@@ -13,14 +13,17 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 button,
@@ -31,6 +34,28 @@ input {
 
 button {
   font: inherit;
+}
+
+@media (max-width: 639px) {
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  .mobile-scroll-row {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-scroll-row::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 ::selection {
