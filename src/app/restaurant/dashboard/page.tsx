@@ -18,7 +18,7 @@ export default async function RestaurantDashboardPage({ searchParams }: { search
   if (!membership || membership.role !== "STAFF" || !membership.isActive) redirect("/");
   const restaurant = membership.restaurant;
   const [activeOrders, historyOrders, riders] = await Promise.all([
-    prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["CONFIRMED","PREPARING","READY_FOR_PICKUP","OUT_FOR_DELIVERY"] } }, orderBy: { createdAt: "asc" }, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
+    prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["CONFIRMED","PREPARING","READY_FOR_PICKUP","OUT_FOR_DELIVERY"] } }, orderBy: { createdAt: "desc" }, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
     prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["DELIVERED","PICKED_UP","CANCELLED"] } }, orderBy: { updatedAt: "desc" }, take: 20, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
     prisma.restaurantStaff.findMany({ where: { restaurantId, role: "RIDER", isActive: true }, orderBy: { createdAt: "asc" }, include: { user: true } }),
   ]);
