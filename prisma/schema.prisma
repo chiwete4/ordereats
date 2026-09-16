@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  STAFF
+  RIDER
+}
+
+enum RestaurantOrderStatus {
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  PICKED_UP
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  WAITING_FOR_RIDER
+  ASSIGNED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id          String    @id @default(cuid())
+  clerkId     String    @unique
+  email       String    @unique
+  firstName   String
+  lastName    String
+  phoneNumber String?
+  dateOfBirth DateTime?
+  allergies   String?
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  orders             Order[]
+  restaurantStaff    RestaurantStaff[]
+  assignedDeliveries Delivery[]        @relation("RiderDeliveries")
+}
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  phoneNumber String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  isOpen      Boolean  @default(true)
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  staff            RestaurantStaff[]
+  menuCategories   MenuCategory[]
+  menuItems        MenuItem[]
+  restaurantOrders RestaurantOrder[]
+}
+
+model RestaurantStaff {
+  id           String    @id @default(cuid())
+  userId       String
+  restaurantId String
+  role         StaffRole
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+}
+
+model MenuCategory {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  menuItems  MenuItem[]
+
+  @@unique([restaurantId, name])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  restaurantId String
+  categoryId   String
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  imageUrl     String?
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id])
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  orderNumber       String   @unique
+  customerId        String
+  subtotal          Decimal  @db.Decimal(10, 2)
+  deliveryFee       Decimal  @db.Decimal(10, 2)
+  serviceFee        Decimal  @db.Decimal(10, 2)
+  total             Decimal  @db.Decimal(10, 2)
+  deliveryLatitude  Float
+  deliveryLongitude Float
+  deliveryNote      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  customer         User              @relation(fields: [customerId], references: [id])
+  restaurantOrders RestaurantOrder[]
+  payment          Payment?
+}
+
+model RestaurantOrder {
+  id           String                @id @default(cuid())
+  orderId      String
+  restaurantId String
+  status       RestaurantOrderStatus @default(CONFIRMED)
+  subtotal     Decimal               @db.Decimal(10, 2)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  order      Order       @relation(fields: [orderId], references: [id])
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  items      OrderItem[]
+  delivery   Delivery?
+
+  @@unique([orderId, restaurantId])
+}
+
+model OrderItem {
+  id                String  @id @default(cuid())
+  restaurantOrderId String
+  menuItemId        String
+  name              String
+  unitPrice         Decimal @db.Decimal(10, 2)
+  quantity          Int
+
+  restaurantOrder RestaurantOrder @relation(fields: [restaurantOrderId], references: [id])
+  menuItem        MenuItem        @relation(fields: [menuItemId], references: [id])
+}
+
+model Delivery {
+  id                String         @id @default(cuid())
+  restaurantOrderId String         @unique
+  riderId           String?
+  status            DeliveryStatus @default(WAITING_FOR_RIDER)
+  lastLatitude      Float?
+  lastLongitude     Float?
+  lastLocationAt    DateTime?
+  assignedAt        DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  restaurantOrder RestaurantOrder @relation(fields: [restaurantOrderId], references: [id])
+  rider           User?           @relation("RiderDeliveries", fields: [riderId], references: [id])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  reference String        @unique
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(PENDING)
+  provider  String        @default("paystack")
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+}
