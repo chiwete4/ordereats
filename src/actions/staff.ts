@@ -8,7 +8,7 @@ async function requireManager(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
   if (!user) throw new Error("You must be signed in.");
   const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } } });
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
   return user;
 }
 
@@ -35,8 +35,9 @@ export async function toggleRestaurantStaffActive(formData: FormData) {
   if (!restaurantId || !membershipId) throw new Error("Staff information is required.");
   const manager = await requireManager(restaurantId);
 
-  const membership = await prisma.restaurantStaff.findFirst({ where: { id: membershipId, restaurantId }, select: { id: true, userId: true, isActive: true } });
+  const membership = await prisma.restaurantStaff.findFirst({ where: { id: membershipId, restaurantId }, select: { id: true, userId: true, isActive: true, role: true } });
   if (!membership) throw new Error("Staff member not found.");
+  if (membership.role === "OWNER") throw new Error("The restaurant owner cannot be deactivated here.");
   if (membership.userId === manager.id && membership.isActive) throw new Error("You cannot deactivate your own restaurant access.");
 
   await prisma.restaurantStaff.update({ where: { id: membership.id }, data: { isActive: !membership.isActive } });
