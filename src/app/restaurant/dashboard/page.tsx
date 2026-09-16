@@ -15,7 +15,7 @@ export default async function RestaurantDashboardPage({ searchParams }: { search
   const user = await getOrCreateCurrentUser(); if (!user) redirect("/");
   const { restaurantId } = await searchParams; if (!restaurantId) redirect("/restaurant/new");
   const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } }, include: { restaurant: { include: { menuCategories: { orderBy: { createdAt: "asc" }, include: { menuItems: { orderBy: { createdAt: "asc" } } } } } } } });
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) redirect("/");
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) redirect("/");
   const restaurant = membership.restaurant;
   const [activeOrders, historyOrders, riders] = await Promise.all([
     prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["CONFIRMED","PREPARING","READY_FOR_PICKUP","OUT_FOR_DELIVERY"] } }, orderBy: { createdAt: "desc" }, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
