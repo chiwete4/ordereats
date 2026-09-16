@@ -14,7 +14,7 @@ async function requireRestaurantStaff(restaurantId: string) {
     where: { userId_restaurantId: { userId: user.id, restaurantId } },
   });
 
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) {
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
     throw new Error("You are not allowed to manage this restaurant.");
   }
 }
@@ -34,7 +34,7 @@ export async function createRestaurant(formData: FormData) {
       data: { name, description: description || null, phoneNumber: phoneNumber || null, address: address || null },
     });
     await tx.restaurantStaff.create({
-      data: { userId: user.id, restaurantId: newRestaurant.id, role: "STAFF" },
+      data: { userId: user.id, restaurantId: newRestaurant.id, role: "OWNER" },
     });
     return newRestaurant;
   });
