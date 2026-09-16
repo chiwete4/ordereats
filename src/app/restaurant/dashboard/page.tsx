@@ -1,173 +1,29 @@
 import { redirect } from "next/navigation";
-
-import {
-  createMenuCategory,
-  createMenuItem,
-  toggleMenuItemAvailability,
-} from "@/actions/menu";
+import { createMenuCategory, createMenuItem, deleteMenuCategory, deleteMenuItem, toggleMenuItemAvailability, updateMenuCategory, updateMenuItem } from "@/actions/menu";
+import { toggleRestaurantOpen, updateRestaurant } from "@/actions/restaurant";
+import { MenuImageUpload } from "@/components/menu-image-upload";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-export default async function RestaurantDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ restaurantId?: string }>;
-}) {
+const input = "mt-2 w-full rounded-lg border px-3 py-2";
+const button = "rounded-lg border px-3 py-2 text-sm font-medium";
+
+export default async function RestaurantDashboardPage({ searchParams }: { searchParams: Promise<{ restaurantId?: string }> }) {
   const user = await getOrCreateCurrentUser();
-
-  if (!user) {
-    redirect("/");
-  }
-
+  if (!user) redirect("/");
   const { restaurantId } = await searchParams;
-
-  if (!restaurantId) {
-    redirect("/restaurant/new");
-  }
-
-  const membership = await prisma.restaurantStaff.findUnique({
-    where: {
-      userId_restaurantId: {
-        userId: user.id,
-        restaurantId,
-      },
-    },
-    include: {
-      restaurant: {
-        include: {
-          menuCategories: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              menuItems: {
-                orderBy: { createdAt: "asc" },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) {
-    redirect("/");
-  }
-
+  if (!restaurantId) redirect("/restaurant/new");
+  const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } }, include: { restaurant: { include: { menuCategories: { orderBy: { createdAt: "asc" }, include: { menuItems: { orderBy: { createdAt: "asc" } } } } } } } });
+  if (!membership || membership.role !== "STAFF" || !membership.isActive) redirect("/");
   const restaurant = membership.restaurant;
 
-  return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <header>
-          <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-            Restaurant dashboard
-          </p>
-          <h1 className="mt-1 text-3xl font-bold">{restaurant.name}</h1>
-          <div className="mt-3 flex gap-4 text-sm text-gray-600">
-            <span>Verification: {restaurant.isVerified ? "Verified" : "Pending"}</span>
-            <span>Status: {restaurant.isOpen ? "Open" : "Closed"}</span>
-          </div>
-        </header>
+  return <main className="min-h-screen bg-gray-50 p-6 md:p-10"><div className="mx-auto max-w-5xl space-y-8">
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm text-gray-500">Restaurant dashboard</p><h1 className="text-3xl font-bold">{restaurant.name}</h1><p className="mt-2 text-sm text-gray-600">Verification: {restaurant.isVerified ? "Verified" : "Pending"} · Status: {restaurant.isOpen ? "Open" : "Closed"}</p></div><form action={toggleRestaurantOpen}><input type="hidden" name="restaurantId" value={restaurant.id}/><button className="rounded-lg bg-black px-4 py-2 font-medium text-white">{restaurant.isOpen ? "Close restaurant" : "Open restaurant"}</button></form></header>
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <form action={createMenuCategory} className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Add category</h2>
-            <p className="mt-1 text-sm text-gray-500">Examples: Meals, Drinks, Snacks.</p>
-            <input type="hidden" name="restaurantId" value={restaurant.id} />
-            <label htmlFor="category-name" className="mt-5 block text-sm font-medium">
-              Category name
-            </label>
-            <input
-              id="category-name"
-              name="name"
-              required
-              placeholder="Meals"
-              className="mt-2 w-full rounded-lg border px-3 py-2"
-            />
-            <button className="mt-4 rounded-lg bg-black px-4 py-2 font-medium text-white" type="submit">
-              Add category
-            </button>
-          </form>
+    <section className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Restaurant settings</h2><p className="mt-1 text-sm text-gray-500">Verification is controlled by OrderEats and cannot be edited here.</p><form action={updateRestaurant} className="mt-5 grid gap-4 md:grid-cols-2"><input type="hidden" name="restaurantId" value={restaurant.id}/><label className="text-sm font-medium">Name<input name="name" required defaultValue={restaurant.name} className={input}/></label><label className="text-sm font-medium">Phone number<input name="phoneNumber" defaultValue={restaurant.phoneNumber ?? ""} className={input}/></label><label className="text-sm font-medium md:col-span-2">Campus location<input name="address" defaultValue={restaurant.address ?? ""} placeholder="e.g. Student Centre, Ground Floor" className={input}/></label><label className="text-sm font-medium md:col-span-2">Description<textarea name="description" defaultValue={restaurant.description ?? ""} className={input}/></label><button className="w-fit rounded-lg bg-black px-4 py-2 font-medium text-white">Save restaurant details</button></form></section>
 
-          <form action={createMenuItem} className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Add menu item</h2>
-            <input type="hidden" name="restaurantId" value={restaurant.id} />
+    <section className="grid gap-6 md:grid-cols-2"><form action={createMenuCategory} className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Add category</h2><input type="hidden" name="restaurantId" value={restaurant.id}/><input name="name" required placeholder="Meals" className={input}/><button className="mt-4 rounded-lg bg-black px-4 py-2 font-medium text-white">Add category</button></form><form action={createMenuItem} className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Add menu item</h2><input type="hidden" name="restaurantId" value={restaurant.id}/>{restaurant.menuCategories.length === 0 ? <p className="mt-4 text-sm text-gray-600">Create a category first.</p> : <div className="mt-4 space-y-4"><select name="categoryId" required className={input}>{restaurant.menuCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><input name="name" required placeholder="Jollof Rice" className={input}/><textarea name="description" placeholder="Description (optional)" className={input}/><input name="price" type="number" min="0.01" step="0.01" required placeholder="2500" className={input}/><MenuImageUpload/><button className="rounded-lg bg-black px-4 py-2 font-medium text-white">Add item</button></div>}</form></section>
 
-            {restaurant.menuCategories.length === 0 ? (
-              <p className="mt-4 text-sm text-gray-600">Create a category first, then you can add food to it.</p>
-            ) : (
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label htmlFor="item-category" className="block text-sm font-medium">Category</label>
-                  <select id="item-category" name="categoryId" required className="mt-2 w-full rounded-lg border px-3 py-2">
-                    {restaurant.menuCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="item-name" className="block text-sm font-medium">Item name</label>
-                  <input id="item-name" name="name" required placeholder="Jollof Rice" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <div>
-                  <label htmlFor="item-description" className="block text-sm font-medium">Description</label>
-                  <textarea id="item-description" name="description" placeholder="Optional description" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <div>
-                  <label htmlFor="item-price" className="block text-sm font-medium">Price (₦)</label>
-                  <input id="item-price" name="price" type="number" min="0.01" step="0.01" required placeholder="2500" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <button className="rounded-lg bg-black px-4 py-2 font-medium text-white" type="submit">Add item</button>
-              </div>
-            )}
-          </form>
-        </section>
-
-        <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div>
-            <h2 className="text-2xl font-semibold">Menu</h2>
-            <p className="mt-1 text-sm text-gray-500">Items marked unavailable stay on the menu but cannot be ordered.</p>
-          </div>
-
-          {restaurant.menuCategories.length === 0 ? (
-            <p className="mt-6 rounded-lg bg-gray-50 p-4 text-gray-600">No menu categories yet.</p>
-          ) : (
-            <div className="mt-6 space-y-8">
-              {restaurant.menuCategories.map((category) => (
-                <div key={category.id}>
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
-                  {category.menuItems.length === 0 ? (
-                    <p className="mt-2 text-sm text-gray-500">No items in this category yet.</p>
-                  ) : (
-                    <div className="mt-3 divide-y rounded-lg border">
-                      {category.menuItems.map((item) => (
-                        <div key={item.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{item.name}</p>
-                              {!item.isAvailable && (
-                                <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Unavailable</span>
-                              )}
-                            </div>
-                            {item.description && <p className="mt-1 text-sm text-gray-500">{item.description}</p>}
-                            <p className="mt-2 font-semibold">₦{Number(item.price).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                          <form action={toggleMenuItemAvailability}>
-                            <input type="hidden" name="restaurantId" value={restaurant.id} />
-                            <input type="hidden" name="menuItemId" value={item.id} />
-                            <button type="submit" className="rounded-lg border px-3 py-2 text-sm font-medium">
-                              Mark {item.isAvailable ? "unavailable" : "available"}
-                            </button>
-                          </form>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
-  );
+    <section className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-2xl font-semibold">Menu</h2><p className="mt-1 text-sm text-gray-500">Manage categories, details, images and availability.</p>{restaurant.menuCategories.length === 0 ? <p className="mt-6 text-gray-600">No menu categories yet.</p> : <div className="mt-6 space-y-8">{restaurant.menuCategories.map(category => <div key={category.id} className="space-y-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><form action={updateMenuCategory} className="flex gap-2"><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="categoryId" value={category.id}/><input name="name" defaultValue={category.name} required className="rounded-lg border px-3 py-2 font-semibold"/><button className={button}>Rename</button></form><form action={deleteMenuCategory}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="categoryId" value={category.id}/><button className={button} disabled={category.menuItems.length > 0} title={category.menuItems.length > 0 ? "Delete or move the items first" : undefined}>Delete category</button></form></div>{category.menuItems.length === 0 ? <p className="text-sm text-gray-500">No items in this category.</p> : category.menuItems.map(item => <div key={item.id} className="rounded-lg border p-4"><form action={updateMenuItem} className="grid gap-4 md:grid-cols-[150px_1fr]"><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><MenuImageUpload defaultValue={item.imageUrl}/><div className="space-y-3"><div className="grid gap-3 sm:grid-cols-2"><input name="name" defaultValue={item.name} required className={input}/><select name="categoryId" defaultValue={item.categoryId} className={input}>{restaurant.menuCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div><textarea name="description" defaultValue={item.description ?? ""} className={input}/><input name="price" type="number" min="0.01" step="0.01" defaultValue={Number(item.price)} required className={input}/><div className="flex flex-wrap gap-2"><button className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white">Save changes</button><span className="self-center text-xs text-gray-500">{item.isAvailable ? "Available" : "Unavailable"}</span></div></div></form><div className="mt-3 flex gap-2 border-t pt-3"><form action={toggleMenuItemAvailability}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><button className={button}>Mark {item.isAvailable ? "unavailable" : "available"}</button></form><form action={deleteMenuItem}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><button className={button}>Delete item</button></form></div></div>)}</div>)}</div>}</section>
+  </div></main>;
 }
