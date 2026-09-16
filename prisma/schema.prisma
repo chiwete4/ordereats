@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum StaffRole {
+  OWNER
   STAFF
   RIDER
 }
