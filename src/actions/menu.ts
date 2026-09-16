@@ -9,7 +9,7 @@ async function requireRestaurantStaff(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
   if (!user) throw new Error("You must be signed in.");
   const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } } });
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
 }
 
 export async function createMenuCategory(formData: FormData) {
