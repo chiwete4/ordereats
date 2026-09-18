@@ -70,7 +70,10 @@ model Restaurant {
   openingTime   String   @default("09:00")
   closingTime   String   @default("22:00")
   operatingDays Int[]    @default([1, 2, 3, 4, 5])
-  timezone      String   @default("Africa/Lagos")
+  timezone          String   @default("Africa/Lagos")
+  payoutBankName    String?
+  payoutAccountName String?
+  payoutAccountNumber String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
