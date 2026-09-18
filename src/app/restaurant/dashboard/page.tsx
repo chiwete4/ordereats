@@ -98,7 +98,7 @@ export default async function RestaurantDashboardPage({
                     {(user.firstName?.[0] || user.email[0]).toUpperCase()}
                   </div>
                 )}
-                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full bg-black">
+                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full border-4 border-white bg-black">
                   <PencilLine className="h-4 w-4 fill-white text-white" strokeWidth={2.65} />
                 </span>
               </div>
@@ -109,7 +109,7 @@ export default async function RestaurantDashboardPage({
                 Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
               </h1>
               <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
-                <Store className="h-4 w-4" strokeWidth={2.65} />
+                <Store className="h-3.5 w-3.5" strokeWidth={2.65} />
                 {roleLabel}
               </div>
 
@@ -134,7 +134,7 @@ export default async function RestaurantDashboardPage({
                 type="button"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
               >
-                <RefreshCw className="h-4 w-4" strokeWidth={2.65} />
+                <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.65} />
                 Switch to Customer
               </button>
             </div>
