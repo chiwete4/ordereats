@@ -81,7 +81,7 @@ export default async function RestaurantDashboardPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="w-full px-4 sm:px-6 lg:px-[150px]">
+      <div className="w-full px-4 sm:px-6 lg:px-[138px]">
         <div className="h-[56px]" />
 
         <section
@@ -98,8 +98,8 @@ export default async function RestaurantDashboardPage({
                     {(user.firstName?.[0] || user.email[0]).toUpperCase()}
                   </div>
                 )}
-                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full border-4 border-white bg-black">
-                  <PencilLine className="h-4 w-4 fill-white text-white" strokeWidth={2.65} />
+                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center overflow-hidden rounded-full border-4 border-white bg-black">
+                  <PencilLine className="h-3 w-3 text-white" strokeWidth={2.65} />
                 </span>
               </div>
             </div>
@@ -113,12 +113,12 @@ export default async function RestaurantDashboardPage({
                 {roleLabel}
               </div>
 
-              <div className="inline-flex min-w-0 items-center rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-none tracking-[-0.02em]">
-                <span className="text-[#808080]">Profile</span>
+              <div className="inline-flex min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-none tracking-[-0.01em] active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <span className="shrink-0 text-[#808080]">Profile</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
-                <span className="text-[#808080]">All Restaurants</span>
+                <span className="shrink-0 text-[#808080]">All Restaurants</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
-                <span className="max-w-[160px] truncate font-semibold text-black">{membership.restaurant.name}</span>
+                <span className="shrink-0 font-semibold tracking-[-0.02em] text-black">{membership.restaurant.name}</span>
               </div>
 
               <RestaurantHoursStatus
