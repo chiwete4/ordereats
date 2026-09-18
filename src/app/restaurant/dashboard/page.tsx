@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { ChevronRight, House, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -60,6 +61,10 @@ export default async function RestaurantDashboardPage({
         select: {
           name: true,
           isOpen: true,
+          openingTime: true,
+          closingTime: true,
+          operatingDays: true,
+          timezone: true,
         },
       },
     },
@@ -117,13 +122,12 @@ export default async function RestaurantDashboardPage({
                 <span className="max-w-[160px] truncate font-semibold text-black">{membership.restaurant.name}</span>
               </div>
 
-              <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
-                9AM - 10PM, Mon - Fri
-              </p>
-
-              <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
-                {membership.restaurant.isOpen ? "Store open" : "Store closed"}
-              </p>
+              <RestaurantHoursStatus
+                openingTime={membership.restaurant.openingTime}
+                closingTime={membership.restaurant.closingTime}
+                operatingDays={membership.restaurant.operatingDays}
+                timezone={membership.restaurant.timezone}
+              />
 
               <div className="hidden h-px min-w-4 flex-1 bg-[#EAEAEA] xl:block" />
 
