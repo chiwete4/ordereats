@@ -81,8 +81,8 @@ export default async function RestaurantDashboardPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="w-full px-4 sm:px-6 lg:px-[138px]">
-        <div className="h-[56px]" />
+      <div className="w-full px-4 sm:px-6 lg:px-[130px]">
+        <div className="h-[48px]" />
 
         <section
           aria-label="Dashboard overview"
@@ -99,7 +99,7 @@ export default async function RestaurantDashboardPage({
                   </div>
                 )}
                 <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center overflow-hidden rounded-full border-4 border-white bg-black">
-                  <PencilLine className="h-3 w-3 text-white" strokeWidth={2.65} />
+                  <PencilLine className="h-3 w-3 fill-white text-white" strokeWidth={2.65} />
                 </span>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default async function RestaurantDashboardPage({
           </div>
         </section>
 
-        <div className="h-[56px]" />
+        <div className="h-[48px]" />
 
         <div className="rounded-[16px] border-[2px] border-[#bdbdbd] p-0">
           <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
