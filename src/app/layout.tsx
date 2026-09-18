@@ -17,9 +17,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "OrderEats — Food, properly sorted",
+  title: "Paperbag — Food, properly sorted",
   description:
-    "Discover nearby food, order from multiple restaurants in one basket, and track every part of your OrderEats order.",
+    "Discover nearby food, order from multiple restaurants in one basket, and track every part of your Paperbag order.",
 };
 
 export default function RootLayout({
