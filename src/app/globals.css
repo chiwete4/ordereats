@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #f4efe6;
-  --foreground: #1f201c;
+  --background: #ffffff;
+  --foreground: #111111;
 }
 
 * {
@@ -21,7 +21,7 @@ body {
   min-width: 320px;
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
@@ -59,8 +59,8 @@ button {
 }
 
 ::selection {
-  background: #d9583b;
-  color: #fff9ef;
+  background: #111111;
+  color: #ffffff;
 }
 
 @layer utilities {
