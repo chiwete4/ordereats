@@ -105,15 +105,15 @@ export default async function RestaurantDashboardPage({
             </div>
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
-              <h1 className="whitespace-nowrap text-[20px] font-normal leading-[0.8] tracking-[-0.052em] text-black">
+              <h1 className="whitespace-nowrap text-[20px] font-normal leading-none tracking-[-0.052em] text-black">
                 Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
               </h1>
-              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black">
+              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
                 <Store className="h-4 w-4" strokeWidth={2.65} />
                 {roleLabel}
               </div>
 
-              <div className="inline-flex min-w-0 items-center rounded-full border-2 border-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-medium leading-[0.8] tracking-[-0.02em]">
+              <div className="inline-flex min-w-0 items-center rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-none tracking-[-0.02em]">
                 <span className="text-[#808080]">Profile</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
                 <span className="text-[#808080]">All Restaurants</span>
@@ -132,7 +132,7 @@ export default async function RestaurantDashboardPage({
 
               <button
                 type="button"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={2.65} />
                 Switch to Customer
