@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { SignInButton, UserButton } from "@clerk/nextjs";
-import { getOrCreateCurrentUser } from "@/lib/current-user";
-import { ArrowRight, MapPin, Menu, Plus, ShoppingBag } from "lucide-react";
+import { ArrowRight, MapPin, ShoppingBag } from "lucide-react";
 
 const categories = ["Nigerian", "Grills", "Burgers", "Healthy", "Late night", "Desserts"];
 const restaurants = [
@@ -15,42 +13,9 @@ function FoodArtwork({ tone, plate, garnish }: { tone: string; plate: string; ga
   return <div className={`relative aspect-[4/3] overflow-hidden rounded-[22px] ${tone}`} aria-hidden="true"><div className="absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white p-3 shadow-[0_16px_40px_rgba(0,0,0,.14)]"><div className={`relative h-full w-full overflow-hidden rounded-full ${plate}`}><div className="absolute left-[16%] top-[18%] h-[34%] w-[48%] rotate-[-12deg] rounded-full bg-[#a84530]" /><div className="absolute bottom-[15%] right-[13%] h-[42%] w-[38%] rounded-full bg-[#815033]" /><div className={`absolute bottom-[14%] left-[14%] h-[30%] w-[30%] rounded-full ${garnish}`} /></div></div></div>;
 }
 
-export default async function Home() {
-  const user = await getOrCreateCurrentUser();
+export default function Home() {
   return <main className="min-h-screen overflow-x-hidden bg-white text-[#111]">
-    <header className="bg-white">
-      <div className="mx-auto flex h-[76px] w-full items-center justify-between px-5 sm:px-8 lg:px-11">
-        <div className="flex min-w-0 items-center gap-6 sm:gap-7">
-          <button type="button" aria-label="Open menu" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg transition-colors hover:bg-black/[0.04]">
-            <Menu className="h-[22px] w-[22px]" strokeWidth={2} />
-          </button>
-          <Link href="/" aria-label="Paperbag home" className="shrink-0">
-            <img src="/paperbag-wordmark.svg" alt="Paperbag" className="h-[28px] w-auto sm:h-[30px]" />
-          </Link>
-        </div>
-        <div className="flex shrink-0 items-center gap-4">
-          {!user ? (
-            <>
-              <SignInButton mode="modal">
-                <button className="rounded-full border-2 border-black px-4 py-1.5 text-sm font-semibold leading-5 transition-colors hover:bg-black hover:text-white sm:px-5">
-                  Log in
-                </button>
-              </SignInButton>
-              <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:inline-flex">
-                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
-              </Link>
-            </>
-          ) : (
-            <div className="flex items-center gap-4">
-              <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:inline-flex">
-                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
-              </Link>
-              <UserButton />
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
+
 
     <section className="mx-auto max-w-[1400px] px-4 pb-20 pt-16 text-center sm:px-8 sm:pb-28 sm:pt-24 lg:px-12 lg:pb-32 lg:pt-32"><div className="mx-auto max-w-5xl"><h1 className="text-balance text-[clamp(3.25rem,11vw,8rem)] font-semibold leading-[.9] tracking-[-.07em]">Craving it?<span className="block">Order it.</span></h1><p className="mx-auto mt-7 max-w-[32rem] px-1 text-base leading-7 text-black/55 sm:mt-9 sm:max-w-2xl sm:text-xl sm:leading-8">Your favourite food, from the places you actually want to eat from. Mix restaurants in one order, track every part, and get back to your day.</p><div className="mx-auto mt-10 w-full max-w-2xl rounded-2xl border border-black/10 bg-white p-2 shadow-[0_12px_36px_rgba(0,0,0,.06)] sm:mt-12 sm:flex sm:items-center"><div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left text-black/50"><MapPin className="h-5 w-5 shrink-0" strokeWidth={1.8} /><span className="truncate text-sm sm:text-base">Enter your delivery address</span></div><a href="#discover" className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3.5 text-sm font-bold text-white sm:w-auto sm:py-4">Find food <ArrowRight className="h-4 w-4" strokeWidth={1.9} /></a></div><div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-black/45 sm:text-sm"><span>✓ One checkout</span><span>✓ Live order status</span><span>✓ Secure payments</span></div></div>
 
@@ -65,27 +30,6 @@ export default async function Home() {
 
     <section className="mx-auto max-w-[1400px] px-4 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32"><div className="rounded-[24px] bg-[#f6f6f6] p-7 sm:p-11 lg:p-14"><div className="grid gap-9 lg:grid-cols-[1fr_auto] lg:items-end"><div><h2 className="max-w-3xl text-4xl font-semibold tracking-[-.055em] sm:text-5xl lg:text-6xl">Your menu deserves a cleaner way to reach people.</h2><p className="mt-6 max-w-2xl leading-7 text-black/55 sm:text-lg">Set up your restaurant, organise categories, manage menu items and get ready for orders from one straightforward dashboard.</p></div><Link href="/restaurant/new" className="inline-flex w-fit items-center gap-2 rounded-xl bg-black px-6 py-4 text-sm font-bold text-white">Add your restaurant <ArrowRight className="h-4 w-4" strokeWidth={1.9} /></Link></div></div></section>
 
-    <footer className="overflow-hidden bg-white px-5 pb-0 pt-12 sm:px-8 sm:pt-16 lg:px-11">
-      <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
-        <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-7 gap-y-3 text-[20px] leading-[0.8] tracking-[-0.03em] text-black/55">
-          <a href="#about" className="transition-colors hover:text-black">About</a>
-          <a href="#product" className="transition-colors hover:text-black">Product</a>
-          <a href="#pricing" className="transition-colors hover:text-black">Pricing</a>
-          <a href="#terms" className="transition-colors hover:text-black">Terms of Use</a>
-          <a href="#privacy" className="transition-colors hover:text-black">Privacy Policy</a>
-        </nav>
-        <p className="shrink-0 text-[20px] leading-[0.8] tracking-[-0.03em] text-black/55">
-          (C) &amp; TM 2026 Paperbag
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mt-10" aria-hidden="true">
-        <img
-          src="/paperbag-wordmark-grey.svg"
-          alt=""
-          className="block h-auto w-full select-none"
-        />
-      </div>
-    </footer>
   </main>;
 }
