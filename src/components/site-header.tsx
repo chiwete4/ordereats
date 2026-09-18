@@ -9,7 +9,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b-[0.5px] border-b-[rgba(128,128,128,0.5)] bg-white">
-      <div className="mx-auto flex h-[56px] w-full items-center justify-between px-3 sm:px-6 lg:px-9">
+      <div className="mx-auto flex h-[56px] w-full items-center justify-between px-1 sm:px-4 lg:px-7">
         <div className="flex min-w-0 items-center gap-3 sm:gap-3.5">
           <button type="button" aria-label="Open menu" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg transition-colors hover:bg-black/[0.04]">
             <Menu className="h-5 w-5" strokeWidth={2} />
