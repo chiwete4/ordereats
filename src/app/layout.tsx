@@ -1,19 +1,27 @@
 import type { Metadata } from "next";
+import { Hedvig_Letters_Serif, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const hedvigLettersSerif = Hedvig_Letters_Serif({
+  subsets: ["latin"],
+  variable: "--font-hedvig-serif",
+  display: "swap",
 });
 
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -30,7 +38,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${inter.variable} ${hedvigLettersSerif.variable} ${geistMono.variable} antialiased`}>
           {children}
         </body>
       </html>
