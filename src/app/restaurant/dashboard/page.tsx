@@ -1,3 +1,5 @@
+import { currentUser } from "@clerk/nextjs/server";
+import { ChevronRight, House, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
@@ -54,12 +56,23 @@ export default async function RestaurantDashboardPage({
     select: {
       role: true,
       isActive: true,
+      restaurant: {
+        select: {
+          name: true,
+          isOpen: true,
+        },
+      },
     },
   });
 
   if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
     redirect("/");
   }
+
+  const clerkUser = await currentUser();
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "there";
+  const roleLabel = membership.role === "OWNER" ? "Restaurant Owner" : "Restaurant Staff";
+  const avatarUrl = clerkUser?.imageUrl;
 
   return (
     <main className="min-h-screen bg-white">
@@ -68,11 +81,61 @@ export default async function RestaurantDashboardPage({
 
         <section
           aria-label="Dashboard overview"
-          className="flex h-[112px] w-full items-center justify-center bg-[#d9d9d9]"
+          className="flex min-h-[112px] w-full items-center bg-white"
         >
-          <span className="text-[clamp(2.5rem,5vw,5rem)] font-semibold tracking-[-0.06em] text-black">
-            0
-          </span>
+          <div className="flex w-full flex-col gap-5 xl:flex-row xl:items-center">
+            <div className="flex shrink-0 items-center gap-4">
+              <div className="relative h-[70px] w-[70px] shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-[70px] w-[70px] rounded-full object-cover" />
+                ) : (
+                  <div className="grid h-[70px] w-[70px] place-items-center rounded-full bg-[#EAEAEA] text-lg font-semibold">
+                    {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                  </div>
+                )}
+                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full bg-white">
+                  <span className={`h-4 w-4 rounded-full border-[4px] border-white ${membership.restaurant.isOpen ? "bg-black" : "bg-[#808080]"}`} />
+                </span>
+              </div>
+
+              <h1 className="whitespace-nowrap text-[28px] font-normal leading-[0.8] tracking-[-0.052em] text-black">
+                Welcome, <span className="font-[var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
+              </h1>
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
+              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black">
+                <Store className="h-4 w-4" strokeWidth={1.65} />
+                {roleLabel}
+              </div>
+
+              <div className="inline-flex min-w-0 items-center rounded-full border border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-[0.8] tracking-[-0.02em]">
+                <span className="text-[#808080]">Profile</span>
+                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={1.65} />
+                <span className="text-[#808080]">All Restaurants</span>
+                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={1.65} />
+                <span className="max-w-[160px] truncate font-semibold text-black">{membership.restaurant.name}</span>
+              </div>
+
+              <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
+                9AM - 10PM, Mon - Fri
+              </p>
+
+              <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
+                {membership.restaurant.isOpen ? "Store open" : "Store closed"}
+              </p>
+
+              <div className="hidden h-px min-w-4 flex-1 bg-[#EAEAEA] xl:block" />
+
+              <button
+                type="button"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black"
+              >
+                <RefreshCw className="h-4 w-4" strokeWidth={1.65} />
+                Switch to Customer
+              </button>
+            </div>
+          </div>
         </section>
 
         <div className="h-[56px]" />
