@@ -1,38 +1,100 @@
 import { redirect } from "next/navigation";
-import { createMenuCategory, createMenuItem, deleteMenuCategory, deleteMenuItem, toggleMenuItemAvailability, updateMenuCategory, updateMenuItem } from "@/actions/menu";
-import { toggleRestaurantOpen, updateRestaurant } from "@/actions/restaurant";
-import { MenuImageUpload } from "@/components/menu-image-upload";
-import { RestaurantOrders } from "@/components/restaurant-orders";
-import { RestaurantStaffSection } from "@/components/restaurant-staff-section";
+
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
-const input = "mt-2 w-full rounded-lg border px-3 py-2";
-const button = "rounded-lg border px-3 py-2 text-sm font-medium";
-const dangerButton = "rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-60";
+const leftBlocks = [
+  { id: 1, height: 346 },
+  { id: 3, height: 682 },
+  { id: 5, height: 535 },
+  { id: 7, height: 337 },
+  { id: 9, height: 337 },
+];
 
-export default async function RestaurantDashboardPage({ searchParams }: { searchParams: Promise<{ restaurantId?: string }> }) {
-  const user = await getOrCreateCurrentUser(); if (!user) redirect("/");
-  const { restaurantId } = await searchParams; if (!restaurantId) redirect("/restaurant/new");
-  const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } }, include: { restaurant: { include: { menuCategories: { orderBy: { createdAt: "asc" }, include: { menuItems: { orderBy: { createdAt: "asc" } } } } } } } });
-  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) redirect("/");
-  const restaurant = membership.restaurant;
-  const [activeOrders, historyOrders, riders] = await Promise.all([
-    prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["CONFIRMED","PREPARING","READY_FOR_PICKUP","OUT_FOR_DELIVERY"] } }, orderBy: { createdAt: "desc" }, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
-    prisma.restaurantOrder.findMany({ where: { restaurantId, status: { in: ["DELIVERED","PICKED_UP","CANCELLED"] } }, orderBy: { updatedAt: "desc" }, take: 20, include: { order: { include: { customer: true } }, items: true, delivery: { include: { rider: true } } } }),
-    prisma.restaurantStaff.findMany({ where: { restaurantId, role: "RIDER", isActive: true }, orderBy: { createdAt: "asc" }, include: { user: true } }),
-  ]);
+const rightBlocks = [
+  { id: 2, height: 422 },
+  { id: 4, height: 527 },
+  { id: 6, height: 350 },
+  { id: 8, height: 350 },
+  { id: 10, height: 594 },
+];
 
-  return <main className="min-h-screen bg-white p-6 md:p-10"><div className="mx-auto max-w-5xl space-y-8">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm text-gray-500">Restaurant dashboard</p><h1 className="text-3xl font-bold">{restaurant.name}</h1><p className="mt-2 text-sm text-gray-600">Verification: {restaurant.isVerified ? "Verified" : "Pending"}</p></div><form action={toggleRestaurantOpen}><input type="hidden" name="restaurantId" value={restaurant.id}/><button type="submit" role="switch" aria-checked={restaurant.isOpen} className={`relative h-7 w-[72px] rounded-full border transition-colors ${restaurant.isOpen ? "border-green-600 bg-green-500" : "border-gray-300 bg-gray-100"}`}><span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-all ${restaurant.isOpen ? "right-[3px]" : "left-[3px]"}`}/><span className={`absolute inset-y-0 flex items-center font-mono text-[8px] font-semibold uppercase tracking-[0.06em] ${restaurant.isOpen ? "left-2.5 text-black" : "right-1.5 text-gray-500"}`}>{restaurant.isOpen ? "OPEN" : "CLOSED"}</span></button></form></header>
+function PlaceholderBlock({ id, height }: { id: number; height: number }) {
+  return (
+    <section
+      aria-label={`Dashboard section ${id}`}
+      className="flex w-full items-center justify-center rounded-[12px] bg-[#d9d9d9]"
+      style={{ height }}
+    >
+      <span className="text-[clamp(2.5rem,5vw,5rem)] font-semibold tracking-[-0.06em] text-black">
+        #{id}
+      </span>
+    </section>
+  );
+}
 
-    <RestaurantOrders restaurantId={restaurant.id} activeOrders={activeOrders} historyOrders={historyOrders} riders={riders}/>
+export default async function RestaurantDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ restaurantId?: string }>;
+}) {
+  const user = await getOrCreateCurrentUser();
+  if (!user) redirect("/");
 
-    <section className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Restaurant settings</h2><p className="mt-1 text-sm text-gray-500">Verification is controlled by Paperbag and cannot be edited here.</p><form action={updateRestaurant} className="mt-5 grid gap-4 md:grid-cols-2"><input type="hidden" name="restaurantId" value={restaurant.id}/><label className="text-sm font-medium">Name<input name="name" required defaultValue={restaurant.name} className={input}/></label><label className="text-sm font-medium">Phone number<input name="phoneNumber" defaultValue={restaurant.phoneNumber ?? ""} className={input}/></label><label className="text-sm font-medium md:col-span-2">Campus location<input name="address" defaultValue={restaurant.address ?? ""} className={input}/></label><label className="text-sm font-medium md:col-span-2">Description<textarea name="description" defaultValue={restaurant.description ?? ""} className={input}/></label><button className="w-fit rounded-lg bg-black px-4 py-2 font-medium text-white">Save restaurant details</button></form></section>
+  const { restaurantId } = await searchParams;
+  if (!restaurantId) redirect("/restaurant/new");
 
-    <section className="grid gap-6 md:grid-cols-2"><form action={createMenuCategory} className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Add category</h2><input type="hidden" name="restaurantId" value={restaurant.id}/><input name="name" required placeholder="Meals" className={input}/><button className="mt-4 rounded-lg bg-black px-4 py-2 font-medium text-white">Add category</button></form><form action={createMenuItem} className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold">Add menu item</h2><input type="hidden" name="restaurantId" value={restaurant.id}/>{restaurant.menuCategories.length === 0 ? <p className="mt-4 text-sm text-gray-600">Create a category first.</p> : <div className="mt-4 space-y-4"><select name="categoryId" required className={input}>{restaurant.menuCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><input name="name" required placeholder="Jollof Rice" className={input}/><textarea name="description" className={input}/><input name="price" type="number" min="0.01" step="0.01" required className={input}/><MenuImageUpload/><button className="rounded-lg bg-black px-4 py-2 font-medium text-white">Add item</button></div>}</form></section>
+  const membership = await prisma.restaurantStaff.findUnique({
+    where: {
+      userId_restaurantId: {
+        userId: user.id,
+        restaurantId,
+      },
+    },
+    select: {
+      role: true,
+      isActive: true,
+    },
+  });
 
-    <section className="rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-2xl font-semibold">Menu</h2><p className="mt-1 text-sm text-gray-500">Manage categories, details, images and availability.</p>{restaurant.menuCategories.length === 0 ? <p className="mt-6 text-gray-600">No menu categories yet.</p> : <div className="mt-6 space-y-8">{restaurant.menuCategories.map(category => <div key={category.id} className="space-y-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><form action={updateMenuCategory} className="flex gap-2"><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="categoryId" value={category.id}/><input name="name" defaultValue={category.name} required className="rounded-lg border px-3 py-2 font-semibold"/><button className={button}>Rename</button></form><div className="text-right"><form action={deleteMenuCategory}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="categoryId" value={category.id}/><button className={dangerButton} disabled={category.menuItems.length > 0}>Delete category</button></form>{category.menuItems.length > 0 && <p className="mt-1 text-xs text-gray-500">Move or delete all items before deleting this category.</p>}</div></div>{category.menuItems.map(item => <div key={item.id} className="rounded-lg border p-4"><form action={updateMenuItem} className="grid gap-4 md:grid-cols-[150px_1fr]"><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><MenuImageUpload defaultValue={item.imageUrl}/><div className="space-y-3"><div className="grid gap-3 sm:grid-cols-2"><input name="name" defaultValue={item.name} required className={input}/><select name="categoryId" defaultValue={item.categoryId} className={input}>{restaurant.menuCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div><textarea name="description" defaultValue={item.description ?? ""} className={input}/><input name="price" type="number" min="0.01" step="0.01" defaultValue={Number(item.price)} required className={input}/><button className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white">Save changes</button></div></form><div className="mt-3 flex gap-2 border-t pt-3"><form action={toggleMenuItemAvailability}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><button className={button}>Mark {item.isAvailable ? "unavailable" : "available"}</button></form><form action={deleteMenuItem}><input type="hidden" name="restaurantId" value={restaurant.id}/><input type="hidden" name="menuItemId" value={item.id}/><button className={dangerButton}>Delete item</button></form></div></div>)}</div>)}</div>}</section>
-    <RestaurantStaffSection restaurantId={restaurant.id} currentUserId={user.id}/>
-  </div></main>;
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
+    redirect("/");
+  }
+
+  return (
+    <main className="min-h-screen bg-white">
+      <div className="mx-auto w-full max-w-[1556px] px-4 sm:px-6 lg:px-0">
+        <div className="h-[56px]" />
+
+        <section
+          aria-label="Dashboard overview"
+          className="flex h-[112px] w-full items-center justify-center bg-[#d9d9d9]"
+        >
+          <span className="text-[clamp(2.5rem,5vw,5rem)] font-semibold tracking-[-0.06em] text-black">
+            0
+          </span>
+        </section>
+
+        <div className="h-[56px]" />
+
+        <div className="rounded-[16px] border-[2px] border-[#bdbdbd] p-0">
+          <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
+            <div className="flex min-w-0 flex-col gap-[20px]">
+              {leftBlocks.map((block) => (
+                <PlaceholderBlock key={block.id} {...block} />
+              ))}
+            </div>
+
+            <div className="mt-[20px] flex min-w-0 flex-col gap-[20px] lg:mt-0 lg:gap-[60px]">
+              {rightBlocks.map((block) => (
+                <PlaceholderBlock key={block.id} {...block} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="h-[112px]" />
+      </div>
+    </main>
+  );
 }
