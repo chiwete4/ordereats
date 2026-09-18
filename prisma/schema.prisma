@@ -65,8 +65,12 @@ model Restaurant {
   address     String?
   latitude    Float?
   longitude   Float?
-  isOpen      Boolean  @default(true)
-  isVerified  Boolean  @default(false)
+  isOpen        Boolean  @default(true)
+  isVerified    Boolean  @default(false)
+  openingTime   String   @default("09:00")
+  closingTime   String   @default("22:00")
+  operatingDays Int[]    @default([1, 2, 3, 4, 5])
+  timezone      String   @default("Africa/Lagos")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
