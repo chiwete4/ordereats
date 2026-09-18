@@ -65,6 +65,27 @@ export default async function Home() {
 
     <section className="mx-auto max-w-[1400px] px-4 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32"><div className="rounded-[24px] bg-[#f6f6f6] p-7 sm:p-11 lg:p-14"><div className="grid gap-9 lg:grid-cols-[1fr_auto] lg:items-end"><div><h2 className="max-w-3xl text-4xl font-semibold tracking-[-.055em] sm:text-5xl lg:text-6xl">Your menu deserves a cleaner way to reach people.</h2><p className="mt-6 max-w-2xl leading-7 text-black/55 sm:text-lg">Set up your restaurant, organise categories, manage menu items and get ready for orders from one straightforward dashboard.</p></div><Link href="/restaurant/new" className="inline-flex w-fit items-center gap-2 rounded-xl bg-black px-6 py-4 text-sm font-bold text-white">Add your restaurant <ArrowRight className="h-4 w-4" strokeWidth={1.9} /></Link></div></div></section>
 
-    <footer className="border-t border-black/[0.07]"><div className="mx-auto flex max-w-[1400px] flex-col gap-7 px-4 py-12 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12"><Link href="/" className="font-semibold">Paperbag</Link><p className="text-sm text-black/45">Good food. Less faff.</p><div className="flex gap-5 text-sm font-medium text-black/60"><a href="#discover">Discover</a><Link href="/restaurant/new">Restaurants</Link></div></div></footer>
+    <footer className="overflow-hidden bg-white px-5 pb-0 pt-12 sm:px-8 sm:pt-16 lg:px-11">
+      <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
+        <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-7 gap-y-3 text-[20px] leading-[0.8] tracking-[-0.03em] text-black/55">
+          <a href="#about" className="transition-colors hover:text-black">About</a>
+          <a href="#product" className="transition-colors hover:text-black">Product</a>
+          <a href="#pricing" className="transition-colors hover:text-black">Pricing</a>
+          <a href="#terms" className="transition-colors hover:text-black">Terms of Use</a>
+          <a href="#privacy" className="transition-colors hover:text-black">Privacy Policy</a>
+        </nav>
+        <p className="shrink-0 text-[20px] leading-[0.8] tracking-[-0.03em] text-black/55">
+          (C) &amp; TM 2026 Paperbag
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mt-10" aria-hidden="true">
+        <img
+          src="/paperbag-wordmark-grey.svg"
+          alt=""
+          className="block h-auto w-full select-none"
+        />
+      </div>
+    </footer>
   </main>;
 }
