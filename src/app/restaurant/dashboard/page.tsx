@@ -183,7 +183,7 @@ export default async function RestaurantDashboardPage({
 
         <div className="h-[32px]" />
 
-        <div className="rounded-[16px] border-[2px] border-[#bdbdbd] p-0">
+        <div>
           <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
             <div className="flex min-w-0 flex-col gap-[20px]">
               {leftBlocks.map((block) =>
