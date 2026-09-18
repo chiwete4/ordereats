@@ -75,16 +75,16 @@ export function RestaurantHoursStatus({
     const hours = Math.floor(remaining / 3600);
     const minutes = Math.floor((remaining % 3600) / 60);
     const seconds = remaining % 60;
-    return `Closing in ${hours}h:${String(minutes).padStart(2, "0")}m:${String(seconds).padStart(2, "0")}s`;
+    return `${hours}h:${String(minutes).padStart(2, "0")}m:${String(seconds).padStart(2, "0")}s`;
   }, [closingTime, now, openingTime, operatingDays, timezone]);
 
   return (
     <>
-      <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
+      <p className="shrink-0 text-[12px] font-normal leading-[0.8] tracking-[-0.02em] text-[#808080]">
         {formatClock(openingTime)} - {formatClock(closingTime)}, {formatDays(operatingDays)}
       </p>
-      <p className="shrink-0 text-[12px] font-medium leading-[0.8] tracking-[-0.02em] text-[#808080]">
-        {status}
+      <p className="shrink-0 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-[#808080]">
+        <span className="font-normal">Closing in</span>{' '}{status}
       </p>
     </>
   );

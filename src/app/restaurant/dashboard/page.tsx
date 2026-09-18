@@ -81,8 +81,8 @@ export default async function RestaurantDashboardPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="w-full px-4 sm:px-6 lg:px-[130px]">
-        <div className="h-[48px]" />
+      <div className="w-full px-4 sm:px-6 lg:px-[125px]">
+        <div className="h-[32px]" />
 
         <section
           aria-label="Dashboard overview"
@@ -105,20 +105,20 @@ export default async function RestaurantDashboardPage({
             </div>
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
-              <h1 className="whitespace-nowrap text-[20px] font-normal leading-none tracking-[-0.052em] text-black">
-                Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
+              <h1 className="whitespace-nowrap text-[22px] font-normal leading-none tracking-[-0.052em] text-black">
+                Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">Jacob Martins</span>
               </h1>
-              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
-                <Store className="h-3.5 w-3.5" strokeWidth={2.65} />
+              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
+                <Store className="h-3 w-3" strokeWidth={2.3} />
                 {roleLabel}
               </div>
 
-              <div className="inline-flex min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-none tracking-[-0.01em] active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="inline-flex min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <span className="shrink-0 text-[#808080]">Profile</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
                 <span className="shrink-0 text-[#808080]">All Restaurants</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
-                <span className="shrink-0 font-semibold tracking-[-0.02em] text-black">{membership.restaurant.name}</span>
+                <span className="shrink-0 font-semibold tracking-[-2%] text-black">{membership.restaurant.name}</span>
               </div>
 
               <RestaurantHoursStatus
@@ -132,16 +132,16 @@ export default async function RestaurantDashboardPage({
 
               <button
                 type="button"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
               >
-                <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.65} />
+                <RefreshCw className="h-3 w-3" strokeWidth={2.3} />
                 Switch to Customer
               </button>
             </div>
           </div>
         </section>
 
-        <div className="h-[48px]" />
+        <div className="h-[32px]" />
 
         <div className="rounded-[16px] border-[2px] border-[#bdbdbd] p-0">
           <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
