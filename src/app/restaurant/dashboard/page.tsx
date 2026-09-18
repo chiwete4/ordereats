@@ -1,5 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { ChevronRight, House, RefreshCw, Store } from "lucide-react";
+import { ChevronRight, PencilLine, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
@@ -90,16 +90,16 @@ export default async function RestaurantDashboardPage({
         >
           <div className="flex w-full flex-col gap-3">
             <div className="shrink-0">
-              <div className="relative h-[70px] w-[70px] shrink-0">
+              <div className="relative h-[56px] w-[56px] shrink-0">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="h-[70px] w-[70px] rounded-full object-cover" />
+                  <img src={avatarUrl} alt="" className="h-[56px] w-[56px] rounded-full object-cover" />
                 ) : (
-                  <div className="grid h-[70px] w-[70px] place-items-center rounded-full bg-[#EAEAEA] text-lg font-semibold">
+                  <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#EAEAEA] text-lg font-semibold">
                     {(user.firstName?.[0] || user.email[0]).toUpperCase()}
                   </div>
                 )}
-                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full bg-white">
-                  <span className={`h-4 w-4 rounded-full border-[4px] border-white ${membership.restaurant.isOpen ? "bg-black" : "bg-[#808080]"}`} />
+                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full bg-black">
+                  <PencilLine className="h-4 w-4 fill-white text-white" strokeWidth={2.65} />
                 </span>
               </div>
             </div>
@@ -108,12 +108,12 @@ export default async function RestaurantDashboardPage({
               <h1 className="whitespace-nowrap text-[20px] font-normal leading-[0.8] tracking-[-0.052em] text-black">
                 Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
               </h1>
-              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black">
+              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black">
                 <Store className="h-4 w-4" strokeWidth={2.65} />
                 {roleLabel}
               </div>
 
-              <div className="inline-flex min-w-0 items-center rounded-full border border-[#EAEAEA] px-3 py-2 text-[12px] font-medium leading-[0.8] tracking-[-0.02em]">
+              <div className="inline-flex min-w-0 items-center rounded-full border-2 border-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-medium leading-[0.8] tracking-[-0.02em]">
                 <span className="text-[#808080]">Profile</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
                 <span className="text-[#808080]">All Restaurants</span>
@@ -132,7 +132,7 @@ export default async function RestaurantDashboardPage({
 
               <button
                 type="button"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-3 py-[6.5px] text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={2.65} />
                 Switch to Customer
