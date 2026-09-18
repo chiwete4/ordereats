@@ -51,49 +51,46 @@ export function RestaurantVerificationCard({
   return (
     <>
       <section className="flex min-h-[346px] w-full flex-col rounded-[14px] bg-[#FFF3C4] px-6 py-5 sm:px-8 sm:py-6">
-        <div className="inline-flex items-center gap-1.5 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black">
-          <AlertTriangle className="h-4 w-4" strokeWidth={2.3} />
-          {allComplete ? "Verification Complete" : "Complete your Verification"}
-        </div>
+        <div className="flex flex-1 flex-col gap-5">
+          <div className="inline-flex items-center gap-1.5 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black">
+            <AlertTriangle className="h-4 w-4" strokeWidth={2.3} />
+            {allComplete ? "Verification Complete" : "Complete your Verification"}
+          </div>
 
-        <div className="mt-6 flex min-w-0 flex-1 flex-col justify-between">
-          <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="relative grid h-[68px] w-[68px] shrink-0 place-items-center overflow-hidden rounded-[8px] bg-white/70">
-                <Store className="h-6 w-6 text-black" strokeWidth={2.3} />
-                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full border-[3px] border-[#FFF3C4] bg-black">
-                  <PencilLine className="h-3 w-3 fill-white text-white" strokeWidth={2.3} />
+          <div className="relative grid h-[56px] w-[56px] shrink-0 place-items-center overflow-visible rounded-[8px] bg-white/70">
+            <Store className="h-5 w-5 text-black" strokeWidth={2.3} />
+            <span className="absolute bottom-[-2px] right-[-2px] grid h-5 w-5 place-items-center rounded-full border-[3px] border-[#FFF3C4] bg-black">
+              <PencilLine className="h-2.5 w-2.5 fill-white text-white" strokeWidth={2.3} />
+            </span>
+          </div>
+
+          <div className="flex min-w-0 items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+              <h2 className="truncate [font-family:var(--font-hedvig-serif)] text-[26px] font-normal leading-none tracking-[-0.035em] text-black">
+                {restaurantName}
+              </h2>
+              {address ? (
+                <span className="inline-flex min-w-0 items-center gap-1 text-[12px] font-medium leading-none tracking-[-0.01em] text-[#808080]">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2.3} />
+                  <span className="truncate">{address}</span>
                 </span>
-              </div>
-
-              <div className="min-w-0 pt-0.5">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-                  <h2 className="truncate [font-family:var(--font-hedvig-serif)] text-[26px] font-normal leading-none tracking-[-0.035em] text-black">
-                    {restaurantName}
-                  </h2>
-                  {address ? (
-                    <span className="inline-flex min-w-0 items-center gap-1 text-[12px] font-medium leading-none tracking-[-0.01em] text-[#808080]">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2.3} />
-                      <span className="truncate">{address}</span>
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-4 max-w-[520px] text-[15px] font-medium leading-[1.25] tracking-[-0.01em] text-[#808080]">
-                  {helperText}
-                </p>
-              </div>
+              ) : null}
             </div>
 
             <button
               type="button"
               onClick={() => detailsDialogRef.current?.showModal()}
-              className="shrink-0 self-start text-[14px] font-semibold leading-none tracking-[-0.02em] text-black underline decoration-[1.5px] underline-offset-2 sm:self-center"
+              className="shrink-0 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black underline decoration-[1.5px] underline-offset-2"
             >
               Edit Restaurant
             </button>
           </div>
 
-          <div className="mt-6">
+          <p className="max-w-[560px] text-[15px] font-medium leading-[1.25] tracking-[-0.01em] text-[#808080]">
+            {helperText}
+          </p>
+
+          <div>
             <div className="grid grid-cols-4 gap-3">
               {steps.map((step, index) => (
                 <div
@@ -118,25 +115,27 @@ export function RestaurantVerificationCard({
                 </div>
               ))}
             </div>
-
-            {!allComplete ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (nextIncomplete?.label === "Restaurant Details") {
-                    detailsDialogRef.current?.showModal();
-                    return;
-                  }
-                  if (nextIncomplete?.label === "Add your Bank Info") {
-                    bankDialogRef.current?.showModal();
-                  }
-                }}
-                className="mt-5 flex h-[34px] w-full items-center justify-center rounded-[10px] bg-[#FFE27A] px-4 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black"
-              >
-                {nextIncomplete?.label === "Add your Bank Info" ? "Add your Bank Info →" : `${nextIncomplete?.label} →`}
-              </button>
-            ) : null}
           </div>
+
+          {!allComplete ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (nextIncomplete?.label === "Restaurant Details") {
+                  detailsDialogRef.current?.showModal();
+                  return;
+                }
+                if (nextIncomplete?.label === "Add your Bank Info") {
+                  bankDialogRef.current?.showModal();
+                }
+              }}
+              className="flex h-[34px] w-full items-center justify-center rounded-[10px] bg-[#FFE27A] px-4 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black"
+            >
+              {nextIncomplete?.label === "Add your Bank Info" ? "Add your Bank Info →" : `${nextIncomplete?.label} →`}
+            </button>
+          ) : (
+            <div className="h-[34px]" />
+          )}
         </div>
       </section>
 
