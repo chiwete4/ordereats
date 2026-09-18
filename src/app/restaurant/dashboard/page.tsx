@@ -153,7 +153,7 @@ export default async function RestaurantDashboardPage({
                 {roleLabel}
               </div>
 
-              <div className="inline-flex min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="hidden min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none active:cursor-grabbing sm:inline-flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <span className="shrink-0 text-[#808080]">Profile</span>
                 <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
                 <span className="shrink-0 text-[#808080]">All Restaurants</span>
