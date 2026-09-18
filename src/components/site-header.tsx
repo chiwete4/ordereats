@@ -23,7 +23,7 @@ export async function SiteHeader() {
           {!user ? (
             <>
               <SignInButton mode="modal">
-                <button className="rounded-full border-2 border-black px-[11.5px] py-[3px] text-[12px] font-semibold leading-[0.8] tracking-[-0.052em] transition-colors hover:bg-black hover:text-white sm:px-[11.5px]">
+                <button className="rounded-full border-2 border-black px-[11.5px] py-[3px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] transition-colors hover:bg-black hover:text-white sm:px-[11.5px]">
                   Log in
                 </button>
               </SignInButton>
