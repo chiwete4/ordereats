@@ -88,8 +88,8 @@ export default async function RestaurantDashboardPage({
           aria-label="Dashboard overview"
           className="flex min-h-[112px] w-full items-center bg-white"
         >
-          <div className="flex w-full flex-col gap-5 xl:flex-row xl:items-center">
-            <div className="flex shrink-0 items-center gap-4">
+          <div className="flex w-full flex-col gap-3">
+            <div className="shrink-0">
               <div className="relative h-[70px] w-[70px] shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-[70px] w-[70px] rounded-full object-cover" />
@@ -102,13 +102,12 @@ export default async function RestaurantDashboardPage({
                   <span className={`h-4 w-4 rounded-full border-[4px] border-white ${membership.restaurant.isOpen ? "bg-black" : "bg-[#808080]"}`} />
                 </span>
               </div>
-
-              <h1 className="whitespace-nowrap text-[28px] font-normal leading-[0.8] tracking-[-0.052em] text-black">
-                Welcome, <span className="font-[var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
-              </h1>
             </div>
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
+              <h1 className="whitespace-nowrap text-[28px] font-normal leading-[0.8] tracking-[-0.052em] text-black">
+                Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">{displayName}</span>
+              </h1>
               <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-3 py-2 text-[12px] font-semibold leading-[0.8] tracking-[-0.02em] text-black">
                 <Store className="h-4 w-4" strokeWidth={1.65} />
                 {roleLabel}
@@ -129,7 +128,7 @@ export default async function RestaurantDashboardPage({
                 timezone={membership.restaurant.timezone}
               />
 
-              <div className="hidden h-px min-w-4 flex-1 bg-[#EAEAEA] xl:block" />
+              <div className="hidden min-w-4 flex-1 xl:block" />
 
               <button
                 type="button"
