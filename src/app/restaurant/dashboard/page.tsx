@@ -3,6 +3,7 @@ import { ChevronRight, PencilLine, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
+import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -65,6 +66,17 @@ export default async function RestaurantDashboardPage({
           closingTime: true,
           operatingDays: true,
           timezone: true,
+          description: true,
+          phoneNumber: true,
+          address: true,
+          payoutBankName: true,
+          payoutAccountName: true,
+          payoutAccountNumber: true,
+          _count: {
+            select: {
+              menuItems: true,
+            },
+          },
         },
       },
     },
@@ -73,6 +85,34 @@ export default async function RestaurantDashboardPage({
   if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
     redirect("/");
   }
+
+  const activeRiderCount = await prisma.restaurantStaff.count({
+    where: {
+      restaurantId,
+      role: "RIDER",
+      isActive: true,
+    },
+  });
+
+  const detailsComplete = Boolean(
+    membership.restaurant.name.trim() &&
+      membership.restaurant.description?.trim() &&
+      membership.restaurant.phoneNumber?.trim() &&
+      membership.restaurant.address?.trim()
+  );
+  const riderComplete = activeRiderCount >= 1;
+  const menuComplete = membership.restaurant._count.menuItems >= 5;
+  const bankComplete = Boolean(
+    membership.restaurant.payoutBankName?.trim() &&
+      membership.restaurant.payoutAccountName?.trim() &&
+      membership.restaurant.payoutAccountNumber?.trim()
+  );
+  const verificationSteps = [
+    { label: "Restaurant Details", complete: detailsComplete },
+    { label: "Add at least 1 Rider", complete: riderComplete },
+    { label: "Create your menu", complete: menuComplete },
+    { label: "Add your Bank Info", complete: bankComplete },
+  ];
 
   const clerkUser = await currentUser();
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "there";
@@ -146,9 +186,24 @@ export default async function RestaurantDashboardPage({
         <div className="rounded-[16px] border-[2px] border-[#bdbdbd] p-0">
           <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
             <div className="flex min-w-0 flex-col gap-[20px]">
-              {leftBlocks.map((block) => (
-                <PlaceholderBlock key={block.id} {...block} />
-              ))}
+              {leftBlocks.map((block) =>
+                block.id === 1 ? (
+                  <RestaurantVerificationCard
+                    key={block.id}
+                    restaurantId={restaurantId}
+                    restaurantName={membership.restaurant.name}
+                    description={membership.restaurant.description}
+                    phoneNumber={membership.restaurant.phoneNumber}
+                    address={membership.restaurant.address}
+                    bankName={membership.restaurant.payoutBankName}
+                    accountName={membership.restaurant.payoutAccountName}
+                    accountNumber={membership.restaurant.payoutAccountNumber}
+                    steps={verificationSteps}
+                  />
+                ) : (
+                  <PlaceholderBlock key={block.id} {...block} />
+                )
+              )}
             </div>
 
             <div className="mt-[20px] flex min-w-0 flex-col gap-[20px] lg:mt-0 lg:gap-[60px]">
