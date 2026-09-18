@@ -63,7 +63,7 @@ export default async function RestaurantDashboardPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto w-full max-w-[1556px] px-4 sm:px-6 lg:px-0">
+      <div className="w-full px-4 sm:px-6 lg:px-[157px]">
         <div className="h-[56px]" />
 
         <section
@@ -93,7 +93,7 @@ export default async function RestaurantDashboardPage({
           </div>
         </div>
 
-        <div className="h-[112px]" />
+        <div className="h-[168px]" />
       </div>
     </main>
   );
