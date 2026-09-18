@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
+import { Menu, Plus } from "lucide-react";
 
 const categories = ["Nigerian", "Grills", "Burgers", "Healthy", "Late night", "Desserts"];
 const restaurants = [
@@ -20,7 +21,39 @@ function FoodArtwork({ tone, plate, garnish }: { tone: string; plate: string; ga
 export default async function Home() {
   const user = await getOrCreateCurrentUser();
   return <main className="min-h-screen overflow-x-hidden bg-white text-[#111]">
-    <header className="border-b border-black/[0.07] bg-white"><div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 sm:h-20 sm:px-8 lg:px-12"><Link href="/" className="flex min-w-0 items-center gap-2.5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-black text-xs font-black text-white">OE</span><span className="truncate text-lg font-semibold tracking-[-.04em] sm:text-xl">OrderEats</span></Link><nav className="hidden items-center gap-8 text-sm font-medium md:flex"><a href="#discover">Discover</a><a href="#how-it-works">How it works</a><Link href="/restaurant/new">For restaurants</Link></nav><div className="flex shrink-0 items-center gap-2">{!user ? <><SignInButton mode="modal"><button className="hidden px-4 py-2.5 text-sm font-semibold sm:block">Sign in</button></SignInButton><SignUpButton mode="modal"><button className="rounded-lg bg-black px-3.5 py-2.5 text-sm font-semibold text-white sm:px-5">Get started</button></SignUpButton></> : <div className="flex items-center gap-3"><span className="hidden text-sm text-black/55 sm:inline">Hi, {user.firstName || "there"}</span><UserButton /></div>}</div></div></header>
+    <header className="bg-white">
+      <div className="mx-auto flex h-[76px] w-full items-center justify-between px-5 sm:px-8 lg:px-11">
+        <div className="flex min-w-0 items-center gap-6 sm:gap-7">
+          <button type="button" aria-label="Open menu" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg transition-colors hover:bg-black/[0.04]">
+            <Menu className="h-[22px] w-[22px]" strokeWidth={2} />
+          </button>
+          <Link href="/" aria-label="Paperbag home" className="shrink-0">
+            <img src="/paperbag-wordmark.svg" alt="Paperbag" className="h-[28px] w-auto sm:h-[30px]" />
+          </Link>
+        </div>
+        <div className="flex shrink-0 items-center gap-4">
+          {!user ? (
+            <>
+              <SignInButton mode="modal">
+                <button className="rounded-full border-2 border-black px-4 py-1.5 text-sm font-semibold leading-5 transition-colors hover:bg-black hover:text-white sm:px-5">
+                  Log in
+                </button>
+              </SignInButton>
+              <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:inline-flex">
+                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
+              </Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-80 sm:inline-flex">
+                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
+              </Link>
+              <UserButton />
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
 
     <section className="mx-auto max-w-[1400px] px-4 pb-20 pt-16 text-center sm:px-8 sm:pb-28 sm:pt-24 lg:px-12 lg:pb-32 lg:pt-32"><div className="mx-auto max-w-5xl"><h1 className="text-balance text-[clamp(3.25rem,11vw,8rem)] font-semibold leading-[.9] tracking-[-.07em]">Craving it?<span className="block">Order it.</span></h1><p className="mx-auto mt-7 max-w-[32rem] px-1 text-base leading-7 text-black/55 sm:mt-9 sm:max-w-2xl sm:text-xl sm:leading-8">Your favourite food, from the places you actually want to eat from. Mix restaurants in one order, track every part, and get back to your day.</p><div className="mx-auto mt-10 w-full max-w-2xl rounded-2xl border border-black/10 bg-white p-2 shadow-[0_12px_36px_rgba(0,0,0,.06)] sm:mt-12 sm:flex sm:items-center"><div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left text-black/50"><PinIcon /><span className="truncate text-sm sm:text-base">Enter your delivery address</span></div><a href="#discover" className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3.5 text-sm font-bold text-white sm:w-auto sm:py-4">Find food <ArrowIcon /></a></div><div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-black/45 sm:text-sm"><span>✓ One checkout</span><span>✓ Live order status</span><span>✓ Secure payments</span></div></div>
 
@@ -35,6 +68,6 @@ export default async function Home() {
 
     <section className="mx-auto max-w-[1400px] px-4 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32"><div className="rounded-[24px] bg-[#f6f6f6] p-7 sm:p-11 lg:p-14"><div className="grid gap-9 lg:grid-cols-[1fr_auto] lg:items-end"><div><h2 className="max-w-3xl text-4xl font-semibold tracking-[-.055em] sm:text-5xl lg:text-6xl">Your menu deserves a cleaner way to reach people.</h2><p className="mt-6 max-w-2xl leading-7 text-black/55 sm:text-lg">Set up your restaurant, organise categories, manage menu items and get ready for orders from one straightforward dashboard.</p></div><Link href="/restaurant/new" className="inline-flex w-fit items-center gap-2 rounded-xl bg-black px-6 py-4 text-sm font-bold text-white">Add your restaurant <ArrowIcon /></Link></div></div></section>
 
-    <footer className="border-t border-black/[0.07]"><div className="mx-auto flex max-w-[1400px] flex-col gap-7 px-4 py-12 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12"><Link href="/" className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-black text-xs font-black text-white">OE</span><span className="font-semibold">OrderEats</span></Link><p className="text-sm text-black/45">Good food. Less faff.</p><div className="flex gap-5 text-sm font-medium text-black/60"><a href="#discover">Discover</a><Link href="/restaurant/new">Restaurants</Link></div></div></footer>
+    <footer className="border-t border-black/[0.07]"><div className="mx-auto flex max-w-[1400px] flex-col gap-7 px-4 py-12 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12"><Link href="/" className="font-semibold">Paperbag</Link><p className="text-sm text-black/45">Good food. Less faff.</p><div className="flex gap-5 text-sm font-medium text-black/60"><a href="#discover">Discover</a><Link href="/restaurant/new">Restaurants</Link></div></div></footer>
   </main>;
 }
