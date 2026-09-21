@@ -82,6 +82,7 @@ model Restaurant {
   menuCategories   MenuCategory[]
   menuItems        MenuItem[]
   restaurantOrders RestaurantOrder[]
+  featuredCombos   FeaturedCombo[]
 }
 
 model RestaurantStaff {
@@ -121,12 +122,46 @@ model MenuItem {
   price        Decimal  @db.Decimal(10, 2)
   imageUrl     String?
   isAvailable  Boolean  @default(true)
+  isArchived   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   restaurant Restaurant   @relation(fields: [restaurantId], references: [id])
   category   MenuCategory @relation(fields: [categoryId], references: [id])
-  orderItems OrderItem[]
+  orderItems          OrderItem[]
+  featuredComboItems FeaturedComboItem[]
+}
+
+model FeaturedCombo {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  name            String
+  readyMin        Int      @default(1)
+  readyMax        Int      @default(5)
+  deliverySeconds Int      @default(45)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  restaurant Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      FeaturedComboItem[]
+
+  @@index([restaurantId, sortOrder])
+}
+
+model FeaturedComboItem {
+  id         String   @id @default(cuid())
+  comboId    String
+  menuItemId String
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  combo    FeaturedCombo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  menuItem MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@unique([comboId, menuItemId])
+  @@index([menuItemId])
 }
 
 model Order {
