@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import {
   Bike,
   Check,
@@ -9,16 +9,17 @@ import {
   PackageCheck,
   Send,
   ShoppingBag,
+  LoaderCircle,
 } from "lucide-react";
 
 import {
   acknowledgeOrder,
   markOrderPickedUp,
   markOrderReady,
-  sendOrderForDelivery,
 } from "@/actions/orders";
 import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
-import { OrderMoreMenu } from "@/components/dashboard-action-controls";
+import { OrderMoreMenu, SendToRiderButton, type OrderRider } from "@/components/dashboard-action-controls";
+import { useToast } from "@/components/toast-provider";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
 
 export type DashboardOrderItem = {
@@ -151,7 +152,7 @@ function PendingPanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className="border-b border-[#EAEAEA] py-4 first:pt-0">
+              <article key={order.id} className={`border-b border-[#EAEAEA] py-4 first:pt-0 transition-opacity ${menuOpenId === order.id ? "opacity-20" : "opacity-100"}`}>
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
@@ -229,14 +230,17 @@ function ActivePanel({
   orders,
   count,
   explorerItems,
+  riders,
 }: {
   restaurantId: string;
   orders: DashboardOrder[];
   count: number;
   explorerItems: DashboardExplorerItem[];
+  riders: OrderRider[];
 }) {
   const initialExpanded = orders.find((order) => order.status === "PREPARING")?.id ?? orders[0]?.id ?? null;
   const [expandedId, setExpandedId] = useState<string | null>(initialExpanded);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   return (
     <section className="w-full bg-white">
@@ -300,7 +304,7 @@ function ActivePanel({
                           Mark as Ready
                         </button>
                       </form>
-                      <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} />
+                      <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} onOpenChange={(open) => setMenuOpenId(open ? order.id : null)} />
                     </div>
                     <p className="ml-[52px] mt-2 text-[9px] font-medium text-[#A0A0A0]">
                       Customer will be told their order is ready.
@@ -310,14 +314,7 @@ function ActivePanel({
 
                 {order.status === "READY_FOR_PICKUP" ? (
                   <div className="ml-[52px] mt-3 flex gap-2">
-                    <form action={sendOrderForDelivery} className="flex-1">
-                      <input type="hidden" name="restaurantId" value={restaurantId} />
-                      <input type="hidden" name="restaurantOrderId" value={order.id} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                        <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
-                        Send to Rider
-                      </button>
-                    </form>
+                    <div className="flex-1"><SendToRiderButton restaurantId={restaurantId} restaurantOrderId={order.id} riders={riders} /></div>
                     <form action={markOrderPickedUp} className="flex-1">
                       <input type="hidden" name="restaurantId" value={restaurantId} />
                       <input type="hidden" name="restaurantOrderId" value={order.id} />
@@ -326,7 +323,7 @@ function ActivePanel({
                         Customer Pick-up
                       </button>
                     </form>
-                    <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} />
+                    <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} onOpenChange={(open) => setMenuOpenId(open ? order.id : null)} />
                   </div>
                 ) : null}
 
@@ -353,6 +350,7 @@ export function RestaurantOrderPanels({
   activeCount,
   pendingExplorerItems,
   activeExplorerItems,
+  riders,
 }: {
   restaurantId: string;
   pendingOrders: DashboardOrder[];
@@ -361,6 +359,7 @@ export function RestaurantOrderPanels({
   activeCount: number;
   pendingExplorerItems: DashboardExplorerItem[];
   activeExplorerItems: DashboardExplorerItem[];
+  riders: OrderRider[];
 }) {
   return (
     <>
