@@ -909,16 +909,39 @@ export function FeaturedMenuManager({
                     </p>
                   </div>
                 </div>
-                <div className="ml-4 mt-3 border-l border-[#505050] pl-5">
+                <div className="relative ml-6 mt-3 pl-9">
+                  {selectedCombo.items.length ? (
+                    <span
+                      className="absolute left-0 top-0 w-px bg-[#555555]"
+                      style={{
+                        height: Math.max(18, (selectedCombo.items.length - 1) * 32 + 18),
+                      }}
+                    />
+                  ) : null}
                   {selectedCombo.items.map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between py-1.5 text-[10px]">
-                      <span className="min-w-0 truncate">
+                    <div key={entry.id} className="relative flex min-h-[32px] items-center gap-3 text-[10px]">
+                      <span className="absolute -left-9 top-1/2 h-px w-6 -translate-y-1/2 bg-[#555555]" />
+                      <span className="min-w-0 flex-1 truncate">
                         <span className="mr-2 text-[#777777]">x{entry.quantity}</span>
                         {entry.menuItem.name}
                       </span>
-                      <span className="text-[#858585]">
+                      <span className="shrink-0 text-[#858585]">
                         {money(entry.menuItem.price * entry.quantity)}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "comboEntry",
+                            id: entry.menuItem.id,
+                            name: entry.menuItem.name,
+                          })
+                        }
+                        className="grid h-6 w-6 shrink-0 place-items-center text-red-500"
+                        aria-label={`Remove ${entry.menuItem.name} from combo`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -942,7 +965,23 @@ export function FeaturedMenuManager({
                 <span>{money(menuItems.reduce((sum, item) => sum + item.price, 0))}</span>
               </div>
               <div className="divide-y divide-[#292929]">
-                {filteredMenu.map((item) => {
+                {filteredMenu.length === 0 ? (
+                  <div className="grid min-h-[220px] place-items-center text-center">
+                    <div>
+                      <span className="mx-auto grid h-11 w-11 place-items-center rounded-[10px] border border-white/10 bg-[#171717] text-[#858585]">
+                        <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                      </span>
+                      <p className="mt-3 text-[11px] font-semibold">
+                        {menuItems.length === 0 ? "No menu items yet" : "No matching menu items"}
+                      </p>
+                      <p className="mt-1 text-[9px] text-[#707070]">
+                        {menuItems.length === 0
+                          ? "Create menu items first, then add them to a combo."
+                          : "Try another search."}
+                      </p>
+                    </div>
+                  </div>
+                ) : filteredMenu.map((item) => {
                   const qty = quantities[item.id] ?? 0;
                   return (
                     <div key={item.id} className="flex items-center gap-3 py-3">
@@ -962,7 +1001,7 @@ export function FeaturedMenuManager({
                           }
                           className="grid h-7 w-7 place-items-center text-[13px]"
                         >
-                          −
+                          <Minus className="h-3.5 w-3.5" strokeWidth={2.3} />
                         </button>
                         <span className="min-w-5 text-center text-[10px]">{qty}</span>
                         <button
@@ -975,7 +1014,7 @@ export function FeaturedMenuManager({
                           }
                           className="grid h-7 w-7 place-items-center text-[13px]"
                         >
-                          +
+                          <Plus className="h-3.5 w-3.5" strokeWidth={2.3} />
                         </button>
                       </div>
                     </div>
@@ -1005,7 +1044,8 @@ export function FeaturedMenuManager({
               onClick={() => submitCombo(nested === "editCombo")}
               className="mt-2 h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:opacity-50"
             >
-              + {nested === "newCombo" ? "Create Combo" : "Save Combo"}
+              <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+              {nested === "newCombo" ? "Create Combo" : "Save Combo"}
             </button>
           </div>
         </NestedModal>
