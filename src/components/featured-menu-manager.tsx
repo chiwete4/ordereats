@@ -7,7 +7,6 @@ import {
   ImagePlus,
   MapPin,
   Pencil,
-  Plus,
   Search,
   ShoppingBag,
   Trash2,
@@ -448,7 +447,6 @@ export function FeaturedMenuManager({
     run(archiveDashboardMenuItem, formData, () => setNested(null));
   }
 
-  const firstCombo = combos[0] ?? null;
 
   return (
     <>
