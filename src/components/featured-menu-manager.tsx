@@ -258,7 +258,7 @@ function ModalFrame({
         >
           <X className="h-5 w-5" strokeWidth={2.3} />
         </button>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
       </div>
@@ -411,6 +411,23 @@ export function FeaturedMenuManager({
   const selectedComboIndex = selectedCombo
     ? Math.max(1, combos.findIndex((combo) => combo.id === selectedCombo.id) + 1)
     : 0;
+
+  const comboHasItems = Object.values(quantities).some((quantity) => quantity > 0);
+  const comboDirty = selectedCombo
+    ? menuItems.some((item) => {
+        const original = selectedCombo.items.find((entry) => entry.menuItem.id === item.id)?.quantity ?? 0;
+        return (quantities[item.id] ?? 0) !== original;
+      })
+    : comboHasItems;
+  const itemDirty = selectedMenu
+    ? itemName.trim() !== selectedMenu.name ||
+      Number(itemPrice.replaceAll(",", "")) !== selectedMenu.price ||
+      itemImage !== (selectedMenu.imageUrl ?? "") ||
+      itemCategoryId !== selectedMenu.categoryId ||
+      Number(itemReadyMin) !== selectedMenu.readyMin ||
+      Number(itemReadyMax) !== selectedMenu.readyMax ||
+      Number(itemDeliverySeconds) !== selectedMenu.deliverySeconds
+    : Boolean(itemName.trim() && Number(itemPrice.replaceAll(",", "")) > 0 && itemCategoryId);
 
   function chooseCategory(categoryId: string | null) {
     setSelectedCategoryId(categoryId);
@@ -722,8 +739,8 @@ export function FeaturedMenuManager({
             setError("");
           }}
         >
-          <div className="grid h-full overflow-y-auto lg:grid-cols-[40%_60%] lg:overflow-hidden">
-            <aside className="flex min-h-[520px] flex-col bg-[#1D1D1D] px-6 py-6 text-white">
+          <div className="grid h-full min-h-0 overflow-y-auto lg:grid-cols-[40%_60%] lg:overflow-hidden">
+            <aside className="flex min-h-0 flex-col overflow-hidden bg-[#1D1D1D] px-6 py-6 text-white lg:h-full">
               <RestaurantMeta restaurant={restaurant} />
 
               <p className="mt-4 text-[11px] font-medium text-[#858585]">
@@ -743,7 +760,7 @@ export function FeaturedMenuManager({
                   </label>
 
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="min-w-0 flex-1 touch-pan-x overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex w-max gap-1.5">
                         <button
                           type="button"
@@ -775,7 +792,7 @@ export function FeaturedMenuManager({
                 </>
               ) : null}
 
-              <div className="mt-3 flex-1 overflow-y-auto">
+              <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
                 {manager === "combos" && combos.length === 0 ? (
                   <div className="grid h-full min-h-[260px] place-items-center px-6 text-center">
                     <div>
@@ -1137,17 +1154,39 @@ export function FeaturedMenuManager({
               </div>
             ) : null}
 
-            <label className="flex h-10 items-center gap-2 rounded-[8px] border border-[#333333] px-3">
-              <Search className="h-4 w-4 text-[#8A8A8A]" strokeWidth={2.3} />
+            <label className="flex h-9 items-center gap-2 rounded-[10px] border border-[#333333] px-3.5">
+              <Search className="h-3.5 w-3.5 shrink-0 text-[#8A8A8A]" strokeWidth={2.3} />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search Menu Items..."
-                className="w-full bg-transparent text-[11px] outline-none placeholder:text-[#777777]"
+                className="min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-[#777777]"
               />
             </label>
 
-            <div className="mt-4 flex-1 overflow-y-auto">
+            <div className="mt-3 touch-pan-x overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => chooseCategory(null)}
+                  className={`h-7 shrink-0 rounded-full border px-3 text-[9px] font-semibold ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                >
+                  All
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => chooseCategory(category.id)}
+                    className={`h-7 shrink-0 rounded-full border px-3 text-[9px] font-semibold ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
               <div className="mb-2 flex items-center justify-between text-[11px] text-[#777777]">
                 <span>Menu Items</span>
                 <span>{money(menuItems.reduce((sum, item) => sum + item.price, 0))}</span>
@@ -1228,7 +1267,7 @@ export function FeaturedMenuManager({
             {error ? <p className="mt-2 text-[10px] text-red-500">{error}</p> : null}
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !comboDirty}
               onClick={() => submitCombo(nested === "editCombo")}
               className="mt-2 h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:opacity-50"
             >
@@ -1288,7 +1327,7 @@ export function FeaturedMenuManager({
               </div>
 
               <div className="space-y-3">
-                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <label className="block rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                   <span className="block text-[11px] text-[#777777]">Name</span>
                   <input
                     value={itemName}
@@ -1298,7 +1337,7 @@ export function FeaturedMenuManager({
                   />
                 </label>
 
-                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <label className="block rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                   <span className="block text-[11px] text-[#777777]">Price</span>
                   <input
                     value={itemPrice}
@@ -1309,7 +1348,7 @@ export function FeaturedMenuManager({
                   />
                 </label>
 
-                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <label className="block rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                   <span className="block text-[11px] text-[#777777]">Category</span>
                   <select
                     value={itemCategoryId}
@@ -1325,7 +1364,7 @@ export function FeaturedMenuManager({
                 </label>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <label className="rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                     <span className="block text-[9px] text-[#777777]">Ready min</span>
                     <input
                       value={itemReadyMin}
@@ -1336,7 +1375,7 @@ export function FeaturedMenuManager({
                     />
                   </label>
 
-                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <label className="rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                     <span className="block text-[9px] text-[#777777]">Ready max</span>
                     <input
                       value={itemReadyMax}
@@ -1347,7 +1386,7 @@ export function FeaturedMenuManager({
                     />
                   </label>
 
-                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <label className="rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                     <span className="block text-[9px] text-[#777777]">Delivery sec</span>
                     <input
                       value={itemDeliverySeconds}
@@ -1372,7 +1411,7 @@ export function FeaturedMenuManager({
             <div className="shrink-0 border-t border-white/10 bg-black px-5 py-4">
               <button
                 type="button"
-                disabled={pending || imageUploading}
+                disabled={pending || imageUploading || !itemDirty}
                 onClick={() => submitItem(nested === "editItem")}
                 className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -1431,8 +1470,9 @@ export function FeaturedMenuManager({
                         />
                         <button
                           type="button"
+                          disabled={pending || !editingCategoryName.trim() || editingCategoryName.trim() === category.name}
                           onClick={saveCategoryName}
-                          className="rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-black"
+                          className="rounded-full disabled:cursor-not-allowed disabled:opacity-40 bg-white px-3 py-1.5 text-[9px] font-semibold text-black"
                         >
                           Save
                         </button>
@@ -1537,7 +1577,7 @@ export function FeaturedMenuManager({
           >
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
               <div className="grid grid-cols-2 gap-3">
-                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <label className="rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                   <span className="block text-[10px] text-[#777777]">Ready min</span>
                   <input
                     name="readyMin"
@@ -1547,7 +1587,7 @@ export function FeaturedMenuManager({
                     className="mt-1 w-full bg-transparent text-[12px] outline-none"
                   />
                 </label>
-                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <label className="rounded-[10px] border border-[#2A2A2A] px-3.5 py-2.5">
                   <span className="block text-[10px] text-[#777777]">Ready max</span>
                   <input
                     name="readyMax"
