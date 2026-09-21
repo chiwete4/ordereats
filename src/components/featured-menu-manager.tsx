@@ -15,6 +15,7 @@ import {
   Sandwich,
   Search,
   ShoppingBag,
+  Star,
   Trash2,
   Utensils,
   UtensilsCrossed,
@@ -598,10 +599,8 @@ export function FeaturedMenuManager({
                           {combo.name}
                         </p>
                         <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-[#858585]">
-                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
-                          <span>
-                            {combo.items.filter((entry) => entry.menuItem.isAvailable).length}/{combo.items.length}
-                          </span>
+                          <Star className="h-3.5 w-3.5" strokeWidth={2.3} />
+                          <span>{combo.ratingAverage === null ? "—/5" : `${combo.ratingAverage.toFixed(1)}/5`}</span>
                           <span>•</span>
                           <span>{money(comboTotal(combo))} total</span>
                         </p>
@@ -681,15 +680,48 @@ export function FeaturedMenuManager({
               </p>
 
               {manager === "menu" ? (
-                <label className="mt-3 flex h-9 items-center gap-2 rounded-[8px] border border-[#3B3B3B] px-3 text-[#8E8E8E]">
-                  <Search className="h-4 w-4" strokeWidth={2.3} />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Find something..."
-                    className="w-full bg-transparent text-[11px] text-white outline-none placeholder:text-[#8E8E8E]"
-                  />
-                </label>
+                <>
+                  <label className="mt-3 flex h-9 items-center gap-2 rounded-[8px] border border-[#3B3B3B] px-3 text-[#8E8E8E]">
+                    <Search className="h-4 w-4" strokeWidth={2.3} />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Find something..."
+                      className="w-full bg-transparent text-[11px] text-white outline-none placeholder:text-[#8E8E8E]"
+                    />
+                  </label>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="flex w-max gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategoryId(null)}
+                          className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[9px] font-semibold ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                        >
+                          All
+                        </button>
+                        {categories.map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => setSelectedCategoryId(category.id)}
+                            className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[9px] font-semibold ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNested("categories")}
+                      className="shrink-0 text-[9px] font-semibold text-[#A0A0A0] underline underline-offset-2"
+                    >
+                      Manage
+                    </button>
+                  </div>
+                </>
               ) : null}
 
               <div className="mt-3 flex-1 overflow-y-auto">
@@ -705,15 +737,19 @@ export function FeaturedMenuManager({
                       </p>
                     </div>
                   </div>
-                ) : manager === "menu" && menuItems.length === 0 ? (
+                ) : manager === "menu" && filteredMenu.length === 0 ? (
                   <div className="grid h-full min-h-[260px] place-items-center px-6 text-center">
                     <div>
                       <span className="mx-auto grid h-11 w-11 place-items-center rounded-[10px] border border-white/10 bg-[#252525] text-[#9A9A9A]">
                         <Utensils className="h-5 w-5" strokeWidth={2.3} />
                       </span>
-                      <p className="mt-3 text-[12px] font-semibold">Your menu is empty</p>
+                      <p className="mt-3 text-[12px] font-semibold">
+                        {menuItems.length === 0 ? "Your menu is empty" : "No items in this view"}
+                      </p>
                       <p className="mt-1 max-w-[220px] text-[10px] leading-[1.4] text-[#777777]">
-                        Add your first menu item to start building the restaurant menu.
+                        {menuItems.length === 0
+                          ? "Add your first menu item to start building the restaurant menu."
+                          : "Switch category filters or clear your search to see more items."}
                       </p>
                     </div>
                   </div>
@@ -732,10 +768,8 @@ export function FeaturedMenuManager({
                             {combo.name}
                           </p>
                           <p className="mt-1 flex items-center gap-1 text-[9px] text-[#8B8B8B]">
-                            <ShoppingBag className="h-3 w-3" strokeWidth={2.3} />
-                            <span>
-                              {combo.items.filter((entry) => entry.menuItem.isAvailable).length}/{combo.items.length}
-                            </span>
+                            <Star className="h-3 w-3" strokeWidth={2.3} />
+                            <span>{combo.ratingAverage === null ? "—/5" : `${combo.ratingAverage.toFixed(1)}/5`}</span>
                             <span>•</span>
                             <span>{money(comboTotal(combo))} total</span>
                           </p>
@@ -790,10 +824,8 @@ export function FeaturedMenuManager({
                       <div className="min-w-0 flex-1 pt-1">
                         <p className="truncate text-[13px] font-medium">{selectedCombo.name}</p>
                         <p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#858585]">
-                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
-                          <span>
-                            {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
-                          </span>
+                          <Star className="h-3.5 w-3.5" strokeWidth={2.3} />
+                          <span>{selectedCombo.ratingAverage === null ? "—/5" : `${selectedCombo.ratingAverage.toFixed(1)}/5`}</span>
                           <span>•</span>
                           <span>{money(comboTotal(selectedCombo))} total</span>
                         </p>
@@ -1000,10 +1032,8 @@ export function FeaturedMenuManager({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-medium">{selectedCombo.name}</p>
                     <p className="mt-1 flex items-center gap-1 text-[9px] text-[#858585]">
-                      <ShoppingBag className="h-3 w-3" strokeWidth={2.3} />
-                      <span>
-                        {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
-                      </span>
+                      <Star className="h-3 w-3" strokeWidth={2.3} />
+                      <span>{selectedCombo.ratingAverage === null ? "—/5" : `${selectedCombo.ratingAverage.toFixed(1)}/5`}</span>
                       <span>•</span>
                       <span>{money(comboTotal(selectedCombo))} total</span>
                     </p>
