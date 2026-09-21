@@ -277,7 +277,7 @@ function NestedModal({
 }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4">
-      <div className="flex max-h-[82vh] w-[min(500px,92vw)] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-black text-white shadow-2xl">
+      <div className="flex h-[min(720px,82vh)] w-[min(500px,92vw)] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-black text-white shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4">
           <h3 className="text-[14px] font-semibold tracking-[-0.02em]">
             {title}
@@ -760,7 +760,7 @@ export function FeaturedMenuManager({
                   </label>
 
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="min-w-0 flex-1 touch-pan-x overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="min-w-0 flex-1 touch-pan-x overflow-x-auto overscroll-x-contain pb-1">
                       <div className="flex w-max gap-1.5">
                         <button
                           type="button"
@@ -1154,7 +1154,7 @@ export function FeaturedMenuManager({
               </div>
             ) : null}
 
-            <label className="flex h-9 items-center gap-2 rounded-[10px] border border-[#333333] px-3.5">
+            <label className="flex items-center gap-2 rounded-[10px] border border-[#333333] px-3.5 py-3">
               <Search className="h-3.5 w-3.5 shrink-0 text-[#8A8A8A]" strokeWidth={2.3} />
               <input
                 value={query}
@@ -1164,12 +1164,12 @@ export function FeaturedMenuManager({
               />
             </label>
 
-            <div className="mt-3 touch-pan-x overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-3 touch-pan-x overflow-x-auto overscroll-x-contain px-0.5 pb-2 pt-0.5">
               <div className="flex w-max gap-1.5">
                 <button
                   type="button"
                   onClick={() => chooseCategory(null)}
-                  className={`h-7 shrink-0 rounded-full border px-3 text-[9px] font-semibold ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                  className={`shrink-0 rounded-full border px-3 py-2 text-[9px] font-semibold leading-none ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
                 >
                   All
                 </button>
@@ -1178,7 +1178,7 @@ export function FeaturedMenuManager({
                     key={category.id}
                     type="button"
                     onClick={() => chooseCategory(category.id)}
-                    className={`h-7 shrink-0 rounded-full border px-3 text-[9px] font-semibold ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
+                    className={`shrink-0 rounded-full border px-3 py-2 text-[9px] font-semibold leading-none ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
                   >
                     {category.name}
                   </button>
@@ -1269,7 +1269,7 @@ export function FeaturedMenuManager({
               type="button"
               disabled={pending || !comboDirty}
               onClick={() => submitCombo(nested === "editCombo")}
-              className="mt-2 h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:opacity-50"
+              className="mt-3 w-full rounded-[9px] bg-white px-4 py-3 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
               {nested === "newCombo" ? "Create Combo" : "Save Combo"}
@@ -1413,7 +1413,7 @@ export function FeaturedMenuManager({
                 type="button"
                 disabled={pending || imageUploading || !itemDirty}
                 onClick={() => submitItem(nested === "editItem")}
-                className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-[9px] bg-white px-4 py-3 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {imageUploading ? (
                   "Uploading image..."
