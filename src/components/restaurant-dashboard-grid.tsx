@@ -4,9 +4,7 @@ import {
   Ban,
   Bike,
   Heart,
-  MapPin,
   PackageCheck,
-  Radio,
   Search,
   ShoppingBag,
   Star,
@@ -22,6 +20,7 @@ import { PerformanceMetrics } from "@/components/performance-metrics";
 import { RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
 import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { RestaurantOrderPanels, type DashboardOrder } from "@/components/restaurant-order-panels";
+import { LiveDeliveryMap, type LiveDeliveryState } from "@/components/live-delivery-map";
 import { StaffUserSearch } from "@/components/staff-user-search";
 import { prisma } from "@/lib/prisma";
 
@@ -110,65 +109,6 @@ function OrderThumb({
     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[7px] border border-[#EAEAEA] bg-white">
       <ShoppingBag className="h-4 w-4" strokeWidth={2.3} />
     </span>
-  );
-}
-
-function LiveMapPanel({
-  restaurant,
-  latestDelivery,
-}: {
-  restaurant: RestaurantForDashboard;
-  latestDelivery: any | null;
-}) {
-  const lat = latestDelivery?.lastLatitude ?? restaurant.latitude;
-  const lng = latestDelivery?.lastLongitude ?? restaurant.longitude;
-  const hasCoordinates = typeof lat === "number" && typeof lng === "number";
-  const delta = 0.025;
-  const mapUrl = hasCoordinates
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng - delta}%2C${lat - delta}%2C${lng + delta}%2C${lat + delta}&layer=mapnik&marker=${lat}%2C${lng}`
-    : null;
-
-  return (
-    <section className="relative aspect-[1069/535] overflow-hidden rounded-[12px] bg-[#102D3A]">
-      {mapUrl ? (
-        <iframe
-          title="Live restaurant delivery map"
-          src={mapUrl}
-          className="absolute inset-0 h-full w-full border-0"
-          loading="lazy"
-        />
-      ) : (
-        <div className="absolute inset-0">
-          <div className="absolute left-[12%] top-[22%] h-px w-[72%] rotate-[14deg] bg-white/10" />
-          <div className="absolute left-[18%] top-[50%] h-px w-[70%] -rotate-[17deg] bg-white/10" />
-          <div className="absolute left-[44%] top-[8%] h-[80%] w-px rotate-[7deg] bg-white/10" />
-          <div className="absolute left-[67%] top-[8%] h-[80%] w-px -rotate-[11deg] bg-white/10" />
-        </div>
-      )}
-
-      <span className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-black">
-        <Radio className="h-3.5 w-3.5" strokeWidth={2.3} />
-        LIVE
-      </span>
-
-      <div className="absolute bottom-6 left-6 flex max-w-[360px] items-center gap-3 rounded-[8px] bg-black px-4 py-3 text-white">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] border border-white/15">
-          <MapPin className="h-4 w-4" strokeWidth={2.3} />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold">
-            {restaurant.address || "Restaurant location"}
-          </p>
-          <p className="mt-1 truncate text-[9px] font-medium text-[#B0B0B0]">
-            {latestDelivery?.rider
-              ? `${personName(latestDelivery.rider)} · live delivery`
-              : hasCoordinates
-                ? "Live restaurant location"
-                : "Add coordinates to enable the live map"}
-          </p>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -731,9 +671,36 @@ export async function RestaurantDashboardGrid({
   );
   const riders = staff.filter((member) => member.role === "RIDER");
   const latestDelivery =
-    orders.find((row) => row.delivery?.lastLocationAt)?.delivery ??
-    orders.find((row) => row.delivery)?.delivery ??
-    null;
+    orders
+      .filter(
+        (row) =>
+          row.status === "OUT_FOR_DELIVERY" &&
+          row.delivery?.riderId &&
+          !["DELIVERED", "CANCELLED"].includes(row.delivery.status)
+      )
+      .map((row) => row.delivery)
+      .filter(Boolean)
+      .sort((a, b) => {
+        const aTime = a?.lastLocationAt?.getTime() ?? a?.updatedAt.getTime() ?? 0;
+        const bTime = b?.lastLocationAt?.getTime() ?? b?.updatedAt.getTime() ?? 0;
+        return bTime - aTime;
+      })[0] ?? null;
+
+  const initialLiveDelivery: LiveDeliveryState | null = latestDelivery
+    ? {
+        id: latestDelivery.id,
+        status: latestDelivery.status,
+        latitude: latestDelivery.lastLatitude,
+        longitude: latestDelivery.lastLongitude,
+        lastLocationAt: latestDelivery.lastLocationAt?.toISOString() ?? null,
+        riderName: latestDelivery.rider
+          ? personName(latestDelivery.rider)
+          : "Assigned rider",
+        orderNumber:
+          orders.find((row) => row.delivery?.id === latestDelivery.id)?.order
+            .orderNumber ?? "Order",
+      }
+    : null;
 
   const assignableOrders = activeOrders
     .filter((row) => row.status === "OUT_FOR_DELIVERY" && !row.delivery?.riderId)
@@ -1016,7 +983,13 @@ export async function RestaurantDashboardGrid({
           categories={categoryData}
         />
 
-        <LiveMapPanel restaurant={restaurant} latestDelivery={latestDelivery} />
+        <LiveDeliveryMap
+          restaurantId={restaurantId}
+          restaurantAddress={restaurant.address}
+          restaurantLatitude={restaurant.latitude}
+          restaurantLongitude={restaurant.longitude}
+          initialDelivery={initialLiveDelivery}
+        />
 
         <ReviewsPanel
           restaurantId={restaurantId}
