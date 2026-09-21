@@ -948,6 +948,8 @@ export async function RestaurantDashboardGrid({
     };
   });
 
+  const verificationComplete = verificationSteps.every((step) => step.complete);
+
   const performanceExplorerItems: DashboardExplorerItem[] = [
     {
       id: "all-time",
@@ -976,29 +978,31 @@ export async function RestaurantDashboardGrid({
   return (
     <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
       <div className="flex min-w-0 flex-col gap-[20px]">
-        <div id="restaurant-verification">
-          <RestaurantVerificationCard
-            restaurantId={restaurantId}
-            restaurantName={restaurant.name}
-            imageUrl={restaurant.imageUrl}
-            description={restaurant.description}
-            phoneNumber={restaurant.phoneNumber}
-            address={restaurant.address}
-            bankName={restaurant.payoutBankName}
-            bankCode={restaurant.payoutBankCode}
-            accountName={restaurant.payoutAccountName}
-            accountNumber={restaurant.payoutAccountNumber}
-            payoutVerified={Boolean(
-              restaurant.payoutRecipientCode && restaurant.payoutVerifiedAt
-            )}
-            canRequestPayout={canRequestPayout}
-            openingTime={restaurant.openingTime}
-            closingTime={restaurant.closingTime}
-            operatingDays={restaurant.operatingDays}
-            timezone={restaurant.timezone}
-            steps={verificationSteps}
-          />
-        </div>
+        {!verificationComplete ? (
+          <div id="restaurant-verification">
+            <RestaurantVerificationCard
+              restaurantId={restaurantId}
+              restaurantName={restaurant.name}
+              imageUrl={restaurant.imageUrl}
+              description={restaurant.description}
+              phoneNumber={restaurant.phoneNumber}
+              address={restaurant.address}
+              bankName={restaurant.payoutBankName}
+              bankCode={restaurant.payoutBankCode}
+              accountName={restaurant.payoutAccountName}
+              accountNumber={restaurant.payoutAccountNumber}
+              payoutVerified={Boolean(
+                restaurant.payoutRecipientCode && restaurant.payoutVerifiedAt
+              )}
+              canRequestPayout={canRequestPayout}
+              openingTime={restaurant.openingTime}
+              closingTime={restaurant.closingTime}
+              operatingDays={restaurant.operatingDays}
+              timezone={restaurant.timezone}
+              steps={verificationSteps}
+            />
+          </div>
+        ) : null}
 
         <FeaturedMenuManager
           restaurantId={restaurantId}
