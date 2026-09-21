@@ -103,10 +103,6 @@ function comboTotal(combo: FeaturedComboData) {
   );
 }
 
-function totalQuantity(combo: FeaturedComboData) {
-  return combo.items.reduce((sum, item) => sum + item.quantity, 0);
-}
-
 function formatPastOrderTime(value: string) {
   const date = new Date(value);
   const diff = Date.now() - date.getTime();
