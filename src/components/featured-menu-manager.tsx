@@ -1381,6 +1381,8 @@ export function FeaturedMenuManager({
               </button>
             </div>
 
+            {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
+
             <div className="mt-4 max-h-[360px] divide-y divide-[#282828] overflow-y-auto">
               {categories.length === 0 ? (
                 <p className="py-8 text-center text-[10px] text-[#777777]">
@@ -1422,11 +1424,12 @@ export function FeaturedMenuManager({
                         </button>
                         <button
                           type="button"
+                          disabled={category.itemCount > 0}
                           onClick={() =>
                             setDeleteTarget({ kind: "category", id: category.id, name: category.name })
                           }
-                          className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500"
-                          aria-label={`Delete ${category.name}`}
+                          className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={category.itemCount > 0 ? `Move items out of ${category.name} before deleting` : `Delete ${category.name}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
                         </button>
