@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { BadgeCheck, LoaderCircle, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { requestRestaurantPayout } from "@/actions/payouts";
+import { requestRestaurantPayout, retryRestaurantPayout } from "@/actions/payouts";
 import { saveRestaurantBankInfo } from "@/actions/verification";
 
 type Bank = {
@@ -229,6 +229,34 @@ export function PaystackBankForm({
     });
   }
 
+  function reconcileLatestPayout() {
+    if (!payoutSummary?.latestPayout) return;
+
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("payoutId", payoutSummary.latestPayout.id);
+
+    setPayoutMessage("");
+    startTransition(async () => {
+      try {
+        const result = await retryRestaurantPayout(formData);
+        setPayoutMessage(
+          result.requiresOtp
+            ? "This payout is waiting for Paystack transfer OTP confirmation."
+            : result.status === "SUCCESS"
+              ? "Payout confirmed successful."
+              : `Payout status: ${result.status}.`
+        );
+        await refreshPayoutSummary();
+        router.refresh();
+      } catch (caught) {
+        setPayoutMessage(
+          caught instanceof Error ? caught.message : "Could not reconcile this payout."
+        );
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
@@ -317,13 +345,25 @@ export function PaystackBankForm({
               </div>
 
               {payoutSummary.latestPayout ? (
-                <p className="mt-3 text-[9px] font-medium text-[#808080]">
-                  Latest payout:{" "}
-                  <span className="font-semibold text-black">
-                    {payoutSummary.latestPayout.status}
-                  </span>{" "}
-                  · {moneyFormatter.format(payoutSummary.latestPayout.amount)}
-                </p>
+                <div className="mt-3">
+                  <p className="text-[9px] font-medium text-[#808080]">
+                    Latest payout:{" "}
+                    <span className="font-semibold text-black">
+                      {payoutSummary.latestPayout.status}
+                    </span>{" "}
+                    · {moneyFormatter.format(payoutSummary.latestPayout.amount)}
+                  </p>
+                  {["FAILED", "PROCESSING"].includes(payoutSummary.latestPayout.status) ? (
+                    <button
+                      type="button"
+                      onClick={reconcileLatestPayout}
+                      disabled={pending}
+                      className="mt-2 text-[9px] font-semibold text-black underline underline-offset-2 disabled:opacity-40"
+                    >
+                      {pending ? "Checking Paystack..." : "Check / retry latest payout"}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
 
               {!confirmPayout ? (
