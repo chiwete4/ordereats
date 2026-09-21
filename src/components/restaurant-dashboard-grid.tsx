@@ -557,7 +557,7 @@ export async function RestaurantDashboardGrid({
     prisma.menuItem.findMany({
       where: { restaurantId, isArchived: false },
       orderBy: { createdAt: "asc" },
-      take: 20,
+      take: 100,
       include: {
         category: {
           select: {
