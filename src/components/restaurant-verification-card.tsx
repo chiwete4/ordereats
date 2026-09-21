@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { AlertTriangle, ArrowRight, Check, Navigation, PencilLine, Store, X } from "lucide-react";
 
 import { saveRestaurantBankInfo } from "@/actions/verification";
@@ -45,6 +45,12 @@ export function RestaurantVerificationCard({
 }) {
   const bankDialogRef = useRef<HTMLDialogElement>(null);
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const openEditor = () => detailsDialogRef.current?.showModal();
+    window.addEventListener("paperbag:edit-restaurant", openEditor);
+    return () => window.removeEventListener("paperbag:edit-restaurant", openEditor);
+  }, []);
+
   const completedCount = steps.filter((step) => step.complete).length;
   const nextIncomplete = steps.find((step) => !step.complete);
   const allComplete = completedCount === steps.length;
