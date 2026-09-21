@@ -431,11 +431,11 @@ export async function deleteDashboardCategory(formData: FormData) {
 
   const category = await prisma.menuCategory.findFirst({
     where: { id: categoryId, restaurantId },
-    include: { _count: { select: { menuItems: { where: { isArchived: false } } } } },
+    include: { _count: { select: { menuItems: true } } },
   });
   if (!category) throw new Error("Category not found.");
   if (category._count.menuItems > 0) {
-    throw new Error("Move or archive this category's menu items before deleting it.");
+    throw new Error("Move every menu item, including archived items, out of this category before deleting it.");
   }
 
   await prisma.menuCategory.delete({ where: { id: category.id } });
