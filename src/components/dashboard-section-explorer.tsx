@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bike,
@@ -22,6 +22,12 @@ export type DashboardExplorerItem = {
   imageUrl?: string | null;
   body?: string | null;
   details?: Array<{ label: string; value: string }>;
+  cursor?: string;
+};
+
+export type DashboardExplorerPagination = {
+  restaurantId: string;
+  kind: "pending" | "active" | "past" | "staff" | "riders" | "reviews";
 };
 
 function EmptyState({ title }: { title: string }) {
@@ -63,19 +69,112 @@ export function DashboardSectionExplorer({
   items,
   triggerLabel = "Expand",
   triggerClassName,
+  pagination,
 }: {
   title: string;
   count?: number;
   items: DashboardExplorerItem[];
   triggerLabel?: ReactNode;
   triggerClassName?: string;
+  pagination?: DashboardExplorerPagination;
 }) {
   const [open, setOpen] = useState(false);
+  const [loadedItems, setLoadedItems] = useState(items);
   const [selectedId, setSelectedId] = useState(items[0]?.id ?? "");
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(Boolean(pagination));
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pagination) {
+      setLoadedItems(items);
+      setSelectedId((current) =>
+        items.some((item) => item.id === current) ? current : items[0]?.id ?? ""
+      );
+    }
+  }, [items, pagination]);
+
+  const loadPage = useCallback(
+    async (reset = false) => {
+      if (!pagination || loading) return;
+
+      setLoading(true);
+      setLoadError("");
+
+      try {
+        const params = new URLSearchParams({
+          restaurantId: pagination.restaurantId,
+          kind: pagination.kind,
+        });
+        if (!reset && cursor) params.set("cursor", cursor);
+
+        const response = await fetch(
+          `/api/restaurant/dashboard/explorer?${params.toString()}`,
+          { cache: "no-store" }
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load dashboard items.");
+        }
+
+        const incoming = (data.items ?? []) as DashboardExplorerItem[];
+
+        setLoadedItems((current) => {
+          if (reset) return incoming;
+          const seen = new Set(current.map((item) => item.id));
+          return [...current, ...incoming.filter((item) => !seen.has(item.id))];
+        });
+        setCursor(data.nextCursor ?? null);
+        setHasMore(Boolean(data.hasMore));
+        setSelectedId((current) => {
+          if (!reset && current) return current;
+          return incoming[0]?.id ?? "";
+        });
+      } catch (error) {
+        setLoadError(
+          error instanceof Error ? error.message : "Could not load more items."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cursor, loading, pagination]
+  );
+
+  useEffect(() => {
+    if (!open || !pagination) return;
+    setCursor(null);
+    setHasMore(true);
+    void loadPage(true);
+    // The first page should be refreshed each time the explorer opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pagination?.restaurantId, pagination?.kind]);
+
+  useEffect(() => {
+    if (!open || !pagination || !hasMore || loading) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void loadPage(false);
+      },
+      { rootMargin: "160px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [open, pagination, hasMore, loading, loadPage]);
 
   const selected = useMemo(
-    () => items.find((item) => item.id === selectedId) ?? items[0] ?? null,
-    [items, selectedId]
+    () =>
+      loadedItems.find((item) => item.id === selectedId) ??
+      loadedItems[0] ??
+      null,
+    [loadedItems, selectedId]
   );
 
   return (
@@ -83,7 +182,7 @@ export function DashboardSectionExplorer({
       <button
         type="button"
         onClick={() => {
-          setSelectedId((current) => current || items[0]?.id || "");
+          setSelectedId((current) => current || loadedItems[0]?.id || "");
           setOpen(true);
         }}
         className={triggerClassName ?? "text-[11px] font-semibold leading-none tracking-[-0.02em] text-black underline underline-offset-2"}
@@ -113,11 +212,11 @@ export function DashboardSectionExplorer({
                 </div>
 
                 <div className="mt-5 min-h-0 flex-1 overflow-y-auto">
-                  {items.length === 0 ? (
+                  {loadedItems.length === 0 && !loading ? (
                     <EmptyState title={title} />
                   ) : (
                     <div className="divide-y divide-[#D8D8D8]">
-                      {items.map((item) => {
+                      {loadedItems.map((item) => {
                         const active = selected?.id === item.id;
                         return (
                           <button
@@ -152,6 +251,30 @@ export function DashboardSectionExplorer({
                           </button>
                         );
                       })}
+                      {pagination ? (
+                        <div
+                          ref={sentinelRef}
+                          className="flex min-h-12 items-center justify-center px-3 py-3 text-[9px] font-medium text-[#888888]"
+                        >
+                          {loading
+                            ? "Loading more…"
+                            : loadError
+                              ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void loadPage(false)}
+                                  className="font-semibold text-black underline underline-offset-2"
+                                >
+                                  Try loading more
+                                </button>
+                              )
+                              : hasMore
+                                ? "Scroll for more"
+                                : loadedItems.length
+                                  ? "You’re all caught up"
+                                  : null}
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
