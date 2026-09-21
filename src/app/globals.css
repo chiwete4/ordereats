@@ -11,6 +11,40 @@
   box-sizing: border-box;
 }
 
+
+
+/* Paperbag scrollbars — native, dependency-free, and consistent across panels/modals. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.72) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.62);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 96, 96, 0.78);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
@@ -49,12 +83,7 @@ button {
     padding-right: 1rem;
     overflow-x: auto;
     flex-wrap: nowrap !important;
-    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-  }
-
-  .mobile-scroll-row::-webkit-scrollbar {
-    display: none;
   }
 }
 
