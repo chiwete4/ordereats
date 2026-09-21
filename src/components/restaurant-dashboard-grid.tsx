@@ -3,16 +3,12 @@ import {
   ArrowRight,
   Ban,
   Bike,
-  Check,
-  Clock3,
   EyeOff,
   Heart,
-  Hourglass,
   MapPin,
   PackageCheck,
   Radio,
   Search,
-  Send,
   ShoppingBag,
   Star,
   Store,
@@ -20,19 +16,13 @@ import {
   Utensils,
 } from "lucide-react";
 
-import {
-  acknowledgeOrder,
-  markOrderPickedUp,
-  markOrderReady,
-  sendOrderForDelivery,
-} from "@/actions/orders";
 import { addRestaurantStaff } from "@/actions/staff";
-import { OrderElapsedTime } from "@/components/order-elapsed-time";
 import { FeaturedMenuManager } from "@/components/featured-menu-manager";
 import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
 import { PerformanceChart, type PerformanceDay } from "@/components/performance-chart";
-import { OrderMoreMenu, RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
+import { RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
 import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
+import { RestaurantOrderPanels, type DashboardOrder } from "@/components/restaurant-order-panels";
 import { StaffUserSearch } from "@/components/staff-user-search";
 import { prisma } from "@/lib/prisma";
 
@@ -142,193 +132,6 @@ function OrderThumb({
   );
 }
 
-function HiddenOrderFields({
-  restaurantId,
-  restaurantOrderId,
-}: {
-  restaurantId: string;
-  restaurantOrderId: string;
-}) {
-  return (
-    <>
-      <input type="hidden" name="restaurantId" value={restaurantId} />
-      <input type="hidden" name="restaurantOrderId" value={restaurantOrderId} />
-    </>
-  );
-}
-
-function PendingOrdersPanel({
-  restaurantId,
-  orders,
-  explorerItems,
-}: {
-  restaurantId: string;
-  orders: Array<any>;
-  explorerItems: DashboardExplorerItem[];
-}) {
-  return (
-    <section className="min-h-[422px] w-full bg-white">
-      <DashboardHeading
-        title="Pending Orders"
-        count={orders.length}
-        expand={<DashboardSectionExplorer title="Pending Orders" count={orders.length} items={explorerItems} />}
-      />
-
-      <div className="mt-5 divide-y divide-[#EAEAEA]">
-        {orders.length === 0 ? (
-          <p className="py-8 text-[12px] font-medium text-[#808080]">No pending orders right now.</p>
-        ) : (
-          orders.slice(0, 3).map((row, index) => {
-            const image = row.items[0]?.menuItem?.imageUrl;
-            return (
-              <article key={row.id} className="py-4 first:pt-0">
-                <div className="flex items-start gap-3">
-                  <OrderThumb src={image} alt={row.items[0]?.name ?? "Order"} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
-                      #{row.order.orderNumber}
-                    </p>
-                    <p className="mt-1 text-[10px] font-medium leading-none tracking-[-0.01em] text-[#808080]">
-                      {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items · {money(row.subtotal)} total
-                    </p>
-                  </div>
-                  <form action={acknowledgeOrder}>
-                    <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                    <button className="rounded-[8px] bg-black px-3 py-2 text-[10px] font-semibold leading-none tracking-[-0.02em] text-white">
-                      Start Making
-                    </button>
-                  </form>
-                </div>
-
-                {index === 0 ? (
-                  <div className="ml-5 mt-4 border-l border-[#CFCFCF] pl-5">
-                    <div className="space-y-3">
-                      {row.items.slice(0, 3).map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between gap-3 text-[10px]">
-                          <span className="min-w-0 truncate font-medium text-black">
-                            <span className="mr-2 text-[#808080]">x{item.quantity}</span>
-                            {item.name}
-                          </span>
-                          <span className="shrink-0 font-medium text-[#808080]">
-                            {money(Number(item.unitPrice) * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="mt-4 text-[10px] font-medium text-[#808080]">
-                      Order placed <span className="font-semibold text-black"><OrderElapsedTime createdAt={row.createdAt.toISOString()} /></span> ago
-                    </p>
-                  </div>
-                ) : null}
-              </article>
-            );
-          })
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ActiveOrdersPanel({
-  restaurantId,
-  orders,
-  explorerItems,
-}: {
-  restaurantId: string;
-  orders: Array<any>;
-  explorerItems: DashboardExplorerItem[];
-}) {
-  return (
-    <section className="min-h-[527px] w-full bg-white">
-      <DashboardHeading
-        title="Active Orders"
-        count={orders.length}
-        expand={<DashboardSectionExplorer title="Active Orders" count={orders.length} items={explorerItems} />}
-      />
-
-      <div className="mt-5 divide-y divide-[#EAEAEA]">
-        {orders.length === 0 ? (
-          <p className="py-8 text-[12px] font-medium text-[#808080]">No active orders right now.</p>
-        ) : (
-          orders.slice(0, 4).map((row, index) => {
-            const image = row.items[0]?.menuItem?.imageUrl;
-            return (
-              <article key={row.id} className="py-4 first:pt-0">
-                <div className="flex items-start gap-3">
-                  <OrderThumb src={image} alt={row.items[0]?.name ?? "Order"} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
-                      #{row.order.orderNumber}
-                    </p>
-                    <p className="mt-1 text-[10px] font-medium leading-none tracking-[-0.01em] text-[#808080]">
-                      {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items · {money(row.subtotal)} total
-                    </p>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-[#808080]">
-                    {row.status === "PREPARING" ? (
-                      <>Preparing <Clock3 className="h-3 w-3" strokeWidth={2.3} /></>
-                    ) : row.status === "READY_FOR_PICKUP" ? (
-                      <>Not Sent <Hourglass className="h-3 w-3" strokeWidth={2.3} /></>
-                    ) : (
-                      <>Sent out <Send className="h-3 w-3" strokeWidth={2.3} /></>
-                    )}
-                  </span>
-                </div>
-
-                {index === 0 && row.status === "PREPARING" ? (
-                  <div className="mt-4">
-                    <div className="ml-5 border-l border-[#CFCFCF] pl-5">
-                      <div className="space-y-3">
-                        {row.items.slice(0, 3).map((item: any) => (
-                          <div key={item.id} className="flex items-center justify-between gap-3 text-[10px]">
-                            <span className="min-w-0 truncate font-medium text-black">
-                              <span className="mr-2 text-[#808080]">x{item.quantity}</span>{item.name}
-                            </span>
-                            <span className="shrink-0 font-medium text-[#808080]">{money(Number(item.unitPrice) * item.quantity)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="mt-4 text-[10px] font-medium text-[#808080]">
-                      Preparation has taken <span className="font-semibold text-black"><OrderElapsedTime createdAt={row.updatedAt.toISOString()} /></span> so far
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                      <form action={markOrderReady} className="flex-1">
-                        <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                        <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                          <Check className="h-3.5 w-3.5" strokeWidth={2.3} /> Mark as Ready
-                        </button>
-                      </form>
-                      <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={row.id} />
-                    </div>
-                    <p className="mt-2 text-[9px] font-medium text-[#A0A0A0]">Customer will be told their order is ready.</p>
-                  </div>
-                ) : row.status === "READY_FOR_PICKUP" ? (
-                  <div className="mt-3 flex gap-2">
-                    <form action={sendOrderForDelivery} className="flex-1">
-                      <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                        <Bike className="h-3.5 w-3.5" strokeWidth={2.3} /> Send to Rider
-                      </button>
-                    </form>
-                    <form action={markOrderPickedUp} className="flex-1">
-                      <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black">
-                        <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} /> Customer Pick-up
-                      </button>
-                    </form>
-                    <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={row.id} />
-                  </div>
-                ) : null}
-              </article>
-            );
-          })
-        )}
-      </div>
-    </section>
-  );
-}
-
 function LiveMapPanel({
   restaurant,
   latestDelivery,
@@ -345,7 +148,7 @@ function LiveMapPanel({
     : null;
 
   return (
-    <section className="relative min-h-[535px] overflow-hidden rounded-[12px] bg-[#102D3A]">
+    <section className="relative aspect-[1069/535] overflow-hidden rounded-[12px] bg-[#102D3A]">
       {mapUrl ? (
         <iframe
           title="Live restaurant delivery map"
@@ -406,7 +209,7 @@ function ReviewsPanel({
   ];
 
   return (
-    <section className="min-h-[337px] rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
+    <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
       <DashboardHeading
         title="Reviews"
         expand={<DashboardSectionExplorer title="Reviews" items={explorerItems} />}
@@ -443,7 +246,7 @@ function StaffPanel({
   const visible = staff.filter((member) => member.role !== "RIDER");
 
   return (
-    <section className="min-h-[350px] bg-white">
+    <section className="bg-white">
       <DashboardHeading
         title="Your Staff"
         count={visible.length}
@@ -463,7 +266,7 @@ function StaffPanel({
       </details>
 
       <div className="mt-4 divide-y divide-[#EAEAEA]">
-        {visible.slice(0, 4).map((member) => (
+        {visible.slice(0, 6).map((member) => (
           <div key={member.id} className="flex items-center gap-3 py-4 first:pt-0">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EFEFEF]">
               <UserRound className="h-4 w-4 text-[#808080]" strokeWidth={2.3} />
@@ -477,6 +280,7 @@ function StaffPanel({
               membershipId={member.id}
               name={personName(member.user)}
               isActive={member.isActive}
+              role={member.role}
               disabled={member.role === "OWNER"}
             />
           </div>
@@ -518,7 +322,7 @@ function RidersPanel({
       </details>
 
       <div className="mt-4 divide-y divide-[#EAEAEA]">
-        {riders.slice(0, 4).map((rider) => {
+        {riders.slice(0, 6).map((rider) => {
           const delivering = rider.user.assignedDeliveries?.find(
             (delivery: any) => !["DELIVERED", "CANCELLED"].includes(delivery.status)
           );
@@ -533,14 +337,23 @@ function RidersPanel({
                   {delivering ? "Delivering an order" : rider.isActive ? "Available to deliver" : "Off duty"}
                 </p>
               </div>
-              {!delivering && rider.isActive ? (
-                <RiderAssignButton
+              <div className="flex shrink-0 items-center gap-2">
+                {!delivering && rider.isActive ? (
+                  <RiderAssignButton
+                    restaurantId={restaurantId}
+                    riderId={rider.userId}
+                    riderName={personName(rider.user)}
+                    orders={assignableOrders}
+                  />
+                ) : null}
+                <StaffMoreMenu
                   restaurantId={restaurantId}
-                  riderId={rider.userId}
-                  riderName={personName(rider.user)}
-                  orders={assignableOrders}
+                  membershipId={rider.id}
+                  name={personName(rider.user)}
+                  isActive={rider.isActive}
+                  role="RIDER"
                 />
-              ) : null}
+              </div>
             </div>
           );
         })}
@@ -557,7 +370,7 @@ function PastOrdersPanel({
   explorerItems: DashboardExplorerItem[];
 }) {
   return (
-    <section className="min-h-[337px] rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
+    <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
       <DashboardHeading
         title="All Past Orders"
         count={orders.length}
@@ -604,7 +417,7 @@ function PerformancePanel({
   explorerItems: DashboardExplorerItem[];
 }) {
   return (
-    <section className="min-h-[594px] bg-white">
+    <section className="bg-white">
       <DashboardHeading
         title="Performance"
         expand={<DashboardSectionExplorer title="Performance" items={explorerItems} />}
@@ -986,6 +799,25 @@ export async function RestaurantDashboardGrid({
   const activeExplorerItems = orderExplorerItems(activeOrders);
   const pastExplorerItems = orderExplorerItems(pastOrders);
 
+  const serializeOrder = (row: any): DashboardOrder => ({
+    id: row.id,
+    orderNumber: row.order.orderNumber,
+    subtotal: Number(row.subtotal),
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    items: row.items.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      imageUrl: item.menuItem?.imageUrl ?? null,
+    })),
+  });
+
+  const pendingOrderData = pendingOrders.map(serializeOrder);
+  const activeOrderData = activeOrders.map(serializeOrder);
+
   const staffExplorerItems: DashboardExplorerItem[] = staff
     .filter((member) => member.role !== "RIDER")
     .map((member) => ({
@@ -1152,9 +984,13 @@ export async function RestaurantDashboardGrid({
       </div>
 
       <div className="mt-[20px] flex min-w-0 flex-col gap-[60px] lg:mt-0">
-        <PendingOrdersPanel restaurantId={restaurantId} orders={pendingOrders} explorerItems={pendingExplorerItems} />
-
-        <ActiveOrdersPanel restaurantId={restaurantId} orders={activeOrders} explorerItems={activeExplorerItems} />
+        <RestaurantOrderPanels
+          restaurantId={restaurantId}
+          pendingOrders={pendingOrderData}
+          activeOrders={activeOrderData}
+          pendingExplorerItems={pendingExplorerItems}
+          activeExplorerItems={activeExplorerItems}
+        />
 
         <StaffPanel restaurantId={restaurantId} staff={staff} explorerItems={staffExplorerItems} />
 
