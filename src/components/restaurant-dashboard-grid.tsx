@@ -1,9 +1,19 @@
 import {
+  ArrowRight,
+  Ban,
   Bike,
+  Check,
+  Clock3,
+  EyeOff,
   Heart,
+  Hourglass,
   MapPin,
   MoreHorizontal,
+  PackageCheck,
+  Plus,
+  Radio,
   Search,
+  Send,
   ShoppingBag,
   Star,
   Store,
@@ -247,12 +257,23 @@ function ActiveOrdersPanel({
                       {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items · {money(row.subtotal)} total
                     </p>
                   </div>
-                  <span className="shrink-0 text-[10px] font-medium text-[#808080]">
-                    {row.status === "PREPARING"
-                      ? "Preparing"
-                      : row.status === "READY_FOR_PICKUP"
-                        ? "Not Sent"
-                        : "Sent out"}
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-[#808080]">
+                    {row.status === "PREPARING" ? (
+                      <>
+                        Preparing
+                        <Clock3 className="h-3 w-3" strokeWidth={2.3} />
+                      </>
+                    ) : row.status === "READY_FOR_PICKUP" ? (
+                      <>
+                        Not Sent
+                        <Hourglass className="h-3 w-3" strokeWidth={2.3} />
+                      </>
+                    ) : (
+                      <>
+                        Sent out
+                        <Send className="h-3 w-3" strokeWidth={2.3} />
+                      </>
+                    )}
                   </span>
                 </div>
 
@@ -279,8 +300,9 @@ function ActiveOrdersPanel({
                     <div className="mt-2 flex gap-2">
                       <form action={markOrderReady} className="flex-1">
                         <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                        <button className="h-8 w-full rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                          ✓ Mark as Ready
+                        <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.3} />
+                          Mark as Ready
                         </button>
                       </form>
                       <button type="button" className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA]">
@@ -295,13 +317,15 @@ function ActiveOrdersPanel({
                   <div className="mt-3 flex gap-2">
                     <form action={sendOrderForDelivery} className="flex-1">
                       <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                      <button className="h-8 w-full rounded-[8px] bg-black text-[10px] font-semibold text-white">
+                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
+                        <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
                         Send to Rider
                       </button>
                     </form>
                     <form action={markOrderPickedUp} className="flex-1">
                       <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
-                      <button className="h-8 w-full rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black">
+                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black">
+                        <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} />
                         Customer Pick-up
                       </button>
                     </form>
@@ -352,8 +376,9 @@ function LiveMapPanel({
         </div>
       )}
 
-      <span className="absolute left-6 top-6 rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-black">
-        ◆ LIVE
+      <span className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-semibold text-black">
+        <Radio className="h-3.5 w-3.5" strokeWidth={2.3} />
+        LIVE
       </span>
 
       <div className="absolute bottom-6 left-6 flex max-w-[360px] items-center gap-3 rounded-[8px] bg-black px-4 py-3 text-white">
@@ -505,8 +530,9 @@ function RidersPanel({
                 <form action={assignRider}>
                   <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={assignableOrder.id} />
                   <input type="hidden" name="riderId" value={rider.userId} />
-                  <button className="rounded-full bg-black px-3 py-1.5 text-[9px] font-semibold text-white">
-                    + Assign
+                  <button className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-1.5 text-[9px] font-semibold text-white">
+                    <Plus className="h-3 w-3" strokeWidth={2.3} />
+                    Assign
                   </button>
                 </form>
               ) : null}
@@ -548,10 +574,23 @@ function PastOrdersPanel({
                     {money(row.subtotal)} total · {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items
                   </p>
                 </div>
-                <span className={`shrink-0 text-[9px] font-semibold ${statusTone}`}>
-                  {row.status === "PICKED_UP"
-                    ? "Picked up"
-                    : row.status.charAt(0) + row.status.slice(1).toLowerCase()}
+                <span className={`inline-flex shrink-0 items-center gap-1 text-[9px] font-semibold ${statusTone}`}>
+                  {row.status === "DELIVERED" ? (
+                    <>
+                      Delivered
+                      <PackageCheck className="h-3 w-3" strokeWidth={2.3} />
+                    </>
+                  ) : row.status === "CANCELLED" ? (
+                    <>
+                      Cancelled
+                      <Ban className="h-3 w-3" strokeWidth={2.3} />
+                    </>
+                  ) : (
+                    <>
+                      Picked up
+                      <Store className="h-3 w-3" strokeWidth={2.3} />
+                    </>
+                  )}
                 </span>
               </div>
             );
@@ -605,8 +644,9 @@ function PerformancePanel({
         })}
       </div>
 
-      <button type="button" className="mt-3 h-8 w-full rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold">
-        All-time performance →
+      <button type="button" className="mt-3 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold">
+        All-time performance
+        <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.3} />
       </button>
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
@@ -625,7 +665,7 @@ function PerformancePanel({
                 <p className="text-[12px] font-semibold tracking-[-0.02em] text-black">{row.value}</p>
                 <p className="mt-1 text-[10px] font-medium text-[#808080]">{row.label}</p>
               </div>
-              <span className="text-[#808080]">⌁</span>
+              <EyeOff className="h-3.5 w-3.5 text-[#808080]" strokeWidth={2.3} />
             </div>
           );
         })}
