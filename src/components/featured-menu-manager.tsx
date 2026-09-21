@@ -362,6 +362,13 @@ export function FeaturedMenuManager({
   const [itemName, setItemName] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemImage, setItemImage] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<
+    | { kind: "combo"; id: string; name: string }
+    | { kind: "menuItem"; id: string; name: string }
+    | { kind: "comboEntry"; id: string; name: string }
+    | null
+  >(null);
   const [error, setError] = useState("");
 
   const selectedCombo =
@@ -408,6 +415,7 @@ export function FeaturedMenuManager({
     setItemName("");
     setItemPrice("");
     setItemImage("");
+    setImageUploading(false);
     setNested("newItem");
   }
 
@@ -416,6 +424,7 @@ export function FeaturedMenuManager({
     setItemName(item.name);
     setItemPrice(String(item.price));
     setItemImage(item.imageUrl ?? "");
+    setImageUploading(false);
     setNested("editItem");
   }
 
@@ -463,6 +472,22 @@ export function FeaturedMenuManager({
     run(archiveDashboardMenuItem, formData, () => setNested(null));
   }
 
+  function confirmDelete() {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.kind === "combo") {
+      deleteCombo(deleteTarget.id);
+    } else if (deleteTarget.kind === "menuItem") {
+      archiveItem(deleteTarget.id);
+    } else {
+      setQuantities((current) => ({
+        ...current,
+        [deleteTarget.id]: 0,
+      }));
+    }
+
+    setDeleteTarget(null);
+  }
 
   return (
     <>
@@ -510,8 +535,11 @@ export function FeaturedMenuManager({
                     <p className="truncate text-[12px] font-medium leading-none">
                       {combo.name}
                     </p>
-                    <p className="mt-2 text-[10px] font-medium text-[#858585]">
-                      {totalQuantity(combo)} items · {money(comboTotal(combo))} total
+                    <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-[#858585]">
+                      <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
+                      <span>{totalQuantity(combo)}/9</span>
+                      <span>•</span>
+                      <span>{money(comboTotal(combo))} total</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -527,7 +555,9 @@ export function FeaturedMenuManager({
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteCombo(combo.id)}
+                      onClick={() =>
+                        setDeleteTarget({ kind: "combo", id: combo.id, name: combo.name })
+                      }
                       className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500"
                       aria-label={`Delete ${combo.name}`}
                     >
@@ -547,14 +577,15 @@ export function FeaturedMenuManager({
             onClick={() => setManager("menu")}
             className="h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black"
           >
-            ▣ Edit Full Menu
+            <ClipboardList className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+            Edit Full Menu
           </button>
           <button
             type="button"
             onClick={() => setManager("combos")}
             className="h-9 rounded-[8px] border border-white/20 text-[11px] font-semibold text-white"
           >
-            <Pencil className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+            <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
             Change Featured Combos
           </button>
         </div>
@@ -589,7 +620,31 @@ export function FeaturedMenuManager({
               ) : null}
 
               <div className="mt-3 flex-1 overflow-y-auto">
-                {manager === "combos"
+                {manager === "combos" && combos.length === 0 ? (
+                  <div className="grid h-full min-h-[260px] place-items-center px-6 text-center">
+                    <div>
+                      <span className="mx-auto grid h-11 w-11 place-items-center rounded-[10px] border border-white/10 bg-[#252525] text-[#9A9A9A]">
+                        <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                      </span>
+                      <p className="mt-3 text-[12px] font-semibold">No featured combos yet</p>
+                      <p className="mt-1 max-w-[220px] text-[10px] leading-[1.4] text-[#777777]">
+                        Build a combo from menu items and it will appear here.
+                      </p>
+                    </div>
+                  </div>
+                ) : manager === "menu" && menuItems.length === 0 ? (
+                  <div className="grid h-full min-h-[260px] place-items-center px-6 text-center">
+                    <div>
+                      <span className="mx-auto grid h-11 w-11 place-items-center rounded-[10px] border border-white/10 bg-[#252525] text-[#9A9A9A]">
+                        <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                      </span>
+                      <p className="mt-3 text-[12px] font-semibold">Your menu is empty</p>
+                      <p className="mt-1 max-w-[220px] text-[10px] leading-[1.4] text-[#777777]">
+                        Add your first menu item to start building the restaurant menu.
+                      </p>
+                    </div>
+                  </div>
+                ) : manager === "combos"
                   ? combos.map((combo, index) => (
                       <button
                         type="button"
@@ -638,7 +693,8 @@ export function FeaturedMenuManager({
                 }
                 className="mt-4 h-9 rounded-[8px] border border-white/15 text-[11px] font-semibold"
               >
-                + {manager === "combos" ? "New Combo" : "New Menu Item"}
+                <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                {manager === "combos" ? "New Combo" : "New Menu Item"}
               </button>
             </aside>
 
@@ -657,7 +713,13 @@ export function FeaturedMenuManager({
                       </div>
                       <button
                         type="button"
-                        onClick={() => deleteCombo(selectedCombo.id)}
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "combo",
+                            id: selectedCombo.id,
+                            name: selectedCombo.name,
+                          })
+                        }
                         className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
                       >
                         <Trash2 className="h-4 w-4" strokeWidth={2.3} />
@@ -672,14 +734,15 @@ export function FeaturedMenuManager({
                         onClick={() => openComboBuilder(selectedCombo)}
                         className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black"
                       >
-                        + Add Items
+                        <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                        Add Items
                       </button>
                       <button
                         type="button"
                         onClick={() => setNested("times")}
                         className="h-9 w-full rounded-[8px] border border-white/20 text-[11px] font-semibold"
                       >
-                        <Pencil className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                        <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
                         Adjust Times
                       </button>
                     </div>
@@ -739,7 +802,13 @@ export function FeaturedMenuManager({
                     </div>
                     <button
                       type="button"
-                      onClick={() => archiveItem(selectedMenu.id)}
+                      onClick={() =>
+                        setDeleteTarget({
+                          kind: "menuItem",
+                          id: selectedMenu.id,
+                          name: selectedMenu.name,
+                        })
+                      }
                       className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
                     >
                       <Trash2 className="h-4 w-4" strokeWidth={2.3} />
@@ -773,7 +842,7 @@ export function FeaturedMenuManager({
                     onClick={() => openEditItem(selectedMenu)}
                     className="mt-3 h-9 w-full rounded-[8px] border border-white/20 text-[11px] font-semibold"
                   >
-                    <Pencil className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                    <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
                     Edit Item
                   </button>
 
@@ -805,7 +874,19 @@ export function FeaturedMenuManager({
                     </div>
                   </div>
                 </>
-              ) : null}
+              ) : (
+                <div className="grid h-full min-h-[420px] place-items-center text-center">
+                  <div>
+                    <span className="mx-auto grid h-12 w-12 place-items-center rounded-[10px] border border-white/10 bg-[#171717] text-[#8B8B8B]">
+                      <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                    </span>
+                    <p className="mt-3 text-[13px] font-semibold">No menu items yet</p>
+                    <p className="mt-1 max-w-[260px] text-[10px] leading-[1.5] text-[#777777]">
+                      Create a menu item from the left panel to begin building your menu.
+                    </p>
+                  </div>
+                </div>
+              )}
             </section>
           </div>
         </ModalFrame>
@@ -945,7 +1026,13 @@ export function FeaturedMenuManager({
                 </div>
                 <button
                   type="button"
-                  onClick={() => archiveItem(selectedMenu.id)}
+                  onClick={() =>
+                    setDeleteTarget({
+                      kind: "menuItem",
+                      id: selectedMenu.id,
+                      name: selectedMenu.name,
+                    })
+                  }
                   className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={2.3} />
