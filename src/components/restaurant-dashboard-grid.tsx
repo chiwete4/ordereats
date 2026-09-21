@@ -44,8 +44,11 @@ type RestaurantForDashboard = {
   operatingDays: number[];
   timezone: string;
   payoutBankName: string | null;
+  payoutBankCode: string | null;
   payoutAccountName: string | null;
   payoutAccountNumber: string | null;
+  payoutRecipientCode: string | null;
+  payoutVerifiedAt: string | null;
 };
 
 const moneyFormatter = new Intl.NumberFormat("en-NG", {
@@ -985,8 +988,12 @@ export async function RestaurantDashboardGrid({
             phoneNumber={restaurant.phoneNumber}
             address={restaurant.address}
             bankName={restaurant.payoutBankName}
+            bankCode={restaurant.payoutBankCode}
             accountName={restaurant.payoutAccountName}
             accountNumber={restaurant.payoutAccountNumber}
+            payoutVerified={Boolean(
+              restaurant.payoutRecipientCode && restaurant.payoutVerifiedAt
+            )}
             openingTime={restaurant.openingTime}
             closingTime={restaurant.closingTime}
             operatingDays={restaurant.operatingDays}
