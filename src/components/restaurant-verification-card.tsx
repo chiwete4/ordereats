@@ -20,6 +20,10 @@ export function RestaurantVerificationCard({
   bankName,
   accountName,
   accountNumber,
+  openingTime,
+  closingTime,
+  operatingDays,
+  timezone,
   steps,
 }: {
   restaurantId: string;
@@ -30,6 +34,10 @@ export function RestaurantVerificationCard({
   bankName: string | null;
   accountName: string | null;
   accountNumber: string | null;
+  openingTime: string;
+  closingTime: string;
+  operatingDays: number[];
+  timezone: string;
   steps: VerificationStep[];
 }) {
   const bankDialogRef = useRef<HTMLDialogElement>(null);
@@ -66,7 +74,7 @@ export function RestaurantVerificationCard({
 
           <div className="flex min-w-0 items-center justify-between gap-4">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-              <h2 className="truncate [font-family:var(--font-hedvig-serif)] text-[26px] font-normal leading-none tracking-[-0.035em] text-black">
+              <h2 className="truncate text-[26px] font-normal leading-none tracking-[-0.035em] text-black">
                 {restaurantName}
               </h2>
               {address ? (
@@ -143,7 +151,7 @@ export function RestaurantVerificationCard({
         <form action={updateRestaurant} className="p-6">
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <div className="flex items-center justify-between">
-            <h3 className="[font-family:var(--font-hedvig-serif)] text-[24px] leading-none tracking-[-0.035em]">Edit Restaurant</h3>
+            <h3 className="text-[24px] leading-none tracking-[-0.035em]">Edit Restaurant</h3>
             <button type="button" onClick={() => detailsDialogRef.current?.close()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full border border-[#EAEAEA]">
               <X className="h-4 w-4" strokeWidth={2.3} />
             </button>
@@ -153,6 +161,46 @@ export function RestaurantVerificationCard({
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Description<textarea name="description" defaultValue={description ?? ""} rows={3} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Phone number<input name="phoneNumber" defaultValue={phoneNumber ?? ""} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Campus location<input name="address" defaultValue={address ?? ""} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-[12px] font-semibold tracking-[-0.02em]">
+                Opens
+                <input name="openingTime" type="time" defaultValue={openingTime} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" />
+              </label>
+              <label className="text-[12px] font-semibold tracking-[-0.02em]">
+                Closes
+                <input name="closingTime" type="time" defaultValue={closingTime} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" />
+              </label>
+            </div>
+
+            <fieldset>
+              <legend className="text-[12px] font-semibold tracking-[-0.02em]">Operating days</legend>
+              <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">
+                {[
+                  { value: 1, label: "Mon" },
+                  { value: 2, label: "Tue" },
+                  { value: 3, label: "Wed" },
+                  { value: 4, label: "Thu" },
+                  { value: 5, label: "Fri" },
+                  { value: 6, label: "Sat" },
+                  { value: 0, label: "Sun" },
+                ].map((day) => (
+                  <label key={day.value} className="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="operatingDays"
+                      value={day.value}
+                      defaultChecked={operatingDays.includes(day.value)}
+                      className="peer sr-only"
+                    />
+                    <span className="flex h-9 items-center justify-center rounded-[10px] border-2 border-[#EAEAEA] text-[11px] font-medium tracking-[-0.01em] peer-checked:border-black peer-checked:bg-black peer-checked:text-white">
+                      {day.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <input type="hidden" name="timezone" value={timezone} />
+            </fieldset>
           </div>
           <button className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white">Save Restaurant</button>
         </form>
@@ -163,7 +211,7 @@ export function RestaurantVerificationCard({
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="[font-family:var(--font-hedvig-serif)] text-[24px] leading-none tracking-[-0.035em]">Bank Information</h3>
+              <h3 className="text-[24px] leading-none tracking-[-0.035em]">Bank Information</h3>
               <p className="mt-2 text-[12px] font-medium tracking-[-0.01em] text-[#808080]">Add the account Paperbag should use for restaurant payouts.</p>
             </div>
             <button type="button" onClick={() => bankDialogRef.current?.close()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full border border-[#EAEAEA]">
