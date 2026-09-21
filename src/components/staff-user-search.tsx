@@ -32,12 +32,12 @@ export function StaffUserSearch({ restaurantId }: { restaurantId: string }) {
 
   return <div className="relative">
     <input type="hidden" name="userId" value={selected?.id ?? ""}/>
-    <label className="text-sm font-medium">Find an OrderEats user
+    <label className="text-sm font-medium">Find an Paperbag user
       <input value={query} onChange={(e) => { setQuery(e.target.value); setSelected(null); }} autoComplete="off" placeholder="Start typing their email or name…" className="mt-2 w-full rounded-lg border px-3 py-2"/>
     </label>
     {selected && <p className="mt-2 text-xs text-gray-600">Selected: <span className="font-medium text-black">{selected.firstName} {selected.lastName}</span> · {selected.email}</p>}
     {!selected && query.trim().length >= 2 && <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
-      {loading ? <p className="px-3 py-2 text-sm text-gray-500">Searching…</p> : results.length > 0 ? results.map(user => <button key={user.id} type="button" onClick={() => { setSelected(user); setQuery(user.email); setResults([]); }} className="block w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"><span className="block text-sm font-medium">{user.firstName} {user.lastName}</span><span className="block text-xs text-gray-500">{user.email}</span></button>) : searched ? <p className="px-3 py-2 text-sm text-gray-500">No matching OrderEats account. They need to create an account first.</p> : null}
+      {loading ? <p className="px-3 py-2 text-sm text-gray-500">Searching…</p> : results.length > 0 ? results.map(user => <button key={user.id} type="button" onClick={() => { setSelected(user); setQuery(user.email); setResults([]); }} className="block w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"><span className="block text-sm font-medium">{user.firstName} {user.lastName}</span><span className="block text-xs text-gray-500">{user.email}</span></button>) : searched ? <p className="px-3 py-2 text-sm text-gray-500">No matching Paperbag account. They need to create an account first.</p> : null}
     </div>}
   </div>;
 }
