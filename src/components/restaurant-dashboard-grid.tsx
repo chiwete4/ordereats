@@ -491,6 +491,9 @@ export async function RestaurantDashboardGrid({
     allRevenueRows,
     reviews,
     complaints,
+    complaintsOpenCount,
+    mealUnreadCount,
+    restaurantRatingAggregate,
   ] = await Promise.all([
     prisma.restaurantOrder.findMany({
       where: { restaurantId },
@@ -554,7 +557,7 @@ export async function RestaurantDashboardGrid({
     prisma.menuItem.findMany({
       where: { restaurantId, isArchived: false },
       orderBy: { createdAt: "asc" },
-      take: 100,
+      take: 20,
       include: {
         category: {
           select: {
@@ -653,7 +656,7 @@ export async function RestaurantDashboardGrid({
     prisma.review.findMany({
       where: { restaurantId },
       orderBy: { createdAt: "desc" },
-      take: 100,
+      take: 20,
       include: {
         customer: {
           select: {
@@ -674,7 +677,7 @@ export async function RestaurantDashboardGrid({
     prisma.customerComplaint.findMany({
       where: { restaurantId },
       orderBy: { createdAt: "desc" },
-      take: 100,
+      take: 20,
       include: {
         customer: {
           select: {
@@ -688,6 +691,30 @@ export async function RestaurantDashboardGrid({
             order: { select: { orderNumber: true } },
           },
         },
+      },
+    }),
+    prisma.customerComplaint.count({
+      where: {
+        restaurantId,
+        status: "OPEN",
+      },
+    }),
+    prisma.review.count({
+      where: {
+        restaurantId,
+        isRead: false,
+        target: {
+          in: ["MENU_ITEM", "FEATURED_COMBO"],
+        },
+      },
+    }),
+    prisma.review.aggregate({
+      where: {
+        restaurantId,
+        target: "RESTAURANT",
+      },
+      _avg: {
+        rating: true,
       },
     }),
   ]);
@@ -866,15 +893,9 @@ export async function RestaurantDashboardGrid({
     };
   });
 
-  const mealReviews = reviews.filter((review) =>
-    ["MENU_ITEM", "FEATURED_COMBO"].includes(review.target)
-  );
-  const restaurantRatings = reviews.filter((review) => review.target === "RESTAURANT");
-  const restaurantRating = restaurantRatings.length
-    ? restaurantRatings.reduce((sum, review) => sum + review.rating, 0) / restaurantRatings.length
-    : null;
-  const complaintsOpen = complaints.filter((complaint) => complaint.status === "OPEN").length;
-  const mealUnread = mealReviews.filter((review) => !review.isRead).length;
+  const restaurantRating = restaurantRatingAggregate._avg.rating;
+  const complaintsOpen = complaintsOpenCount;
+  const mealUnread = mealUnreadCount;
 
   const reviewExplorerItems: DashboardExplorerItem[] = [
     ...complaints.map((complaint) => ({
