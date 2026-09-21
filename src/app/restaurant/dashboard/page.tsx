@@ -2,40 +2,10 @@ import { currentUser } from "@clerk/nextjs/server";
 import { ChevronRight, PencilLine, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid";
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
-import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
-
-const leftBlocks = [
-  { id: 1, height: 346 },
-  { id: 3, height: 682 },
-  { id: 5, height: 535 },
-  { id: 7, height: 337 },
-  { id: 9, height: 337 },
-];
-
-const rightBlocks = [
-  { id: 2, height: 422 },
-  { id: 4, height: 527 },
-  { id: 6, height: 350 },
-  { id: 8, height: 350 },
-  { id: 10, height: 594 },
-];
-
-function PlaceholderBlock({ id, height }: { id: number; height: number }) {
-  return (
-    <section
-      aria-label={`Dashboard section ${id}`}
-      className="flex w-full items-center justify-center rounded-[12px] bg-[#d9d9d9]"
-      style={{ height }}
-    >
-      <span className="text-[clamp(2.5rem,5vw,5rem)] font-semibold tracking-[-0.06em] text-black">
-        #{id}
-      </span>
-    </section>
-  );
-}
 
 export default async function RestaurantDashboardPage({
   searchParams,
@@ -69,6 +39,9 @@ export default async function RestaurantDashboardPage({
           description: true,
           phoneNumber: true,
           address: true,
+          latitude: true,
+          longitude: true,
+          isVerified: true,
           payoutBankName: true,
           payoutAccountName: true,
           payoutAccountNumber: true,
@@ -146,7 +119,7 @@ export default async function RestaurantDashboardPage({
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
               <h1 className="whitespace-nowrap text-[22px] font-normal leading-none tracking-[-0.052em] text-black">
-                Welcome, <span className="tracking-[-0.035em]">Jacob Martins</span>
+                Welcome, <span className="tracking-[-0.035em]">{displayName}</span>
               </h1>
               <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
                 <Store className="h-3 w-3" strokeWidth={2.3} />
@@ -183,40 +156,27 @@ export default async function RestaurantDashboardPage({
 
         <div className="h-[32px]" />
 
-        <div>
-          <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
-            <div className="flex min-w-0 flex-col gap-[20px]">
-              {leftBlocks.map((block) =>
-                block.id === 1 ? (
-                  <RestaurantVerificationCard
-                    key={block.id}
-                    restaurantId={restaurantId}
-                    restaurantName={membership.restaurant.name}
-                    description={membership.restaurant.description}
-                    phoneNumber={membership.restaurant.phoneNumber}
-                    address={membership.restaurant.address}
-                    bankName={membership.restaurant.payoutBankName}
-                    accountName={membership.restaurant.payoutAccountName}
-                    accountNumber={membership.restaurant.payoutAccountNumber}
-                    openingTime={membership.restaurant.openingTime}
-                    closingTime={membership.restaurant.closingTime}
-                    operatingDays={membership.restaurant.operatingDays}
-                    timezone={membership.restaurant.timezone}
-                    steps={verificationSteps}
-                  />
-                ) : (
-                  <PlaceholderBlock key={block.id} {...block} />
-                )
-              )}
-            </div>
-
-            <div className="mt-[20px] flex min-w-0 flex-col gap-[20px] lg:mt-0 lg:gap-[60px]">
-              {rightBlocks.map((block) => (
-                <PlaceholderBlock key={block.id} {...block} />
-              ))}
-            </div>
-          </div>
-        </div>
+        <RestaurantDashboardGrid
+          restaurantId={restaurantId}
+          currentUserId={user.id}
+          restaurant={{
+            name: membership.restaurant.name,
+            description: membership.restaurant.description,
+            phoneNumber: membership.restaurant.phoneNumber,
+            address: membership.restaurant.address,
+            latitude: membership.restaurant.latitude,
+            longitude: membership.restaurant.longitude,
+            isVerified: membership.restaurant.isVerified,
+            openingTime: membership.restaurant.openingTime,
+            closingTime: membership.restaurant.closingTime,
+            operatingDays: membership.restaurant.operatingDays,
+            timezone: membership.restaurant.timezone,
+            payoutBankName: membership.restaurant.payoutBankName,
+            payoutAccountName: membership.restaurant.payoutAccountName,
+            payoutAccountNumber: membership.restaurant.payoutAccountNumber,
+          }}
+          verificationSteps={verificationSteps}
+        />
 
         <div className="h-[168px]" />
       </div>
