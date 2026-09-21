@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Bike,
   Check,
@@ -9,6 +9,7 @@ import {
   PackageCheck,
   Send,
   ShoppingBag,
+  LoaderCircle,
 } from "lucide-react";
 
 import {
@@ -19,6 +20,8 @@ import {
 import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
 import { OrderMoreMenu, SendToRiderButton, type OrderRider } from "@/components/dashboard-action-controls";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
+import { useToast } from "@/components/toast-provider";
+import { useRouter } from "next/navigation";
 
 export type DashboardOrderItem = {
   id: string;
@@ -116,6 +119,52 @@ function Heading({
   );
 }
 
+function ServerActionButton({
+  action,
+  restaurantId,
+  restaurantOrderId,
+  label,
+  pendingLabel,
+  icon,
+  className,
+  successTitle,
+}: {
+  action: (formData: FormData) => Promise<void>;
+  restaurantId: string;
+  restaurantOrderId: string;
+  label: string;
+  pendingLabel: string;
+  icon: React.ReactNode;
+  className: string;
+  successTitle: string;
+}) {
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const toast = useToast();
+
+  function run() {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("restaurantOrderId", restaurantOrderId);
+    startTransition(async () => {
+      try {
+        await action(formData);
+        toast({ title: successTitle, tone: "success" });
+        router.refresh();
+      } catch (error) {
+        toast({ title: "That didn’t work", description: error instanceof Error ? error.message : "Please try again.", tone: "error" });
+      }
+    });
+  }
+
+  return (
+    <button type="button" disabled={pending} onClick={run} className={`${className} disabled:opacity-50`}>
+      {pending ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2.3} /> : icon}
+      {pending ? pendingLabel : label}
+    </button>
+  );
+}
+
 function PendingPanel({
   restaurantId,
   orders,
@@ -169,13 +218,16 @@ function PendingPanel({
                     </div>
                   </button>
 
-                  <form action={acknowledgeOrder}>
-                    <input type="hidden" name="restaurantId" value={restaurantId} />
-                    <input type="hidden" name="restaurantOrderId" value={order.id} />
-                    <button className="rounded-[8px] bg-black px-3 py-2 text-[10px] font-semibold leading-none tracking-[-0.02em] text-white">
-                      Start Making
-                    </button>
-                  </form>
+                  <ServerActionButton
+                    action={acknowledgeOrder}
+                    restaurantId={restaurantId}
+                    restaurantOrderId={order.id}
+                    label="Start Making"
+                    pendingLabel="Starting…"
+                    icon={null}
+                    successTitle="Order moved to preparation"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-black px-3 py-2 text-[10px] font-semibold leading-none tracking-[-0.02em] text-white"
+                  />
                 </div>
 
                 {expanded ? (
@@ -294,14 +346,18 @@ function ActivePanel({
                       so far
                     </p>
                     <div className="ml-[52px] mt-2 flex gap-2">
-                      <form action={markOrderReady} className="flex-1">
-                        <input type="hidden" name="restaurantId" value={restaurantId} />
-                        <input type="hidden" name="restaurantOrderId" value={order.id} />
-                        <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                          <Check className="h-3.5 w-3.5" strokeWidth={2.3} />
-                          Mark as Ready
-                        </button>
-                      </form>
+                      <div className="flex-1">
+                        <ServerActionButton
+                          action={markOrderReady}
+                          restaurantId={restaurantId}
+                          restaurantOrderId={order.id}
+                          label="Mark as Ready"
+                          pendingLabel="Saving…"
+                          icon={<Check className="h-3.5 w-3.5" strokeWidth={2.3} />}
+                          successTitle="Order marked ready"
+                          className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white"
+                        />
+                      </div>
                       <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} onOpenChange={(open) => setMenuOpenId(open ? order.id : null)} />
                     </div>
                     <p className="ml-[52px] mt-2 text-[9px] font-medium text-[#A0A0A0]">
@@ -313,14 +369,18 @@ function ActivePanel({
                 {order.status === "READY_FOR_PICKUP" ? (
                   <div className="ml-[52px] mt-3 flex gap-2">
                     <div className="flex-1"><SendToRiderButton restaurantId={restaurantId} restaurantOrderId={order.id} riders={riders} /></div>
-                    <form action={markOrderPickedUp} className="flex-1">
-                      <input type="hidden" name="restaurantId" value={restaurantId} />
-                      <input type="hidden" name="restaurantOrderId" value={order.id} />
-                      <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black">
-                        <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} />
-                        Customer Pick-up
-                      </button>
-                    </form>
+                    <div className="flex-1">
+                      <ServerActionButton
+                        action={markOrderPickedUp}
+                        restaurantId={restaurantId}
+                        restaurantOrderId={order.id}
+                        label="Customer Pick-up"
+                        pendingLabel="Saving…"
+                        icon={<PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} />}
+                        successTitle="Order marked picked up"
+                        className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black"
+                      />
+                    </div>
                     <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} onOpenChange={(open) => setMenuOpenId(open ? order.id : null)} />
                   </div>
                 ) : null}
