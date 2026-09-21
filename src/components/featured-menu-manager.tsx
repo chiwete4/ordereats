@@ -668,8 +668,13 @@ export function FeaturedMenuManager({
                           <p className="truncate text-[11px] font-medium">
                             {combo.name}
                           </p>
-                          <p className="mt-1 text-[9px] text-[#8B8B8B]">
-                            {totalQuantity(combo)} items · {money(comboTotal(combo))} total
+                          <p className="mt-1 flex items-center gap-1 text-[9px] text-[#8B8B8B]">
+                            <ShoppingBag className="h-3 w-3" strokeWidth={2.3} />
+                            <span>
+                              {combo.items.filter((entry) => entry.menuItem.isAvailable).length}/{combo.items.length}
+                            </span>
+                            <span>•</span>
+                            <span>{money(comboTotal(combo))} total</span>
                           </p>
                         </div>
                         <span className="rounded-full border border-white/15 px-3 py-1.5 text-[9px] font-medium">
@@ -927,8 +932,13 @@ export function FeaturedMenuManager({
                   <StackedThumb combo={selectedCombo} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-medium">{selectedCombo.name}</p>
-                    <p className="mt-1 text-[9px] text-[#858585]">
-                      {totalQuantity(selectedCombo)} items · {money(comboTotal(selectedCombo))} total
+                    <p className="mt-1 flex items-center gap-1 text-[9px] text-[#858585]">
+                      <ShoppingBag className="h-3 w-3" strokeWidth={2.3} />
+                      <span>
+                        {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
+                      </span>
+                      <span>•</span>
+                      <span>{money(comboTotal(selectedCombo))} total</span>
                     </p>
                   </div>
                 </div>
