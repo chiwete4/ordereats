@@ -70,17 +70,32 @@ export async function POST(request: NextRequest) {
           ? "REVERSED"
           : "FAILED";
 
-    await prisma.restaurantPayout.updateMany({
+    const payout = await prisma.restaurantPayout.findUnique({
       where: { reference },
-      data: {
-        status,
-        paystackTransferCode: event.data?.transfer_code || undefined,
-        paystackTransferId:
-          event.data?.id === undefined ? undefined : String(event.data.id),
-        completedAt: status === "SUCCESS" ? new Date() : null,
-        failureReason: status === "SUCCESS" ? null : failureMessage(event.data),
-      },
+      select: { id: true },
     });
+
+    if (payout) {
+      await prisma.$transaction(async (tx) => {
+        await tx.restaurantPayout.update({
+          where: { id: payout.id },
+          data: {
+            status,
+            paystackTransferCode: event.data?.transfer_code || undefined,
+            paystackTransferId:
+              event.data?.id === undefined ? undefined : String(event.data.id),
+            completedAt: status === "SUCCESS" ? new Date() : null,
+            failureReason: status === "SUCCESS" ? null : failureMessage(event.data),
+          },
+        });
+
+        if (status === "FAILED" || status === "REVERSED") {
+          await tx.restaurantPayoutOrder.deleteMany({
+            where: { payoutId: payout.id },
+          });
+        }
+      });
+    }
   }
 
   return NextResponse.json({ received: true });
