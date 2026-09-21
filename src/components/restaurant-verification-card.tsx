@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, Navigation, PencilLine, Store, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { saveRestaurantBankInfo } from "@/actions/verification";
 import { addRestaurantStaff } from "@/actions/staff";
 import { RestaurantImageUpload } from "@/components/restaurant-image-upload";
 import { StaffUserSearch } from "@/components/staff-user-search";
+import { PaystackBankForm } from "@/components/paystack-bank-form";
 import { updateRestaurant } from "@/actions/restaurant";
 
 type VerificationStep = {
@@ -23,8 +23,10 @@ export function RestaurantVerificationCard({
   phoneNumber,
   address,
   bankName,
+  bankCode,
   accountName,
   accountNumber,
+  payoutVerified,
   openingTime,
   closingTime,
   operatingDays,
@@ -38,8 +40,10 @@ export function RestaurantVerificationCard({
   phoneNumber: string | null;
   address: string | null;
   bankName: string | null;
+  bankCode: string | null;
   accountName: string | null;
   accountNumber: string | null;
+  payoutVerified: boolean;
   openingTime: string;
   closingTime: string;
   operatingDays: number[];
@@ -363,25 +367,35 @@ export function RestaurantVerificationCard({
         </form>
       </dialog>
 
-      <dialog ref={bankDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
-        <form action={saveRestaurantBankInfo} className="max-h-[90vh] overflow-y-auto p-6 pb-4">
-          <input type="hidden" name="restaurantId" value={restaurantId} />
-          <div className="flex items-center justify-between">
+      <dialog ref={bankDialogRef} className="h-[min(650px,90vh)] w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="flex shrink-0 items-center justify-between px-6 pb-4 pt-6">
             <div>
               <h3 className="text-[24px] leading-none tracking-[-0.035em]">Bank Information</h3>
-              <p className="mt-2 text-[12px] font-medium tracking-[-0.01em] text-[#808080]">Add the account Paperbag should use for restaurant payouts.</p>
+              <p className="mt-2 text-[12px] font-medium tracking-[-0.01em] text-[#808080]">
+                Verify the Nigerian account Paperbag should use for restaurant payouts.
+              </p>
             </div>
-            <button type="button" onClick={() => bankDialogRef.current?.close()} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full border border-[#EAEAEA]">
+            <button
+              type="button"
+              onClick={() => bankDialogRef.current?.close()}
+              aria-label="Close"
+              className="grid h-8 w-8 place-items-center rounded-full border border-[#EAEAEA]"
+            >
               <X className="h-4 w-4" strokeWidth={2.3} />
             </button>
           </div>
-          <div className="mt-6 grid gap-4">
-            <label className="text-[12px] font-semibold tracking-[-0.02em]">Bank name<input name="bankName" defaultValue={bankName ?? ""} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
-            <label className="text-[12px] font-semibold tracking-[-0.02em]">Account name<input name="accountName" defaultValue={accountName ?? ""} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
-            <label className="text-[12px] font-semibold tracking-[-0.02em]">Account number<input name="accountNumber" defaultValue={accountNumber ?? ""} required inputMode="numeric" pattern="\d{10}" maxLength={10} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
-          </div>
-          <button className="sticky bottom-0 z-10 mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white shadow-[0_-18px_28px_rgba(255,255,255,0.96)]">Save Bank Information</button>
-        </form>
+
+          <PaystackBankForm
+            restaurantId={restaurantId}
+            initialBankName={bankName}
+            initialBankCode={bankCode}
+            initialAccountName={accountName}
+            initialAccountNumber={accountNumber}
+            isVerified={payoutVerified}
+            onSaved={() => bankDialogRef.current?.close()}
+          />
+        </div>
       </dialog>
     </>
   );
