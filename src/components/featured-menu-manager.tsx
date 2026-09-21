@@ -24,9 +24,13 @@ import { useRouter } from "next/navigation";
 
 import {
   archiveDashboardMenuItem,
+  createDashboardCategory,
   createDashboardMenuItem,
   createFeaturedCombo,
+  deleteDashboardCategory,
   deleteFeaturedCombo,
+  toggleDashboardMenuItemAvailability,
+  updateDashboardCategory,
   updateDashboardMenuItem,
   updateFeaturedComboItems,
   updateFeaturedComboTimes,
@@ -42,6 +46,8 @@ export type FeaturedMenuItemData = {
   readyMin: number;
   readyMax: number;
   deliverySeconds: number;
+  categoryId: string;
+  categoryName: string;
 };
 
 export type FeaturedComboData = {
@@ -50,11 +56,19 @@ export type FeaturedComboData = {
   readyMin: number;
   readyMax: number;
   deliverySeconds: number;
+  ratingAverage: number | null;
+  ratingCount: number;
   items: Array<{
     id: string;
     quantity: number;
     menuItem: FeaturedMenuItemData;
   }>;
+};
+
+export type MenuCategoryData = {
+  id: string;
+  name: string;
+  itemCount: number;
 };
 
 export type FeaturedPastOrderData = {
@@ -332,12 +346,14 @@ export function FeaturedMenuManager({
   menuItems,
   combos,
   pastOrders,
+  categories,
 }: {
   restaurantId: string;
   restaurant: RestaurantData;
   menuItems: FeaturedMenuItemData[];
   combos: FeaturedComboData[];
   pastOrders: FeaturedPastOrderData[];
+  categories: MenuCategoryData[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -345,19 +361,28 @@ export function FeaturedMenuManager({
   const [selectedComboId, setSelectedComboId] = useState(combos[0]?.id ?? "");
   const [expandedComboId, setExpandedComboId] = useState<string | null>(null);
   const [selectedMenuId, setSelectedMenuId] = useState(menuItems[0]?.id ?? "");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [nested, setNested] = useState<
-    "newCombo" | "editCombo" | "newItem" | "editItem" | "times" | null
+    "newCombo" | "editCombo" | "newItem" | "editItem" | "times" | "categories" | null
   >(null);
   const [query, setQuery] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [itemName, setItemName] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemImage, setItemImage] = useState("");
+  const [itemCategoryId, setItemCategoryId] = useState(categories[0]?.id ?? "");
+  const [itemReadyMin, setItemReadyMin] = useState("1");
+  const [itemReadyMax, setItemReadyMax] = useState("5");
+  const [itemDeliverySeconds, setItemDeliverySeconds] = useState("45");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState("");
+  const [editingCategoryName, setEditingCategoryName] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<
     | { kind: "combo"; id: string; name: string }
     | { kind: "menuItem"; id: string; name: string }
     | { kind: "comboEntry"; id: string; name: string }
+    | { kind: "category"; id: string; name: string }
     | null
   >(null);
   const [error, setError] = useState("");
@@ -372,9 +397,12 @@ export function FeaturedMenuManager({
 
   const filteredMenu = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return menuItems;
-    return menuItems.filter((item) => item.name.toLowerCase().includes(q));
-  }, [menuItems, query]);
+    return menuItems.filter((item) => {
+      const matchesQuery = !q || item.name.toLowerCase().includes(q);
+      const matchesCategory = !selectedCategoryId || item.categoryId === selectedCategoryId;
+      return matchesQuery && matchesCategory;
+    });
+  }, [menuItems, query, selectedCategoryId]);
 
   function run(
     action: (formData: FormData) => Promise<void>,
@@ -409,6 +437,10 @@ export function FeaturedMenuManager({
     setItemName("");
     setItemPrice("");
     setItemImage("");
+    setItemCategoryId(selectedCategoryId || categories[0]?.id || "");
+    setItemReadyMin("1");
+    setItemReadyMax("5");
+    setItemDeliverySeconds("45");
     setImageUploading(false);
     setNested("newItem");
   }
@@ -418,6 +450,10 @@ export function FeaturedMenuManager({
     setItemName(item.name);
     setItemPrice(String(item.price));
     setItemImage(item.imageUrl ?? "");
+    setItemCategoryId(item.categoryId);
+    setItemReadyMin(String(item.readyMin));
+    setItemReadyMax(String(item.readyMax));
+    setItemDeliverySeconds(String(item.deliverySeconds));
     setImageUploading(false);
     setNested("editItem");
   }
@@ -450,6 +486,10 @@ export function FeaturedMenuManager({
     formData.set("name", itemName);
     formData.set("price", itemPrice);
     formData.set("imageUrl", itemImage);
+    formData.set("categoryId", itemCategoryId);
+    formData.set("readyMin", itemReadyMin);
+    formData.set("readyMax", itemReadyMax);
+    formData.set("deliverySeconds", itemDeliverySeconds);
     if (editing && selectedMenu) formData.set("menuItemId", selectedMenu.id);
 
     run(
@@ -473,6 +513,13 @@ export function FeaturedMenuManager({
       deleteCombo(deleteTarget.id);
     } else if (deleteTarget.kind === "menuItem") {
       archiveItem(deleteTarget.id);
+    } else if (deleteTarget.kind === "category") {
+      const formData = new FormData();
+      formData.set("restaurantId", restaurantId);
+      formData.set("categoryId", deleteTarget.id);
+      run(deleteDashboardCategory, formData, () => {
+        if (selectedCategoryId === deleteTarget.id) setSelectedCategoryId(null);
+      });
     } else {
       setQuantities((current) => ({
         ...current,
@@ -490,12 +537,13 @@ export function FeaturedMenuManager({
           <div>
             <RestaurantMeta restaurant={restaurant} />
           </div>
-          <a
-            href="#restaurant-verification"
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("paperbag:edit-restaurant"))}
             className="mt-[62px] shrink-0 text-[11px] font-semibold underline underline-offset-2"
           >
             Edit Restaurant
-          </a>
+          </button>
         </div>
 
         <p className="mt-5 text-[11px] font-medium text-[#7C7C7C]">
