@@ -5,7 +5,9 @@ import { AlertTriangle, ArrowRight, Check, Navigation, PencilLine, Store, X } fr
 import { useRouter } from "next/navigation";
 
 import { saveRestaurantBankInfo } from "@/actions/verification";
+import { addRestaurantStaff } from "@/actions/staff";
 import { RestaurantImageUpload } from "@/components/restaurant-image-upload";
+import { StaffUserSearch } from "@/components/staff-user-search";
 import { updateRestaurant } from "@/actions/restaurant";
 
 type VerificationStep = {
@@ -46,9 +48,12 @@ export function RestaurantVerificationCard({
 }) {
   const bankDialogRef = useRef<HTMLDialogElement>(null);
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
+  const riderDialogRef = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const [detailsError, setDetailsError] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
+  const [riderError, setRiderError] = useState("");
+  const [savingRider, setSavingRider] = useState(false);
   useEffect(() => {
     const openEditor = () => {
       setDetailsError("");
@@ -74,8 +79,8 @@ export function RestaurantVerificationCard({
 
   return (
     <>
-      <section className="flex min-h-[346px] w-full flex-col rounded-[14px] bg-[#FFF3C4] px-6 py-5 sm:px-8 sm:py-6">
-        <div className="flex flex-1 flex-col gap-5">
+      <section className="flex w-full flex-col rounded-[14px] bg-[#FFF3C4] px-6 py-5 sm:px-8 sm:py-6">
+        <div className="flex flex-col gap-5">
           <div className="inline-flex items-center gap-1.5 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black">
             <AlertTriangle className="h-4 w-4" strokeWidth={2.3} />
             {allComplete ? "Verification Complete" : "Complete your Verification"}
@@ -95,7 +100,7 @@ export function RestaurantVerificationCard({
 
           <div className="flex min-w-0 items-center justify-between gap-4">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-              <h2 className="truncate text-[26px] font-normal leading-none tracking-[-0.035em] text-black">
+              <h2 className="truncate text-[20px] font-medium leading-none tracking-[-0.04em] text-black">
                 {restaurantName}
               </h2>
               {address ? (
@@ -112,7 +117,7 @@ export function RestaurantVerificationCard({
                 setDetailsError("");
                 detailsDialogRef.current?.showModal();
               }}
-              className="shrink-0 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black underline decoration-[1.5px] underline-offset-2"
+              className="shrink-0 text-[11px] font-semibold leading-none tracking-[-0.02em] text-black underline underline-offset-2"
             >
               Edit Restaurant
             </button>
@@ -158,11 +163,8 @@ export function RestaurantVerificationCard({
                   return;
                 }
                 if (nextIncomplete?.label === "Add at least 1 Rider") {
-                  const riderDetails = document.getElementById("rider-add-details") as HTMLDetailsElement | null;
-                  if (riderDetails) {
-                    riderDetails.open = true;
-                    riderDetails.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }
+                  setRiderError("");
+                  riderDialogRef.current?.showModal();
                   return;
                 }
                 if (nextIncomplete?.label === "Create your menu") {
@@ -283,6 +285,72 @@ export function RestaurantVerificationCard({
             className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {savingDetails ? "Saving..." : "Save Restaurant"}
+          </button>
+        </form>
+      </dialog>
+
+      <dialog ref={riderDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
+        <form
+          className="p-6"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            formData.set("restaurantId", restaurantId);
+            formData.set("role", "RIDER");
+
+            if (!formData.get("userId")?.toString()) {
+              setRiderError("Choose a Paperbag user to add as a rider.");
+              return;
+            }
+
+            setRiderError("");
+            setSavingRider(true);
+
+            try {
+              await addRestaurantStaff(formData);
+              riderDialogRef.current?.close();
+              router.refresh();
+            } catch (error) {
+              setRiderError(
+                error instanceof Error ? error.message : "We couldn't add this rider. Try again."
+              );
+            } finally {
+              setSavingRider(false);
+            }
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[20px] font-medium leading-none tracking-[-0.04em]">Add a Rider</h3>
+              <p className="mt-2 text-[11px] font-medium text-[#808080]">
+                Find an existing Paperbag user and attach them to this restaurant as a rider.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => riderDialogRef.current?.close()}
+              aria-label="Close"
+              className="grid h-8 w-8 place-items-center rounded-full border border-[#EAEAEA]"
+            >
+              <X className="h-4 w-4" strokeWidth={2.3} />
+            </button>
+          </div>
+
+          <div className="mt-6">
+            <StaffUserSearch restaurantId={restaurantId} />
+          </div>
+
+          {riderError ? (
+            <p className="mt-4 rounded-[10px] bg-red-50 px-3 py-2.5 text-[11px] font-medium text-red-600">
+              {riderError}
+            </p>
+          ) : null}
+
+          <button
+            disabled={savingRider}
+            className="mt-6 h-10 w-full rounded-[10px] bg-black text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {savingRider ? "Adding Rider..." : "Add Rider"}
           </button>
         </form>
       </dialog>
