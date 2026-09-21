@@ -48,3 +48,18 @@ Paperbag uses Paystack for payment verification, payout account verification, tr
 5. Localhost cannot receive Paystack webhooks; use a public development URL when testing webhook delivery.
 
 The bank setup flow resolves the Nigerian account number through Paystack, creates a reusable `nuban` transfer recipient, and stores the returned recipient code. Payouts are only built from successfully paid restaurant orders that have reached `DELIVERED` or `PICKED_UP` and have not already been included in another payout.
+
+
+## Demo dashboard seed
+
+Use the demo seed when you need realistic restaurant data without manually creating users, menu items, orders, riders, reviews, and complaints.
+
+```powershell
+npm.cmd run seed:demo
+```
+
+The seed targets `SEED_RESTAURANT_ID` when set; otherwise it uses the first restaurant with an active owner. It creates Clerk Development users when `CLERK_SECRET_KEY` is available, and refuses to create demo users in a live Clerk instance unless `ALLOW_LIVE_CLERK_SEED=1` is explicitly set.
+
+Seeded Clerk test addresses use the `+clerk_test` pattern. In Clerk Development instances they can use the test email code `424242`. When password sign-in is enabled, the default seed password is `PaperbagDemo!2026` unless `SEED_TEST_PASSWORD` overrides it.
+
+The seed creates current pending/preparing/ready/out-for-delivery orders plus historical delivered, picked-up, and cancelled orders across the last two weeks. Re-running it replaces non-payout demo orders so the "just arrived" timestamps stay fresh.
