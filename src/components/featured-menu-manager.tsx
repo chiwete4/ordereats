@@ -375,6 +375,9 @@ export function FeaturedMenuManager({
     combos.find((combo) => combo.id === selectedComboId) ?? combos[0] ?? null;
   const selectedMenu =
     menuItems.find((item) => item.id === selectedMenuId) ?? menuItems[0] ?? null;
+  const selectedComboIndex = selectedCombo
+    ? Math.max(1, combos.findIndex((combo) => combo.id === selectedCombo.id) + 1)
+    : 0;
 
   const filteredMenu = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -510,20 +513,27 @@ export function FeaturedMenuManager({
 
         <div className="mt-3 flex-1 divide-y divide-white/10">
           {combos.length === 0 ? (
-            <div className="py-8">
-              <p className="text-[12px] font-medium text-[#858585]">
-                No featured combos yet.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setManager("combos");
-                  openComboBuilder();
-                }}
-                className="mt-3 text-[11px] font-semibold underline underline-offset-2"
-              >
-                Create your first combo
-              </button>
+            <div className="grid min-h-[360px] place-items-center text-center">
+              <div>
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-[10px] border border-white/10 bg-[#151515] text-[#858585]">
+                  <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                </span>
+                <p className="mt-3 text-[12px] font-semibold">No featured combos yet</p>
+                <p className="mt-1 max-w-[280px] text-[10px] leading-[1.5] text-[#707070]">
+                  Choose items from your menu and turn them into a featured combo.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManager("combos");
+                    openComboBuilder();
+                  }}
+                  className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.3} />
+                  Create your first combo
+                </button>
+              </div>
             </div>
           ) : (
             combos.slice(0, 3).map((combo, index) => (
@@ -704,11 +714,17 @@ export function FeaturedMenuManager({
                   <>
                     <p className="text-[12px] font-medium text-[#808080]">Edit Combo</p>
                     <div className="mt-5 flex items-start gap-3">
+                      <span className="pt-2 text-[12px] font-semibold">#{selectedComboIndex}</span>
                       <StackedThumb combo={selectedCombo} />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pt-1">
                         <p className="text-[12px] font-medium">{selectedCombo.name}</p>
-                        <p className="mt-1 text-[10px] text-[#858585]">
-                          {totalQuantity(selectedCombo)} items · {money(comboTotal(selectedCombo))} total
+                        <p className="mt-1 flex items-center gap-1.5 text-[10px] text-[#858585]">
+                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
+                          <span>
+                            {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
+                          </span>
+                          <span>•</span>
+                          <span>{money(comboTotal(selectedCombo))} total</span>
                         </p>
                       </div>
                       <button
@@ -776,14 +792,21 @@ export function FeaturedMenuManager({
                     </div>
                   </>
                 ) : (
-                  <div className="grid h-full place-items-center text-center">
+                  <div className="grid h-full min-h-[420px] place-items-center text-center">
                     <div>
-                      <p className="text-[13px] font-semibold">No featured combos yet.</p>
+                      <span className="mx-auto grid h-12 w-12 place-items-center rounded-[10px] border border-white/10 bg-[#171717] text-[#8B8B8B]">
+                        <Utensils className="h-5 w-5" strokeWidth={2.3} />
+                      </span>
+                      <p className="mt-3 text-[13px] font-semibold">No featured combos yet</p>
+                      <p className="mt-1 max-w-[260px] text-[10px] leading-[1.5] text-[#777777]">
+                        Build your first combo from the menu items on this restaurant.
+                      </p>
                       <button
                         type="button"
                         onClick={() => openComboBuilder()}
-                        className="mt-3 text-[11px] underline underline-offset-2"
+                        className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2"
                       >
+                        <Plus className="h-3.5 w-3.5" strokeWidth={2.3} />
                         Create a combo
                       </button>
                     </div>
