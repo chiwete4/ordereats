@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useState } from "react";
 import {
   Bike,
   Check,
@@ -9,7 +9,6 @@ import {
   PackageCheck,
   Send,
   ShoppingBag,
-  LoaderCircle,
 } from "lucide-react";
 
 import {
@@ -19,7 +18,6 @@ import {
 } from "@/actions/orders";
 import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
 import { OrderMoreMenu, SendToRiderButton, type OrderRider } from "@/components/dashboard-action-controls";
-import { useToast } from "@/components/toast-provider";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
 
 export type DashboardOrderItem = {
@@ -152,7 +150,7 @@ function PendingPanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className={`border-b border-[#EAEAEA] py-4 first:pt-0 transition-opacity ${menuOpenId === order.id ? "opacity-20" : "opacity-100"}`}>
+              <article key={order.id} className="border-b border-[#EAEAEA] py-4 first:pt-0">
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
@@ -263,7 +261,7 @@ function ActivePanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className="border-b border-[#EAEAEA] py-4 first:pt-0">
+              <article key={order.id} className={`border-b border-[#EAEAEA] py-4 first:pt-0 transition-opacity ${menuOpenId === order.id ? "opacity-20" : "opacity-100"}`}>
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
@@ -374,6 +372,7 @@ export function RestaurantOrderPanels({
         orders={activeOrders}
         count={activeCount}
         explorerItems={activeExplorerItems}
+        riders={riders}
       />
     </>
   );
