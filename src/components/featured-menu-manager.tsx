@@ -424,6 +424,7 @@ export function FeaturedMenuManager({
 
   function openComboBuilder(combo?: FeaturedComboData) {
     setQuery("");
+    setSelectedCategoryId(null);
     setQuantities(
       combo
         ? Object.fromEntries(
@@ -1452,7 +1453,7 @@ export function FeaturedMenuManager({
                 : deleteTarget.kind === "menuItem"
                   ? `“${deleteTarget.name}” will be hidden from your restaurant menu and removed from every featured combo. Existing past order records will remain intact.`
                   : deleteTarget.kind === "category"
-                    ? `“${deleteTarget.name}” can only be deleted when it has no active menu items. Deleting it does not delete archived items or historical orders.`
+                    ? `“${deleteTarget.name}” can only be deleted when no menu items, including archived items, still belong to it. Historical orders are never deleted.`
                     : `“${deleteTarget.name}” will be removed from this combo only. The menu item itself will remain in your full menu.`}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
