@@ -134,6 +134,11 @@ export function PaystackBankForm({
   );
   const currentKey = bankCode && accountNumber ? `${bankCode}:${accountNumber}` : "";
   const verified = currentKey !== "" && currentKey === verifiedKey && Boolean(accountName);
+  const savedAccountSelected =
+    isVerified &&
+    Boolean(initialBankCode) &&
+    Boolean(initialAccountNumber) &&
+    currentKey === `${initialBankCode}:${initialAccountNumber}`;
 
   async function verifyAccount() {
     if (!bankCode || !/^\d{10}$/.test(accountNumber)) {
@@ -328,7 +333,7 @@ export function PaystackBankForm({
             ) : null}
           </div>
 
-          {isVerified && canRequestPayout && payoutSummary ? (
+          {savedAccountSelected && canRequestPayout && payoutSummary ? (
             <div className="rounded-[10px] border-2 border-[#EAEAEA] p-3">
               <div className="flex items-end justify-between gap-3">
                 <div>
