@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  ArrowRight,
   Ban,
   Bike,
   Check,
@@ -616,7 +617,12 @@ function PerformancePanel({
         <DashboardSectionExplorer
           title="Performance"
           items={explorerItems}
-          triggerLabel="All-time performance →"
+          triggerLabel={
+            <span className="inline-flex items-center justify-center gap-1.5">
+              All-time performance
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.3} />
+            </span>
+          }
           triggerClassName="h-8 w-full rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold text-black"
         />
       </div>
