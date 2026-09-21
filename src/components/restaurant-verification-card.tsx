@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { AlertTriangle, Check, MapPin, PencilLine, Store, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Navigation, PencilLine, Store, X } from "lucide-react";
 
 import { saveRestaurantBankInfo } from "@/actions/verification";
 import { RestaurantImageUpload } from "@/components/restaurant-image-upload";
@@ -87,7 +87,7 @@ export function RestaurantVerificationCard({
               </h2>
               {address ? (
                 <span className="inline-flex min-w-0 items-center gap-1 text-[12px] font-medium leading-none tracking-[-0.01em] text-[#808080]">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2.3} />
+                  <Navigation className="h-3.5 w-3.5 shrink-0 fill-current" strokeWidth={2.3} />
                   <span className="truncate">{address}</span>
                 </span>
               ) : null}
@@ -147,7 +147,12 @@ export function RestaurantVerificationCard({
               }}
               className="flex h-[34px] w-full items-center justify-center rounded-[10px] bg-[#FFE27A] px-4 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black"
             >
-              {nextIncomplete?.label === "Add your Bank Info" ? "Add your Bank Info →" : `${nextIncomplete?.label} →`}
+              <span>
+                {nextIncomplete?.label === "Add your Bank Info"
+                  ? "Add your Bank Info"
+                  : nextIncomplete?.label}
+              </span>
+              <ArrowRight className="ml-1.5 h-4 w-4" strokeWidth={2.3} />
             </button>
           ) : (
             <div className="h-[34px]" />
