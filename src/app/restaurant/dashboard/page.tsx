@@ -146,7 +146,7 @@ export default async function RestaurantDashboardPage({
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
               <h1 className="whitespace-nowrap text-[22px] font-normal leading-none tracking-[-0.052em] text-black">
-                Welcome, <span className="[font-family:var(--font-hedvig-serif)] tracking-[-0.035em]">Jacob Martins</span>
+                Welcome, <span className="tracking-[-0.035em]">Jacob Martins</span>
               </h1>
               <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
                 <Store className="h-3 w-3" strokeWidth={2.3} />
@@ -198,6 +198,10 @@ export default async function RestaurantDashboardPage({
                     bankName={membership.restaurant.payoutBankName}
                     accountName={membership.restaurant.payoutAccountName}
                     accountNumber={membership.restaurant.payoutAccountNumber}
+                    openingTime={membership.restaurant.openingTime}
+                    closingTime={membership.restaurant.closingTime}
+                    operatingDays={membership.restaurant.operatingDays}
+                    timezone={membership.restaurant.timezone}
                     steps={verificationSteps}
                   />
                 ) : (
