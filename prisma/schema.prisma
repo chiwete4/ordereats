@@ -39,6 +39,17 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum ReviewTarget {
+  RESTAURANT
+  MENU_ITEM
+  FEATURED_COMBO
+}
+
+enum ComplaintStatus {
+  OPEN
+  RESOLVED
+}
+
 model User {
   id          String    @id @default(cuid())
   clerkId     String    @unique
@@ -55,6 +66,8 @@ model User {
   orders             Order[]
   restaurantStaff    RestaurantStaff[]
   assignedDeliveries Delivery[]        @relation("RiderDeliveries")
+  reviews              Review[]
+  complaints           CustomerComplaint[]
 }
 
 model Restaurant {
@@ -83,6 +96,8 @@ model Restaurant {
   menuItems        MenuItem[]
   restaurantOrders RestaurantOrder[]
   featuredCombos   FeaturedCombo[]
+  reviews          Review[]
+  complaints       CustomerComplaint[]
 }
 
 model RestaurantStaff {
@@ -133,6 +148,7 @@ model MenuItem {
   category   MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems          OrderItem[]
   featuredComboItems FeaturedComboItem[]
+  reviews            Review[]
 }
 
 model FeaturedCombo {
@@ -148,6 +164,7 @@ model FeaturedCombo {
 
   restaurant Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   items      FeaturedComboItem[]
+  reviews    Review[]
 
   @@index([restaurantId, sortOrder])
 }
@@ -199,6 +216,8 @@ model RestaurantOrder {
   restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
   items      OrderItem[]
   delivery   Delivery?
+  reviews    Review[]
+  complaints CustomerComplaint[]
 
   @@unique([orderId, restaurantId])
 }
@@ -231,6 +250,49 @@ model Delivery {
 
   restaurantOrder RestaurantOrder @relation(fields: [restaurantOrderId], references: [id])
   rider           User?           @relation("RiderDeliveries", fields: [riderId], references: [id])
+}
+
+model Review {
+  id                String       @id @default(cuid())
+  restaurantId      String
+  customerId        String
+  restaurantOrderId String?
+  target            ReviewTarget
+  menuItemId        String?
+  featuredComboId   String?
+  rating            Int
+  body              String?
+  isRead            Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer        User             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  restaurantOrder RestaurantOrder? @relation(fields: [restaurantOrderId], references: [id], onDelete: SetNull)
+  menuItem        MenuItem?        @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  featuredCombo   FeaturedCombo?   @relation(fields: [featuredComboId], references: [id], onDelete: SetNull)
+
+  @@index([restaurantId, target, createdAt])
+  @@index([menuItemId])
+  @@index([featuredComboId])
+}
+
+model CustomerComplaint {
+  id                String          @id @default(cuid())
+  restaurantId      String
+  customerId        String
+  restaurantOrderId String?
+  subject           String
+  body              String
+  status            ComplaintStatus @default(OPEN)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer        User             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  restaurantOrder RestaurantOrder? @relation(fields: [restaurantOrderId], references: [id], onDelete: SetNull)
+
+  @@index([restaurantId, status, createdAt])
 }
 
 model Payment {
