@@ -47,8 +47,11 @@ export default async function RestaurantDashboardPage({
           longitude: true,
           isVerified: true,
           payoutBankName: true,
+          payoutBankCode: true,
           payoutAccountName: true,
           payoutAccountNumber: true,
+          payoutRecipientCode: true,
+          payoutVerifiedAt: true,
           _count: {
             select: {
               menuItems: {
@@ -85,8 +88,11 @@ export default async function RestaurantDashboardPage({
   const menuComplete = membership.restaurant._count.menuItems >= 5;
   const bankComplete = Boolean(
     membership.restaurant.payoutBankName?.trim() &&
+      membership.restaurant.payoutBankCode?.trim() &&
       membership.restaurant.payoutAccountName?.trim() &&
-      membership.restaurant.payoutAccountNumber?.trim()
+      membership.restaurant.payoutAccountNumber?.trim() &&
+      membership.restaurant.payoutRecipientCode?.trim() &&
+      membership.restaurant.payoutVerifiedAt
   );
   const verificationSteps = [
     { label: "Restaurant Details", complete: detailsComplete },
@@ -179,8 +185,11 @@ export default async function RestaurantDashboardPage({
             operatingDays: membership.restaurant.operatingDays,
             timezone: membership.restaurant.timezone,
             payoutBankName: membership.restaurant.payoutBankName,
+            payoutBankCode: membership.restaurant.payoutBankCode,
             payoutAccountName: membership.restaurant.payoutAccountName,
             payoutAccountNumber: membership.restaurant.payoutAccountNumber,
+            payoutRecipientCode: membership.restaurant.payoutRecipientCode,
+            payoutVerifiedAt: membership.restaurant.payoutVerifiedAt?.toISOString() ?? null,
           }}
           verificationSteps={verificationSteps}
         />
