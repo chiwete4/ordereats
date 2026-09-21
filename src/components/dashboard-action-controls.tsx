@@ -1,58 +1,159 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { AlertTriangle, Bike, MoreHorizontal, Plus, UserRound, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { AlertTriangle, Bike, LoaderCircle, MoreHorizontal, Plus, UserRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { cancelRestaurantOrder, assignRider } from "@/actions/orders";
+import { cancelRestaurantOrder, assignReadyOrderToRider, assignRider } from "@/actions/orders";
 import { changeRestaurantStaffRole, toggleRestaurantStaffActive } from "@/actions/staff";
+import { useToast } from "@/components/toast-provider";
 
 export function OrderMoreMenu({
   restaurantId,
   restaurantOrderId,
+  onOpenChange,
 }: {
   restaurantId: string;
   restaurantOrderId: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const toast = useToast();
+
+  function changeOpen(next: boolean) {
+    setOpen(next);
+    onOpenChange?.(next);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) changeOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  function cancel() {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("restaurantOrderId", restaurantOrderId);
+    changeOpen(false);
+    toast({ title: "Cancelling order…", tone: "info" });
+    startTransition(async () => {
+      try {
+        await cancelRestaurantOrder(formData);
+        toast({ title: "Order cancelled", tone: "success" });
+        router.refresh();
+      } catch (error) {
+        toast({ title: "Couldn’t cancel order", description: error instanceof Error ? error.message : "Please try again.", tone: "error" });
+      }
+    });
+  }
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button type="button" onClick={() => changeOpen(!open)} disabled={pending} className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA] disabled:opacity-50" aria-label="Order options">
+        {pending ? <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={2.3} /> : <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-[90] w-[176px] rounded-[9px] border border-[#D9D9D9] bg-white p-1.5 shadow-xl">
+          <button type="button" onClick={cancel} className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-red-600 hover:bg-red-50">
+            <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2.3} />
+            Cancel order
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export type OrderRider = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  deliveringOrderNumber: string | null;
+};
+
+export function SendToRiderButton({
+  restaurantId,
+  restaurantOrderId,
+  riders,
+}: {
+  restaurantId: string;
+  restaurantOrderId: string;
+  riders: OrderRider[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [pendingRiderId, setPendingRiderId] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const toast = useToast();
+  const available = riders.filter((rider) => rider.isActive && !rider.deliveringOrderNumber);
+  const delivering = riders.filter((rider) => rider.isActive && rider.deliveringOrderNumber);
+
+  function assign(rider: OrderRider) {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("restaurantOrderId", restaurantOrderId);
+    formData.set("riderId", rider.id);
+    setPendingRiderId(rider.id);
+    setOpen(false);
+    toast({ title: `Sending to ${rider.name}…`, tone: "info" });
+    startTransition(async () => {
+      try {
+        await assignReadyOrderToRider(formData);
+        toast({ title: "Rider assigned", description: `${rider.name} is now handling this delivery.`, tone: "success" });
+        router.refresh();
+      } catch (error) {
+        toast({ title: "Couldn’t assign rider", description: error instanceof Error ? error.message : "Please try another rider.", tone: "error" });
+      } finally {
+        setPendingRiderId(null);
+      }
+    });
+  }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA]"
-        aria-label="Order options"
-      >
-        <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
+      <button type="button" onClick={() => setOpen(true)} disabled={pending} className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white disabled:opacity-50">
+        {pending ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2.3} /> : <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />}
+        {pending ? "Assigning…" : "Send to Rider"}
       </button>
-
       {open ? (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/35 p-4">
-          <div className="w-[min(420px,92vw)] rounded-[12px] border border-[#D5D5D5] bg-white p-5 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-red-50 text-red-600">
-                <AlertTriangle className="h-5 w-5" strokeWidth={2.3} />
-              </span>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close">
-                <X className="h-4 w-4" strokeWidth={2.3} />
-              </button>
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/25 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+          <div className="w-[min(430px,92vw)] max-h-[78vh] overflow-y-auto rounded-[12px] border border-[#D5D5D5] bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-[14px] font-semibold tracking-[-0.02em]">Choose a rider</h3>
+                <p className="mt-1 text-[10px] text-[#808080]">Available riders are shown first.</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close"><X className="h-4 w-4" strokeWidth={2.3} /></button>
             </div>
-            <h3 className="mt-4 text-[14px] font-semibold tracking-[-0.02em]">Cancel this order?</h3>
-            <p className="mt-2 text-[11px] leading-[1.5] text-[#777777]">
-              This changes the restaurant order to Cancelled. Orders already sent out for delivery cannot be cancelled here.
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="h-9 rounded-[8px] border border-[#D8D8D8] text-[11px] font-semibold">
-                Keep Order
-              </button>
-              <form action={cancelRestaurantOrder}>
-                <input type="hidden" name="restaurantId" value={restaurantId} />
-                <input type="hidden" name="restaurantOrderId" value={restaurantOrderId} />
-                <button className="h-9 w-full rounded-[8px] bg-red-600 text-[11px] font-semibold text-white">
-                  Cancel Order
-                </button>
-              </form>
+            <div className="mt-5">
+              <p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.06em] text-[#888]">Available · {available.length}</p>
+              <div className="divide-y divide-[#EAEAEA]">
+                {available.length ? available.map((rider) => (
+                  <button key={rider.id} type="button" onClick={() => assign(rider)} disabled={Boolean(pendingRiderId)} className="flex w-full items-center gap-3 py-3 text-left disabled:opacity-40">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-[#F0F0F0]"><Bike className="h-4 w-4" strokeWidth={2.3} /></span>
+                    <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-semibold">{rider.name}</span><span className="mt-1 block text-[9px] font-medium text-green-600">Available to deliver</span></span>
+                    <span className="rounded-full bg-black px-3 py-1.5 text-[9px] font-semibold text-white">Choose</span>
+                  </button>
+                )) : <p className="py-3 text-[10px] text-[#888]">No riders are available right now.</p>}
+              </div>
+            </div>
+            <div className="mt-5 border-t border-[#EAEAEA] pt-4">
+              <p className="mb-2 text-[9px] font-semibold uppercase tracking-[0.06em] text-[#888]">Out delivering · {delivering.length}</p>
+              <div className="divide-y divide-[#EAEAEA]">
+                {delivering.length ? delivering.map((rider) => (
+                  <div key={rider.id} className="flex items-center gap-3 py-3 opacity-55">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-[#F0F0F0]"><Bike className="h-4 w-4" strokeWidth={2.3} /></span>
+                    <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-semibold">{rider.name}</span><span className="mt-1 block truncate text-[9px] text-[#777]">Delivering #{rider.deliveringOrderNumber}</span></span>
+                  </div>
+                )) : <p className="py-3 text-[10px] text-[#888]">No riders are currently out delivering.</p>}
+              </div>
             </div>
           </div>
         </div>
