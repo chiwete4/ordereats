@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Bike, MapPin, ShoppingBag } from "lucide-react";
 
 import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
+import { markRiderDeliveryDelivered } from "@/actions/rider";
 import { RiderLocationTracker } from "@/components/rider-location-tracker";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -111,6 +112,13 @@ export default async function RiderPage() {
             </section>
 
             <RiderLocationTracker deliveryId={delivery.id} />
+
+            <form action={markRiderDeliveryDelivered}>
+              <input type="hidden" name="deliveryId" value={delivery.id} />
+              <button className="h-11 w-full rounded-[10px] bg-black text-[12px] font-semibold text-white">
+                Mark Delivery Complete
+              </button>
+            </form>
           </div>
         )}
       </div>
