@@ -7,9 +7,7 @@ import {
   ShoppingBag,
   Star,
   Store,
-  Trash2,
   UserRound,
-  Utensils,
 } from "lucide-react";
 
 import {
@@ -19,7 +17,6 @@ import {
   markOrderReady,
   sendOrderForDelivery,
 } from "@/actions/orders";
-import { deleteMenuItem } from "@/actions/menu";
 import { addRestaurantStaff } from "@/actions/staff";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
 import { FeaturedMenuManager } from "@/components/featured-menu-manager";
@@ -317,106 +314,6 @@ function ActiveOrdersPanel({
             );
           })
         )}
-      </div>
-    </section>
-  );
-}
-
-function FeaturedMenuPanel({
-  restaurantId,
-  restaurant,
-  items,
-}: {
-  restaurantId: string;
-  restaurant: RestaurantForDashboard;
-  items: Array<any>;
-}) {
-  return (
-    <section className="flex min-h-[682px] w-full flex-col rounded-[12px] bg-black px-6 py-6 text-white sm:px-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="grid h-[56px] w-[56px] place-items-center overflow-hidden rounded-[8px] bg-white/10">
-            {restaurant.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={restaurant.imageUrl} alt={restaurant.name} className="h-full w-full object-cover" />
-            ) : (
-              <Store className="h-5 w-5" strokeWidth={2.3} />
-            )}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <h2 className="text-[22px] font-medium leading-none tracking-[-0.04em]">
-              {restaurant.name}
-            </h2>
-            {restaurant.isVerified ? (
-              <span className="text-[10px] font-medium text-[#B0B0B0]">● Verified by Paperbag</span>
-            ) : null}
-            {restaurant.address ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#B0B0B0]">
-                <MapPin className="h-3 w-3" strokeWidth={2.3} />
-                {restaurant.address}
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <a href="#restaurant-verification" className="mt-[62px] shrink-0 text-[11px] font-semibold underline underline-offset-2">
-          Edit Restaurant
-        </a>
-      </div>
-
-      <p className="mt-5 text-[11px] font-medium text-[#8E8E8E]">Featured Combos</p>
-
-      <div className="mt-3 flex-1 divide-y divide-white/10">
-        {items.length === 0 ? (
-          <p className="py-8 text-[12px] font-medium text-[#8E8E8E]">
-            Add menu items to build your featured menu.
-          </p>
-        ) : (
-          items.slice(0, 3).map((item, index) => (
-            <article key={item.id} className="py-5 first:pt-0">
-              <div className="flex items-start gap-3">
-                <span className="pt-2 text-[12px] font-semibold">#{index + 1}</span>
-                <MenuThumb src={item.imageUrl} alt={item.name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-medium leading-none">{item.name}</p>
-                  <p className="mt-2 text-[10px] font-medium text-[#9A9A9A]">
-                    {item.isAvailable ? "Available" : "Unavailable"} · {money(item.price)} total
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" className="rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-medium">
-                    Edit
-                  </button>
-                  <form action={deleteMenuItem}>
-                    <input type="hidden" name="restaurantId" value={restaurantId} />
-                    <input type="hidden" name="menuItemId" value={item.id} />
-                    <button
-                      aria-label={`Delete ${item.name}`}
-                      className="grid h-7 w-7 place-items-center rounded-full bg-[#7F0000] text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
-                    </button>
-                  </form>
-                </div>
-              </div>
-              {index === 0 ? (
-                <div className="ml-[68px] mt-4 space-y-2 text-[10px] text-[#B0B0B0]">
-                  <p>Ready within 1-5 minutes</p>
-                  <p>Delivery in &lt;45 seconds</p>
-                  <p className="text-[9px] text-[#737373]">Ensure these claims are accurate.</p>
-                </div>
-              ) : null}
-            </article>
-          ))
-        )}
-      </div>
-
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        <button type="button" className="h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black">
-          Edit Full Menu
-        </button>
-        <button type="button" className="h-9 rounded-[8px] border border-white/20 text-[11px] font-semibold text-white">
-          Change Featured Combos
-        </button>
       </div>
     </section>
   );
