@@ -20,7 +20,10 @@ function failureMessage(data: PaystackWebhook["data"]) {
   if (!data) return null;
   if (typeof data.reason === "string" && data.reason) return data.reason;
   if (typeof data.failures === "string" && data.failures) return data.failures;
-  if (data.failures) return JSON.stringify(data.failures).slice(0, 1000);
+  if (data.failures) {
+    const serialized = JSON.stringify(data.failures);
+    return serialized ? serialized.slice(0, 1000) : null;
+  }
   return null;
 }
 
