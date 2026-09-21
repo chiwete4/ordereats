@@ -159,7 +159,6 @@ export default async function RestaurantDashboardPage({
 
         <RestaurantDashboardGrid
           restaurantId={restaurantId}
-          currentUserId={user.id}
           restaurant={{
             name: membership.restaurant.name,
             description: membership.restaurant.description,
