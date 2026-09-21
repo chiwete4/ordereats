@@ -235,6 +235,65 @@ function ComboDetails({ combo }: { combo: FeaturedComboData }) {
   );
 }
 
+function ComboEditorBreakdown({ combo }: { combo: FeaturedComboData }) {
+  const branchHeight = Math.max(18, (combo.items.length - 1) * 38 + 19);
+
+  return (
+    <>
+      <div className="relative ml-[76px] mt-6 pl-[62px]">
+        {combo.items.length ? (
+          <span
+            className="absolute left-0 top-0 w-[1.5px] rounded-full bg-[#777777]"
+            style={{ height: branchHeight }}
+          />
+        ) : null}
+
+        {combo.items.map((entry) => (
+          <div
+            key={entry.id}
+            className="relative grid min-h-[38px] grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-x-3 text-[12px]"
+          >
+            <span className="absolute -left-[62px] top-1/2 h-[1.5px] w-[44px] -translate-y-1/2 rounded-full bg-[#777777]" />
+            <span className="text-[#888888]">x{entry.quantity}</span>
+            <span className="truncate font-medium text-white">
+              {entry.menuItem.name}
+            </span>
+            <span className="shrink-0 text-[#888888]">
+              {money(entry.menuItem.price * entry.quantity)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="ml-[76px] mt-7 space-y-2.5 text-[12px] text-[#888888]">
+        <p className="flex items-center gap-2">
+          <UtensilsCrossed className="h-4 w-4 shrink-0" strokeWidth={2.3} />
+          <span>
+            Ready within{" "}
+            <span className="font-semibold text-white">
+              {combo.readyMin}-{combo.readyMax}
+            </span>{" "}
+            minutes
+          </span>
+        </p>
+        <p className="flex items-center gap-2">
+          <Bike className="h-4 w-4 shrink-0" strokeWidth={2.3} />
+          <span>
+            Delivery in{" "}
+            <span className="font-semibold text-white">
+              &lt;{combo.deliverySeconds}
+            </span>{" "}
+            seconds
+          </span>
+        </p>
+        <p className="pl-6 text-[10px] leading-none text-[#777777]">
+          Ensure these claims are accurate.
+        </p>
+      </div>
+    </>
+  );
+}
+
 function ModalFrame({
   children,
   onClose,
@@ -717,21 +776,43 @@ export function FeaturedMenuManager({
               {manager === "combos" ? (
                 selectedCombo ? (
                   <>
-                    <p className="text-[12px] font-medium text-[#808080]">Edit Combo</p>
-                    <div className="mt-5 flex items-start gap-3">
-                      <span className="pt-2 text-[12px] font-semibold">#{selectedComboIndex}</span>
-                      <StackedThumb combo={selectedCombo} />
-                      <div className="min-w-0 flex-1 pt-1">
-                        <p className="text-[12px] font-medium">{selectedCombo.name}</p>
-                        <p className="mt-1 flex items-center gap-1.5 text-[10px] text-[#858585]">
-                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
+                    <p className="text-[14px] font-medium leading-none text-[#7A7A7A]">
+                      Edit Combo
+                    </p>
+
+                    <div className="mt-7 grid grid-cols-[34px_56px_minmax(0,1fr)_42px] items-start gap-x-3">
+                      <span className="pt-4 text-[14px] font-semibold leading-none text-white">
+                        #{selectedComboIndex}
+                      </span>
+
+                      <div className="relative h-14 w-[68px]">
+                        <span className="absolute left-0 top-1.5 h-12 w-12 rounded-[9px] border border-white/20 bg-[#D8D8D8]" />
+                        <span className="absolute left-2 top-1 h-12 w-12 rounded-[9px] border border-white/30 bg-[#EEEEEE]" />
+                        <div className="absolute right-0 top-0">
+                          {selectedCombo.items[0]?.menuItem ? (
+                            <MenuThumb item={selectedCombo.items[0].menuItem} />
+                          ) : (
+                            <span className="grid h-11 w-11 place-items-center rounded-[8px] bg-[#2A2A2A]">
+                              <Utensils className="h-4 w-4" strokeWidth={2.3} />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 pt-1">
+                        <p className="truncate text-[16px] font-medium leading-[1.05] tracking-[-0.025em] text-white">
+                          {selectedCombo.name}
+                        </p>
+                        <p className="mt-2 flex items-center gap-2 text-[12px] leading-none text-[#858585]">
+                          <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={2.3} />
                           <span>
                             {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
                           </span>
-                          <span>•</span>
+                          <span className="text-[#666666]">•</span>
                           <span>{money(comboTotal(selectedCombo))} total</span>
                         </p>
                       </div>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -741,34 +822,36 @@ export function FeaturedMenuManager({
                             name: selectedCombo.name,
                           })
                         }
-                        className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
+                        aria-label={`Delete ${selectedCombo.name}`}
+                        className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[#4A0000] text-red-500"
                       >
-                        <Trash2 className="h-4 w-4" strokeWidth={2.3} />
+                        <Trash2 className="h-[18px] w-[18px]" strokeWidth={2.3} />
                       </button>
                     </div>
 
-                    <ComboDetails combo={selectedCombo} />
+                    <ComboEditorBreakdown combo={selectedCombo} />
 
-                    <div className="mt-5 space-y-2">
+                    <div className="ml-[76px] mt-5 space-y-2.5">
                       <button
                         type="button"
                         onClick={() => openComboBuilder(selectedCombo)}
-                        className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-white text-[12px] font-semibold text-black"
                       >
-                        <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                        <Plus className="h-4 w-4" strokeWidth={2.3} />
                         Add Items
                       </button>
+
                       <button
                         type="button"
                         onClick={() => setNested("times")}
-                        className="h-9 w-full rounded-[8px] border border-white/20 text-[11px] font-semibold"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border-2 border-[#242424] text-[12px] font-semibold text-white"
                       >
-                        <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
+                        <Pencil className="h-4 w-4 fill-current" strokeWidth={2.3} />
                         Adjust Times
                       </button>
                     </div>
 
-                    <div className="mt-6 border-t border-white/10 pt-5">
+                    <div className="mt-8 border-t border-white/10 pt-5">
                       <p className="text-[11px] font-medium text-[#858585]">Past Orders</p>
                       <div className="mt-3 divide-y divide-white/10">
                         {pastOrders.slice(0, 7).map((order) => (
