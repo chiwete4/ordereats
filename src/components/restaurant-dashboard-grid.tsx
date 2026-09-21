@@ -365,10 +365,12 @@ function RidersPanel({
 function PastOrdersPanel({
   restaurantId,
   orders,
+  count,
   explorerItems,
 }: {
   restaurantId: string;
   orders: Array<any>;
+  count: number;
   explorerItems: DashboardExplorerItem[];
 }) {
   return (
@@ -379,7 +381,7 @@ function PastOrdersPanel({
         expand={
           <DashboardSectionExplorer
             title="All Past Orders"
-            count={orders.length}
+            count={count}
             items={explorerItems}
             pagination={{ restaurantId, kind: "past" }}
           />
@@ -481,6 +483,9 @@ export async function RestaurantDashboardGrid({
     featuredCombos,
     categories,
     totalOrders,
+    pendingOrderCount,
+    activeOrderCount,
+    pastOrderCount,
     customerRows,
     weeklyRows,
     allRevenueRows,
@@ -589,6 +594,21 @@ export async function RestaurantDashboardGrid({
       },
     }),
     prisma.restaurantOrder.count({ where: { restaurantId } }),
+    prisma.restaurantOrder.count({
+      where: { restaurantId, status: "CONFIRMED" },
+    }),
+    prisma.restaurantOrder.count({
+      where: {
+        restaurantId,
+        status: { in: ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"] },
+      },
+    }),
+    prisma.restaurantOrder.count({
+      where: {
+        restaurantId,
+        status: { in: ["DELIVERED", "PICKED_UP", "CANCELLED"] },
+      },
+    }),
     prisma.restaurantOrder.findMany({
       where: { restaurantId },
       select: {
@@ -980,6 +1000,7 @@ export async function RestaurantDashboardGrid({
         <PastOrdersPanel
           restaurantId={restaurantId}
           orders={pastOrders}
+          count={pastOrderCount}
           explorerItems={pastExplorerItems}
         />
       </div>
@@ -989,6 +1010,8 @@ export async function RestaurantDashboardGrid({
           restaurantId={restaurantId}
           pendingOrders={pendingOrderData}
           activeOrders={activeOrderData}
+          pendingCount={pendingOrderCount}
+          activeCount={activeOrderCount}
           pendingExplorerItems={pendingExplorerItems}
           activeExplorerItems={activeExplorerItems}
         />
