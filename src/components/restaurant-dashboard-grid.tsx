@@ -9,9 +9,7 @@ import {
   Heart,
   Hourglass,
   MapPin,
-  MoreHorizontal,
   PackageCheck,
-  Plus,
   Radio,
   Search,
   Send,
@@ -19,11 +17,11 @@ import {
   Star,
   Store,
   UserRound,
+  Utensils,
 } from "lucide-react";
 
 import {
   acknowledgeOrder,
-  assignRider,
   markOrderPickedUp,
   markOrderReady,
   sendOrderForDelivery,
@@ -162,19 +160,23 @@ function HiddenOrderFields({
 function PendingOrdersPanel({
   restaurantId,
   orders,
+  explorerItems,
 }: {
   restaurantId: string;
   orders: Array<any>;
+  explorerItems: DashboardExplorerItem[];
 }) {
   return (
     <section className="min-h-[422px] w-full bg-white">
-      <DashboardHeading title="Pending Orders" count={orders.length} />
+      <DashboardHeading
+        title="Pending Orders"
+        count={orders.length}
+        expand={<DashboardSectionExplorer title="Pending Orders" count={orders.length} items={explorerItems} />}
+      />
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
         {orders.length === 0 ? (
-          <p className="py-8 text-[12px] font-medium text-[#808080]">
-            No pending orders right now.
-          </p>
+          <p className="py-8 text-[12px] font-medium text-[#808080]">No pending orders right now.</p>
         ) : (
           orders.slice(0, 3).map((row, index) => {
             const image = row.items[0]?.menuItem?.imageUrl;
@@ -230,19 +232,23 @@ function PendingOrdersPanel({
 function ActiveOrdersPanel({
   restaurantId,
   orders,
+  explorerItems,
 }: {
   restaurantId: string;
   orders: Array<any>;
+  explorerItems: DashboardExplorerItem[];
 }) {
   return (
     <section className="min-h-[527px] w-full bg-white">
-      <DashboardHeading title="Active Orders" count={orders.length} />
+      <DashboardHeading
+        title="Active Orders"
+        count={orders.length}
+        expand={<DashboardSectionExplorer title="Active Orders" count={orders.length} items={explorerItems} />}
+      />
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
         {orders.length === 0 ? (
-          <p className="py-8 text-[12px] font-medium text-[#808080]">
-            No active orders right now.
-          </p>
+          <p className="py-8 text-[12px] font-medium text-[#808080]">No active orders right now.</p>
         ) : (
           orders.slice(0, 4).map((row, index) => {
             const image = row.items[0]?.menuItem?.imageUrl;
@@ -260,20 +266,11 @@ function ActiveOrdersPanel({
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-[#808080]">
                     {row.status === "PREPARING" ? (
-                      <>
-                        Preparing
-                        <Clock3 className="h-3 w-3" strokeWidth={2.3} />
-                      </>
+                      <>Preparing <Clock3 className="h-3 w-3" strokeWidth={2.3} /></>
                     ) : row.status === "READY_FOR_PICKUP" ? (
-                      <>
-                        Not Sent
-                        <Hourglass className="h-3 w-3" strokeWidth={2.3} />
-                      </>
+                      <>Not Sent <Hourglass className="h-3 w-3" strokeWidth={2.3} /></>
                     ) : (
-                      <>
-                        Sent out
-                        <Send className="h-3 w-3" strokeWidth={2.3} />
-                      </>
+                      <>Sent out <Send className="h-3 w-3" strokeWidth={2.3} /></>
                     )}
                   </span>
                 </div>
@@ -285,12 +282,9 @@ function ActiveOrdersPanel({
                         {row.items.slice(0, 3).map((item: any) => (
                           <div key={item.id} className="flex items-center justify-between gap-3 text-[10px]">
                             <span className="min-w-0 truncate font-medium text-black">
-                              <span className="mr-2 text-[#808080]">x{item.quantity}</span>
-                              {item.name}
+                              <span className="mr-2 text-[#808080]">x{item.quantity}</span>{item.name}
                             </span>
-                            <span className="shrink-0 font-medium text-[#808080]">
-                              {money(Number(item.unitPrice) * item.quantity)}
-                            </span>
+                            <span className="shrink-0 font-medium text-[#808080]">{money(Number(item.unitPrice) * item.quantity)}</span>
                           </div>
                         ))}
                       </div>
@@ -302,37 +296,28 @@ function ActiveOrdersPanel({
                       <form action={markOrderReady} className="flex-1">
                         <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
                         <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                          <Check className="h-3.5 w-3.5" strokeWidth={2.3} />
-                          Mark as Ready
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.3} /> Mark as Ready
                         </button>
                       </form>
-                      <button type="button" className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA]">
-                        <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
-                      </button>
+                      <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={row.id} />
                     </div>
-                    <p className="mt-2 text-[9px] font-medium text-[#A0A0A0]">
-                      Customer will be told their order is ready.
-                    </p>
+                    <p className="mt-2 text-[9px] font-medium text-[#A0A0A0]">Customer will be told their order is ready.</p>
                   </div>
                 ) : row.status === "READY_FOR_PICKUP" ? (
                   <div className="mt-3 flex gap-2">
                     <form action={sendOrderForDelivery} className="flex-1">
                       <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
                       <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-black text-[10px] font-semibold text-white">
-                        <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
-                        Send to Rider
+                        <Bike className="h-3.5 w-3.5" strokeWidth={2.3} /> Send to Rider
                       </button>
                     </form>
                     <form action={markOrderPickedUp} className="flex-1">
                       <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={row.id} />
                       <button className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black">
-                        <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} />
-                        Customer Pick-up
+                        <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} /> Customer Pick-up
                       </button>
                     </form>
-                    <button type="button" className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA]">
-                      <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
-                    </button>
+                    <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={row.id} />
                   </div>
                 ) : null}
               </article>
