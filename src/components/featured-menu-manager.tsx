@@ -396,6 +396,14 @@ export function FeaturedMenuManager({
     ? Math.max(1, combos.findIndex((combo) => combo.id === selectedCombo.id) + 1)
     : 0;
 
+  function chooseCategory(categoryId: string | null) {
+    setSelectedCategoryId(categoryId);
+    const firstMatch = categoryId
+      ? menuItems.find((item) => item.categoryId === categoryId)
+      : menuItems[0];
+    setSelectedMenuId(firstMatch?.id ?? "");
+  }
+
   const filteredMenu = useMemo(() => {
     const q = query.trim().toLowerCase();
     return menuItems.filter((item) => {
@@ -723,7 +731,7 @@ export function FeaturedMenuManager({
                       <div className="flex w-max gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setSelectedCategoryId(null)}
+                          onClick={() => chooseCategory(null)}
                           className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[9px] font-semibold ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
                         >
                           All
@@ -732,7 +740,7 @@ export function FeaturedMenuManager({
                           <button
                             key={category.id}
                             type="button"
-                            onClick={() => setSelectedCategoryId(category.id)}
+                            onClick={() => chooseCategory(category.id)}
                             className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[9px] font-semibold ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
                           >
                             {category.name}
