@@ -704,6 +704,22 @@ export async function RestaurantDashboardGrid({
       }
     : null;
 
+  const orderRiders = riders.map((rider) => {
+    const activeDelivery = rider.user.assignedDeliveries?.[0];
+    const deliveryOrder = activeDelivery
+      ? orders.find((row) => row.delivery?.id === activeDelivery.id)
+      : null;
+
+    return {
+      id: rider.userId,
+      name: personName(rider.user),
+      isActive: rider.isActive,
+      deliveringOrderNumber: activeDelivery
+        ? deliveryOrder?.order.orderNumber ?? "Active order"
+        : null,
+    };
+  });
+
   const assignableOrders = activeOrders
     .filter((row) => row.status === "OUT_FOR_DELIVERY" && !row.delivery?.riderId)
     .map((row) => ({
@@ -1019,6 +1035,7 @@ export async function RestaurantDashboardGrid({
           activeCount={activeOrderCount}
           pendingExplorerItems={pendingExplorerItems}
           activeExplorerItems={activeExplorerItems}
+          riders={orderRiders}
         />
 
         <StaffPanel restaurantId={restaurantId} staff={staff} explorerItems={staffExplorerItems} />
