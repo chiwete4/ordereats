@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import {
-  ArrowRight,
   Ban,
   Bike,
   Check,
@@ -658,110 +657,193 @@ export async function RestaurantDashboardGrid({
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 6);
 
-  const [orders, staff, menuItems, featuredCombos, totalOrders, customerRows, revenueRows, weeklyRows] =
-    await Promise.all([
-      prisma.restaurantOrder.findMany({
-        where: { restaurantId },
-        orderBy: { createdAt: "desc" },
-        take: 40,
-        include: {
-          order: {
-            select: {
-              orderNumber: true,
-              customerId: true,
-            },
-          },
-          items: {
-            include: {
-              menuItem: {
-                select: {
-                  imageUrl: true,
-                },
-              },
-            },
-          },
-          delivery: {
-            include: {
-              rider: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
-            },
+  const [
+    orders,
+    staff,
+    menuItems,
+    featuredCombos,
+    categories,
+    totalOrders,
+    customerRows,
+    weeklyRows,
+    allRevenueRows,
+    reviews,
+    complaints,
+  ] = await Promise.all([
+    prisma.restaurantOrder.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 60,
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            customerId: true,
+            payment: { select: { status: true } },
           },
         },
-      }),
-      prisma.restaurantStaff.findMany({
-        where: { restaurantId },
-        orderBy: { createdAt: "asc" },
-        include: {
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              assignedDeliveries: {
-                where: {
-                  status: {
-                    notIn: ["DELIVERED", "CANCELLED"],
-                  },
-                },
-                select: {
-                  id: true,
-                  status: true,
-                },
-                take: 1,
+        items: {
+          include: {
+            menuItem: {
+              select: {
+                imageUrl: true,
               },
             },
           },
         },
-      }),
-      prisma.menuItem.findMany({
-        where: { restaurantId, isArchived: false },
-        orderBy: { createdAt: "asc" },
-        take: 50,
-      }),
-      prisma.featuredCombo.findMany({
-        where: { restaurantId },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        include: {
-          items: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              menuItem: true,
+        delivery: {
+          include: {
+            rider: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
           },
         },
-      }),
-      prisma.restaurantOrder.count({ where: { restaurantId } }),
-      prisma.restaurantOrder.findMany({
-        where: { restaurantId },
-        select: {
-          order: {
-            select: {
-              customerId: true,
+      },
+    }),
+    prisma.restaurantStaff.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            assignedDeliveries: {
+              where: {
+                status: {
+                  notIn: ["DELIVERED", "CANCELLED"],
+                },
+              },
+              select: {
+                id: true,
+                status: true,
+              },
+              take: 1,
             },
           },
         },
-      }),
-      prisma.restaurantOrder.findMany({
-        where: {
-          restaurantId,
-          createdAt: { gte: todayStart },
-          status: { not: "CANCELLED" },
+      },
+    }),
+    prisma.menuItem.findMany({
+      where: { restaurantId, isArchived: false },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-        select: { subtotal: true },
-      }),
-      prisma.restaurantOrder.findMany({
-        where: {
-          restaurantId,
-          createdAt: { gte: weekStart },
+      },
+    }),
+    prisma.featuredCombo.findMany({
+      where: { restaurantId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        items: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            menuItem: true,
+          },
         },
-        select: { createdAt: true },
-      }),
-    ]);
+        reviews: {
+          select: { rating: true },
+        },
+      },
+    }),
+    prisma.menuCategory.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.restaurantOrder.count({ where: { restaurantId } }),
+    prisma.restaurantOrder.findMany({
+      where: { restaurantId },
+      select: {
+        order: {
+          select: {
+            customerId: true,
+          },
+        },
+      },
+    }),
+    prisma.restaurantOrder.findMany({
+      where: {
+        restaurantId,
+        createdAt: { gte: weekStart },
+        status: { not: "CANCELLED" },
+      },
+      select: {
+        createdAt: true,
+        subtotal: true,
+        order: {
+          select: {
+            customerId: true,
+            payment: { select: { status: true } },
+          },
+        },
+      },
+    }),
+    prisma.restaurantOrder.findMany({
+      where: {
+        restaurantId,
+        status: { not: "CANCELLED" },
+      },
+      select: {
+        subtotal: true,
+        order: {
+          select: {
+            payment: { select: { status: true } },
+          },
+        },
+      },
+    }),
+    prisma.review.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        menuItem: { select: { name: true } },
+        featuredCombo: { select: { name: true } },
+        restaurantOrder: {
+          select: {
+            order: { select: { orderNumber: true } },
+          },
+        },
+      },
+    }),
+    prisma.customerComplaint.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        restaurantOrder: {
+          select: {
+            order: { select: { orderNumber: true } },
+          },
+        },
+      },
+    }),
+  ]);
 
   const pendingOrders = orders.filter((row) => row.status === "CONFIRMED");
   const activeOrders = orders.filter((row) =>
@@ -771,15 +853,26 @@ export async function RestaurantDashboardGrid({
     ["DELIVERED", "PICKED_UP", "CANCELLED"].includes(row.status)
   );
   const riders = staff.filter((member) => member.role === "RIDER");
-  const assignableOrder =
-    activeOrders.find((row) => row.status === "OUT_FOR_DELIVERY" && !row.delivery?.riderId) ?? null;
   const latestDelivery =
     orders.find((row) => row.delivery?.lastLocationAt)?.delivery ??
     orders.find((row) => row.delivery)?.delivery ??
     null;
 
-  const revenueToday = revenueRows.reduce((sum, row) => sum + Number(row.subtotal), 0);
+  const assignableOrders = activeOrders
+    .filter((row) => row.status === "OUT_FOR_DELIVERY" && !row.delivery?.riderId)
+    .map((row) => ({
+      id: row.id,
+      orderNumber: row.order.orderNumber,
+      total: money(row.subtotal),
+    }));
+
   const totalCustomers = new Set(customerRows.map((row) => row.order.customerId)).size;
+  const successfulAllRevenue = allRevenueRows.filter((row) => row.order.payment?.status === "SUCCESS");
+  const allTimeRevenue = successfulAllRevenue.reduce((sum, row) => sum + Number(row.subtotal), 0);
+
+  const revenueToday = weeklyRows
+    .filter((row) => row.createdAt >= todayStart && row.order.payment?.status === "SUCCESS")
+    .reduce((sum, row) => sum + Number(row.subtotal), 0);
 
   const menuItemData = menuItems.map((item) => ({
     id: item.id,
@@ -790,28 +883,46 @@ export async function RestaurantDashboardGrid({
     readyMin: item.readyMin,
     readyMax: item.readyMax,
     deliverySeconds: item.deliverySeconds,
+    categoryId: item.categoryId,
+    categoryName: item.category.name,
   }));
 
-  const comboData = featuredCombos.map((combo) => ({
-    id: combo.id,
-    name: combo.name,
-    readyMin: combo.readyMin,
-    readyMax: combo.readyMax,
-    deliverySeconds: combo.deliverySeconds,
-    items: combo.items.map((entry) => ({
-      id: entry.id,
-      quantity: entry.quantity,
-      menuItem: {
-        id: entry.menuItem.id,
-        name: entry.menuItem.name,
-        price: Number(entry.menuItem.price),
-        imageUrl: entry.menuItem.imageUrl,
-        isAvailable: entry.menuItem.isAvailable,
-        readyMin: entry.menuItem.readyMin,
-        readyMax: entry.menuItem.readyMax,
-        deliverySeconds: entry.menuItem.deliverySeconds,
-      },
-    })),
+  const comboData = featuredCombos.map((combo) => {
+    const ratingAverage = combo.reviews.length
+      ? combo.reviews.reduce((sum, review) => sum + review.rating, 0) / combo.reviews.length
+      : null;
+
+    return {
+      id: combo.id,
+      name: combo.name,
+      readyMin: combo.readyMin,
+      readyMax: combo.readyMax,
+      deliverySeconds: combo.deliverySeconds,
+      ratingAverage,
+      ratingCount: combo.reviews.length,
+      items: combo.items.map((entry) => ({
+        id: entry.id,
+        quantity: entry.quantity,
+        menuItem: {
+          id: entry.menuItem.id,
+          name: entry.menuItem.name,
+          price: Number(entry.menuItem.price),
+          imageUrl: entry.menuItem.imageUrl,
+          isAvailable: entry.menuItem.isAvailable,
+          readyMin: entry.menuItem.readyMin,
+          readyMax: entry.menuItem.readyMax,
+          deliverySeconds: entry.menuItem.deliverySeconds,
+          categoryId: entry.menuItem.categoryId,
+          categoryName: categories.find((category) => category.id === entry.menuItem.categoryId)?.name ?? "Menu",
+        },
+      })),
+    };
+  });
+
+  const categoryData = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    itemCount: menuItems.filter((item) => item.categoryId === category.id).length,
   }));
 
   const pastOrderData = pastOrders.slice(0, 12).map((row) => ({
@@ -821,20 +932,158 @@ export async function RestaurantDashboardGrid({
     createdAt: row.createdAt.toISOString(),
   }));
 
+  function orderExplorerItems(rows: Array<any>): DashboardExplorerItem[] {
+    return rows.map((row) => {
+      const itemCount = row.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+      const imageUrl = row.items[0]?.menuItem?.imageUrl ?? null;
+      const tone =
+        row.status === "DELIVERED"
+          ? "green"
+          : row.status === "CANCELLED"
+            ? "red"
+            : row.status === "READY_FOR_PICKUP"
+              ? "amber"
+              : "neutral";
+
+      return {
+        id: row.id,
+        title: `#${row.order.orderNumber}`,
+        subtitle: `${itemCount} items · ${money(row.subtotal)} total`,
+        status: row.status.replaceAll("_", " "),
+        statusTone: tone,
+        imageUrl,
+        details: [
+          ...row.items.map((item: any) => ({
+            label: `x${item.quantity} ${item.name}`,
+            value: money(Number(item.unitPrice) * item.quantity),
+          })),
+          { label: "Placed", value: row.createdAt.toLocaleString() },
+          { label: "Payment", value: row.order.payment?.status ?? "No payment record" },
+        ],
+      } satisfies DashboardExplorerItem;
+    });
+  }
+
+  const pendingExplorerItems = orderExplorerItems(pendingOrders);
+  const activeExplorerItems = orderExplorerItems(activeOrders);
+  const pastExplorerItems = orderExplorerItems(pastOrders);
+
+  const staffExplorerItems: DashboardExplorerItem[] = staff
+    .filter((member) => member.role !== "RIDER")
+    .map((member) => ({
+      id: member.id,
+      title: personName(member.user),
+      subtitle: member.user.email,
+      status: member.isActive ? "Active" : "Inactive",
+      statusTone: member.isActive ? "green" : "neutral",
+      details: [
+        { label: "Role", value: member.role },
+        { label: "Access", value: member.isActive ? "Active" : "Inactive" },
+        { label: "Email", value: member.user.email },
+      ],
+    }));
+
+  const riderExplorerItems: DashboardExplorerItem[] = riders.map((rider) => {
+    const delivering = rider.user.assignedDeliveries?.[0];
+    return {
+      id: rider.id,
+      title: personName(rider.user),
+      subtitle: rider.user.email,
+      status: delivering ? "Delivering" : rider.isActive ? "Available" : "Off duty",
+      statusTone: delivering ? "amber" : rider.isActive ? "green" : "neutral",
+      details: [
+        { label: "Role", value: "RIDER" },
+        { label: "Access", value: rider.isActive ? "Active" : "Inactive" },
+        { label: "Delivery", value: delivering ? "Currently delivering an order" : "No active delivery" },
+      ],
+    };
+  });
+
+  const mealReviews = reviews.filter((review) =>
+    ["MENU_ITEM", "FEATURED_COMBO"].includes(review.target)
+  );
+  const restaurantRatings = reviews.filter((review) => review.target === "RESTAURANT");
+  const restaurantRating = restaurantRatings.length
+    ? restaurantRatings.reduce((sum, review) => sum + review.rating, 0) / restaurantRatings.length
+    : null;
+  const complaintsOpen = complaints.filter((complaint) => complaint.status === "OPEN").length;
+  const mealUnread = mealReviews.filter((review) => !review.isRead).length;
+
+  const reviewExplorerItems: DashboardExplorerItem[] = [
+    ...complaints.map((complaint) => ({
+      id: `complaint-${complaint.id}`,
+      title: complaint.subject,
+      subtitle: `${personName(complaint.customer)}${complaint.restaurantOrder ? ` · #${complaint.restaurantOrder.order.orderNumber}` : ""}`,
+      status: complaint.status,
+      statusTone: complaint.status === "OPEN" ? "red" : "green",
+      body: complaint.body,
+      details: [
+        { label: "Type", value: "Customer complaint" },
+        { label: "Submitted", value: complaint.createdAt.toLocaleString() },
+      ],
+    })),
+    ...reviews.map((review) => ({
+      id: `review-${review.id}`,
+      title:
+        review.target === "RESTAURANT"
+          ? "Restaurant rating"
+          : review.target === "FEATURED_COMBO"
+            ? review.featuredCombo?.name ?? "Featured combo review"
+            : review.menuItem?.name ?? "Meal review",
+      subtitle: `${personName(review.customer)}${review.restaurantOrder ? ` · #${review.restaurantOrder.order.orderNumber}` : ""}`,
+      status: `${review.rating}/5`,
+      statusTone: "green",
+      body: review.body,
+      details: [
+        { label: "Rating", value: `${review.rating}/5` },
+        { label: "Type", value: review.target.replaceAll("_", " ") },
+        { label: "Submitted", value: review.createdAt.toLocaleString() },
+      ],
+    })),
+  ];
+
   const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
-  const weeklyCounts = Array.from({ length: 7 }, (_, index) => {
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+  const weeklyDays: PerformanceDay[] = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + index);
     const next = new Date(date);
     next.setDate(next.getDate() + 1);
-    const count = weeklyRows.filter(
-      (row) => row.createdAt >= date && row.createdAt < next
-    ).length;
+    const rows = weeklyRows.filter((row) => row.createdAt >= date && row.createdAt < next);
+    const paidRows = rows.filter((row) => row.order.payment?.status === "SUCCESS");
     return {
       label: dayFormatter.format(date).toUpperCase().slice(0, 3),
-      count,
+      dateLabel: dateFormatter.format(date),
+      count: rows.length,
+      revenue: paidRows.reduce((sum, row) => sum + Number(row.subtotal), 0),
+      customers: new Set(rows.map((row) => row.order.customerId)).size,
     };
   });
+
+  const performanceExplorerItems: DashboardExplorerItem[] = [
+    {
+      id: "all-time",
+      title: "All-time performance",
+      subtitle: "Since this restaurant joined Paperbag",
+      status: "Live totals",
+      statusTone: "neutral",
+      details: [
+        { label: "Revenue", value: money(allTimeRevenue) },
+        { label: "Orders", value: totalOrders.toLocaleString() },
+        { label: "Customers", value: totalCustomers.toLocaleString() },
+      ],
+    },
+    ...weeklyDays.map((day) => ({
+      id: day.dateLabel,
+      title: day.dateLabel,
+      subtitle: `${day.count} orders`,
+      details: [
+        { label: "Orders", value: day.count.toLocaleString() },
+        { label: "Paid revenue", value: money(day.revenue) },
+        { label: "Customers", value: day.customers.toLocaleString() },
+      ],
+    })),
+  ];
 
   return (
     <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
@@ -869,33 +1118,41 @@ export async function RestaurantDashboardGrid({
           menuItems={menuItemData}
           combos={comboData}
           pastOrders={pastOrderData}
+          categories={categoryData}
         />
 
         <LiveMapPanel restaurant={restaurant} latestDelivery={latestDelivery} />
 
-        <ReviewsPanel />
+        <ReviewsPanel
+          complaintsOpen={complaintsOpen}
+          mealUnread={mealUnread}
+          restaurantRating={restaurantRating}
+          explorerItems={reviewExplorerItems}
+        />
 
-        <PastOrdersPanel orders={pastOrders} />
+        <PastOrdersPanel orders={pastOrders} explorerItems={pastExplorerItems} />
       </div>
 
       <div className="mt-[20px] flex min-w-0 flex-col gap-[60px] lg:mt-0">
-        <PendingOrdersPanel restaurantId={restaurantId} orders={pendingOrders} />
+        <PendingOrdersPanel restaurantId={restaurantId} orders={pendingOrders} explorerItems={pendingExplorerItems} />
 
-        <ActiveOrdersPanel restaurantId={restaurantId} orders={activeOrders} />
+        <ActiveOrdersPanel restaurantId={restaurantId} orders={activeOrders} explorerItems={activeExplorerItems} />
 
-        <StaffPanel restaurantId={restaurantId} staff={staff} />
+        <StaffPanel restaurantId={restaurantId} staff={staff} explorerItems={staffExplorerItems} />
 
         <RidersPanel
           restaurantId={restaurantId}
           riders={riders}
-          assignableOrder={assignableOrder}
+          assignableOrders={assignableOrders}
+          explorerItems={riderExplorerItems}
         />
 
         <PerformancePanel
-          weeklyCounts={weeklyCounts}
+          weeklyDays={weeklyDays}
           revenueToday={revenueToday}
           totalOrders={totalOrders}
           totalCustomers={totalCustomers}
+          explorerItems={performanceExplorerItems}
         />
       </div>
     </div>
