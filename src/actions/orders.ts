@@ -50,6 +50,25 @@ export async function sendOrderForDelivery(formData: FormData) {
   revalidatePath("/restaurant/dashboard");
 }
 
+export async function assignReadyOrderToRider(formData: FormData) {
+  const restaurantId = String(formData.get("restaurantId") || "");
+  const restaurantOrderId = String(formData.get("restaurantOrderId") || "");
+  const riderId = String(formData.get("riderId") || "");
+  await requireManager(restaurantId);
+  const order = await getRestaurantOrder(restaurantId, restaurantOrderId);
+  if (order.status !== "READY_FOR_PICKUP") throw new Error("Only a ready order can be sent to a rider.");
+  const rider = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: riderId, restaurantId } } });
+  if (!rider || rider.role !== "RIDER" || !rider.isActive) throw new Error("Choose an active rider for this restaurant.");
+  const activeDelivery = await prisma.delivery.findFirst({ where: { riderId, status: { notIn: ["DELIVERED", "CANCELLED"] } }, select: { id: true } });
+  if (activeDelivery) throw new Error("That rider is already delivering an order. Choose an available rider.");
+  await prisma.$transaction([
+    prisma.restaurantOrder.update({ where: { id: order.id }, data: { status: "OUT_FOR_DELIVERY" } }),
+    prisma.delivery.upsert({ where: { restaurantOrderId: order.id }, create: { restaurantOrderId: order.id, riderId, status: "ASSIGNED", assignedAt: new Date() }, update: { riderId, status: "ASSIGNED", assignedAt: new Date() } }),
+  ]);
+  revalidatePath("/restaurant/dashboard");
+  revalidatePath("/rider");
+}
+
 export async function assignRider(formData: FormData) {
   const restaurantId = String(formData.get("restaurantId") || "");
   const restaurantOrderId = String(formData.get("restaurantOrderId") || "");
