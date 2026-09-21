@@ -40,6 +40,7 @@ type RestaurantForDashboard = {
   description: string | null;
   phoneNumber: string | null;
   address: string | null;
+  imageUrl: string | null;
   latitude: number | null;
   longitude: number | null;
   isVerified: boolean;
@@ -338,9 +339,9 @@ function FeaturedMenuPanel({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="grid h-[56px] w-[56px] place-items-center overflow-hidden rounded-[8px] bg-white/10">
-            {items[0]?.imageUrl ? (
+            {restaurant.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={items[0].imageUrl} alt="" className="h-full w-full object-cover" />
+              <img src={restaurant.imageUrl} alt={restaurant.name} className="h-full w-full object-cover" />
             ) : (
               <Store className="h-5 w-5" strokeWidth={2.3} />
             )}
@@ -890,6 +891,7 @@ export async function RestaurantDashboardGrid({
           <RestaurantVerificationCard
             restaurantId={restaurantId}
             restaurantName={restaurant.name}
+            imageUrl={restaurant.imageUrl}
             description={restaurant.description}
             phoneNumber={restaurant.phoneNumber}
             address={restaurant.address}
