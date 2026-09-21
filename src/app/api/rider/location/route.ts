@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     },
     select: {
       id: true,
+      status: true,
     },
   });
 
@@ -59,6 +60,9 @@ export async function POST(request: NextRequest) {
       lastLatitude: latitude,
       lastLongitude: longitude,
       lastLocationAt: now,
+      ...(delivery.status === "ASSIGNED" || delivery.status === "PICKED_UP"
+        ? { status: "OUT_FOR_DELIVERY" }
+        : {}),
     },
   });
 
