@@ -13,7 +13,6 @@ import {
   Star,
   Store,
   UserRound,
-  Utensils,
 } from "lucide-react";
 
 import { addRestaurantStaff } from "@/actions/staff";
@@ -87,27 +86,6 @@ function DashboardHeading({
       </div>
       {expand ?? null}
     </div>
-  );
-}
-
-function MenuThumb({
-  src,
-  alt,
-}: {
-  src?: string | null;
-  alt: string;
-}) {
-  return src ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      className="h-9 w-9 shrink-0 rounded-[7px] border border-white/20 object-cover"
-    />
-  ) : (
-    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[7px] bg-[#EAEAEA] text-black">
-      <Utensils className="h-4 w-4" strokeWidth={2.3} />
-    </span>
   );
 }
 
@@ -302,7 +280,7 @@ function RidersPanel({
   explorerItems: DashboardExplorerItem[];
 }) {
   return (
-    <section className="min-h-[350px] bg-white">
+    <section className="bg-white">
       <DashboardHeading
         title="Riders on Duty"
         count={riders.length}
