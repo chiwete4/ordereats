@@ -36,6 +36,7 @@ export async function createRestaurant(formData: FormData) {
       description: description || null,
       phoneNumber: phoneNumber || null,
       address: address || null,
+      imageUrl: imageUrl || null,
       ...(openingTime && closingTime
         ? {
             openingTime,
@@ -61,6 +62,7 @@ export async function updateRestaurant(formData: FormData) {
   const description = formData.get("description")?.toString().trim();
   const phoneNumber = formData.get("phoneNumber")?.toString().trim();
   const address = formData.get("address")?.toString().trim();
+  const imageUrl = formData.get("imageUrl")?.toString().trim();
   const openingTime = formData.get("openingTime")?.toString().trim();
   const closingTime = formData.get("closingTime")?.toString().trim();
   const timezone = formData.get("timezone")?.toString().trim();
