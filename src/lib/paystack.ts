@@ -53,6 +53,10 @@ export type PaystackTransfer = {
   recipient?: string | PaystackTransferRecipient;
 };
 
+export function isPaystackConfigured() {
+  return Boolean(process.env.PAYSTACK_SECRET_KEY?.trim());
+}
+
 function secretKey() {
   const key = process.env.PAYSTACK_SECRET_KEY?.trim();
   if (!key) {
