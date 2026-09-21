@@ -80,6 +80,22 @@ export async function changeRestaurantStaffRole(formData: FormData) {
     throw new Error("You cannot change your own restaurant role.");
   }
 
+  if (membership.role === "RIDER" && nextRole === "STAFF") {
+    const activeDelivery = await prisma.delivery.findFirst({
+      where: {
+        riderId: membership.userId,
+        status: {
+          notIn: ["DELIVERED", "CANCELLED"],
+        },
+      },
+      select: { id: true },
+    });
+
+    if (activeDelivery) {
+      throw new Error("Finish or reassign this rider's active delivery before switching them to staff.");
+    }
+  }
+
   await prisma.restaurantStaff.update({
     where: { id: membership.id },
     data: { role: nextRole },
