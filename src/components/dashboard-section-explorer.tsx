@@ -61,11 +61,13 @@ export function DashboardSectionExplorer({
   count,
   items,
   triggerLabel = "Expand",
+  triggerClassName,
 }: {
   title: string;
   count?: number;
   items: DashboardExplorerItem[];
   triggerLabel?: string;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(items[0]?.id ?? "");
@@ -83,7 +85,7 @@ export function DashboardSectionExplorer({
           setSelectedId((current) => current || items[0]?.id || "");
           setOpen(true);
         }}
-        className="text-[11px] font-semibold leading-none tracking-[-0.02em] text-black underline underline-offset-2"
+        className={triggerClassName ?? "text-[11px] font-semibold leading-none tracking-[-0.02em] text-black underline underline-offset-2"}
       >
         {triggerLabel}
       </button>
