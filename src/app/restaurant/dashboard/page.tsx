@@ -1,8 +1,9 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { ChevronRight, PencilLine, RefreshCw, Store } from "lucide-react";
+import { ChevronRight, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid";
+import { DashboardProfileEditButton } from "@/components/dashboard-profile-edit-button";
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -116,9 +117,7 @@ export default async function RestaurantDashboardPage({
                     {(user.firstName?.[0] || user.email[0]).toUpperCase()}
                   </div>
                 )}
-                <span className="absolute bottom-0 right-0 grid h-6 w-6 place-items-center overflow-hidden rounded-full border-4 border-white bg-black">
-                  <PencilLine className="h-3 w-3 fill-white text-white" strokeWidth={2.65} />
-                </span>
+                <DashboardProfileEditButton />
               </div>
             </div>
 
