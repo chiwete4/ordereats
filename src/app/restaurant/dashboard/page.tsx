@@ -48,7 +48,11 @@ export default async function RestaurantDashboardPage({
           payoutAccountNumber: true,
           _count: {
             select: {
-              menuItems: true,
+              menuItems: {
+                where: {
+                  isArchived: false,
+                },
+              },
             },
           },
         },
