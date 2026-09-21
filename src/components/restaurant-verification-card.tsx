@@ -27,6 +27,7 @@ export function RestaurantVerificationCard({
   accountName,
   accountNumber,
   payoutVerified,
+  canRequestPayout,
   openingTime,
   closingTime,
   operatingDays,
@@ -44,6 +45,7 @@ export function RestaurantVerificationCard({
   accountName: string | null;
   accountNumber: string | null;
   payoutVerified: boolean;
+  canRequestPayout: boolean;
   openingTime: string;
   closingTime: string;
   operatingDays: number[];
@@ -393,6 +395,7 @@ export function RestaurantVerificationCard({
             initialAccountName={accountName}
             initialAccountNumber={accountNumber}
             isVerified={payoutVerified}
+            canRequestPayout={canRequestPayout}
             onSaved={() => bankDialogRef.current?.close()}
           />
         </div>
