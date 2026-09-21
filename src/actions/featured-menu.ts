@@ -51,6 +51,25 @@ function parseItems(raw: FormDataEntryValue | null) {
     .filter((item) => item.menuItemId && Number.isInteger(item.quantity) && item.quantity > 0);
 }
 
+function parseTiming(formData: FormData) {
+  const readyMin = Number(formData.get("readyMin") ?? 1);
+  const readyMax = Number(formData.get("readyMax") ?? 5);
+  const deliverySeconds = Number(formData.get("deliverySeconds") ?? 45);
+
+  if (
+    !Number.isInteger(readyMin) ||
+    !Number.isInteger(readyMax) ||
+    !Number.isInteger(deliverySeconds) ||
+    readyMin < 0 ||
+    readyMax < readyMin ||
+    deliverySeconds < 1
+  ) {
+    throw new Error("Enter valid preparation and delivery times.");
+  }
+
+  return { readyMin, readyMax, deliverySeconds };
+}
+
 async function ensureDashboardCategory(restaurantId: string) {
   const existing = await prisma.menuCategory.findFirst({
     where: { restaurantId },
@@ -76,13 +95,20 @@ export async function createDashboardMenuItem(formData: FormData) {
   const name = formData.get("name")?.toString().trim();
   const price = parsePrice(formData.get("price"));
   const imageUrl = formData.get("imageUrl")?.toString().trim();
+  const requestedCategoryId = formData.get("categoryId")?.toString();
+  const timing = parseTiming(formData);
 
   if (!restaurantId || !name) {
     throw new Error("Restaurant and item name are required.");
   }
 
   await requireManager(restaurantId);
-  const categoryId = await ensureDashboardCategory(restaurantId);
+  const categoryId = requestedCategoryId || await ensureDashboardCategory(restaurantId);
+  const category = await prisma.menuCategory.findFirst({
+    where: { id: categoryId, restaurantId },
+    select: { id: true },
+  });
+  if (!category) throw new Error("Choose a valid menu category.");
 
   await prisma.menuItem.create({
     data: {
@@ -91,6 +117,7 @@ export async function createDashboardMenuItem(formData: FormData) {
       name,
       price,
       imageUrl: imageUrl || null,
+      ...timing,
     },
   });
 
@@ -103,8 +130,10 @@ export async function updateDashboardMenuItem(formData: FormData) {
   const name = formData.get("name")?.toString().trim();
   const price = parsePrice(formData.get("price"));
   const imageUrl = formData.get("imageUrl")?.toString().trim();
+  const categoryId = formData.get("categoryId")?.toString();
+  const timing = parseTiming(formData);
 
-  if (!restaurantId || !menuItemId || !name) {
+  if (!restaurantId || !menuItemId || !name || !categoryId) {
     throw new Error("Menu item information is required.");
   }
 
@@ -120,6 +149,11 @@ export async function updateDashboardMenuItem(formData: FormData) {
   });
 
   if (!item) throw new Error("Menu item not found.");
+  const category = await prisma.menuCategory.findFirst({
+    where: { id: categoryId, restaurantId },
+    select: { id: true },
+  });
+  if (!category) throw new Error("Choose a valid menu category.");
 
   await prisma.menuItem.update({
     where: { id: item.id },
@@ -127,6 +161,8 @@ export async function updateDashboardMenuItem(formData: FormData) {
       name,
       price,
       imageUrl: imageUrl || null,
+      categoryId,
+      ...timing,
     },
   });
 
@@ -343,5 +379,65 @@ export async function deleteFeaturedCombo(formData: FormData) {
     where: { id: combo.id },
   });
 
+  revalidatePath("/restaurant/dashboard");
+}
+
+
+export async function toggleDashboardMenuItemAvailability(formData: FormData) {
+  const restaurantId = formData.get("restaurantId")?.toString();
+  const menuItemId = formData.get("menuItemId")?.toString();
+  if (!restaurantId || !menuItemId) throw new Error("Menu item information is required.");
+  await requireManager(restaurantId);
+
+  const item = await prisma.menuItem.findFirst({
+    where: { id: menuItemId, restaurantId, isArchived: false },
+    select: { id: true, isAvailable: true },
+  });
+  if (!item) throw new Error("Menu item not found.");
+
+  await prisma.menuItem.update({
+    where: { id: item.id },
+    data: { isAvailable: !item.isAvailable },
+  });
+  revalidatePath("/restaurant/dashboard");
+}
+
+export async function createDashboardCategory(formData: FormData) {
+  const restaurantId = formData.get("restaurantId")?.toString();
+  const name = formData.get("name")?.toString().trim();
+  if (!restaurantId || !name) throw new Error("Category name is required.");
+  await requireManager(restaurantId);
+  await prisma.menuCategory.create({ data: { restaurantId, name } });
+  revalidatePath("/restaurant/dashboard");
+}
+
+export async function updateDashboardCategory(formData: FormData) {
+  const restaurantId = formData.get("restaurantId")?.toString();
+  const categoryId = formData.get("categoryId")?.toString();
+  const name = formData.get("name")?.toString().trim();
+  if (!restaurantId || !categoryId || !name) throw new Error("Category information is required.");
+  await requireManager(restaurantId);
+  const category = await prisma.menuCategory.findFirst({ where: { id: categoryId, restaurantId }, select: { id: true } });
+  if (!category) throw new Error("Category not found.");
+  await prisma.menuCategory.update({ where: { id: category.id }, data: { name } });
+  revalidatePath("/restaurant/dashboard");
+}
+
+export async function deleteDashboardCategory(formData: FormData) {
+  const restaurantId = formData.get("restaurantId")?.toString();
+  const categoryId = formData.get("categoryId")?.toString();
+  if (!restaurantId || !categoryId) throw new Error("Category information is required.");
+  await requireManager(restaurantId);
+
+  const category = await prisma.menuCategory.findFirst({
+    where: { id: categoryId, restaurantId },
+    include: { _count: { select: { menuItems: { where: { isArchived: false } } } } },
+  });
+  if (!category) throw new Error("Category not found.");
+  if (category._count.menuItems > 0) {
+    throw new Error("Move or archive this category's menu items before deleting it.");
+  }
+
+  await prisma.menuCategory.delete({ where: { id: category.id } });
   revalidatePath("/restaurant/dashboard");
 }
