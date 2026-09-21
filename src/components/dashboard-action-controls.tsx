@@ -8,6 +8,62 @@ import { cancelRestaurantOrder, assignReadyOrderToRider, assignRider } from "@/a
 import { changeRestaurantStaffRole, toggleRestaurantStaffActive } from "@/actions/staff";
 import { useToast } from "@/components/toast-provider";
 
+function ConfirmActionDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  pending = false,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  pending?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !pending) onCancel();
+      }}
+    >
+      <div className="w-[min(420px,92vw)] rounded-[12px] border border-[#D8D8D8] bg-white p-5 shadow-2xl">
+        <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-red-50 text-red-600">
+          <AlertTriangle className="h-5 w-5" strokeWidth={2.3} />
+        </span>
+        <h3 className="mt-4 text-[14px] font-semibold tracking-[-0.02em] text-black">{title}</h3>
+        <p className="mt-2 text-[11px] leading-[1.5] text-[#777777]">{description}</p>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onCancel}
+            className="h-9 rounded-[8px] border border-[#D8D8D8] text-[11px] font-semibold text-black disabled:opacity-50"
+          >
+            Go back
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onConfirm}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[8px] bg-red-600 px-3 text-[11px] font-semibold text-white disabled:opacity-50"
+          >
+            {pending ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" strokeWidth={2.3} /> : null}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function OrderMoreMenu({
   restaurantId,
   restaurantOrderId,
@@ -18,6 +74,7 @@ export function OrderMoreMenu({
   onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -41,7 +98,7 @@ export function OrderMoreMenu({
     const formData = new FormData();
     formData.set("restaurantId", restaurantId);
     formData.set("restaurantOrderId", restaurantOrderId);
-    changeOpen(false);
+    setConfirming(false);
     toast({ title: "Cancelling order…", tone: "info" });
     startTransition(async () => {
       try {
@@ -55,19 +112,30 @@ export function OrderMoreMenu({
   }
 
   return (
+    <>
     <div ref={rootRef} className="relative z-[60] shrink-0">
       <button type="button" onClick={() => changeOpen(!open)} disabled={pending} className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA] disabled:opacity-50" aria-label="Order options">
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={2.3} /> : <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />}
       </button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-[90] w-[176px] rounded-[9px] border border-[#D9D9D9] bg-white p-1.5 shadow-xl">
-          <button type="button" onClick={cancel} className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-red-600 hover:bg-red-50">
+          <button type="button" onClick={() => { changeOpen(false); setConfirming(true); }} className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-red-600 hover:bg-red-50">
             <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2.3} />
             Cancel order
           </button>
         </div>
       ) : null}
     </div>
+    <ConfirmActionDialog
+      open={confirming}
+      title="Cancel this order?"
+      description="This will move the order to Cancelled. This action should only be used when you are sure the restaurant will not fulfil it."
+      confirmLabel="Cancel Order"
+      pending={pending}
+      onCancel={() => setConfirming(false)}
+      onConfirm={cancel}
+    />
+    </>
   );
 }
 
@@ -180,6 +248,7 @@ export function StaffMoreMenu({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
 
   if (disabled || role === "OWNER") {
     return (
@@ -209,6 +278,7 @@ export function StaffMoreMenu({
   }
 
   return (
+    <>
     <details className="relative">
       <summary
         className="grid h-7 w-7 cursor-pointer list-none place-items-center rounded-[7px] text-black transition-colors hover:bg-[#F0F0F0] [&::-webkit-details-marker]:hidden"
@@ -237,7 +307,7 @@ export function StaffMoreMenu({
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(toggleRestaurantStaffActive)}
+          onClick={() => isActive ? setConfirmingDeactivate(true) : run(toggleRestaurantStaffActive)}
           className={`w-full rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold hover:bg-[#F4F4F4] disabled:opacity-40 ${isActive ? "text-red-600" : "text-black"}`}
         >
           {isActive ? "Deactivate access" : "Reactivate access"}
@@ -250,6 +320,19 @@ export function StaffMoreMenu({
         ) : null}
       </div>
     </details>
+    <ConfirmActionDialog
+      open={confirmingDeactivate}
+      title={`Deactivate ${name}?`}
+      description="They will lose active access to this restaurant until you reactivate them."
+      confirmLabel="Deactivate"
+      pending={pending}
+      onCancel={() => setConfirmingDeactivate(false)}
+      onConfirm={() => {
+        setConfirmingDeactivate(false);
+        run(toggleRestaurantStaffActive);
+      }}
+    />
+    </>
   );
 }
 
