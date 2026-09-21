@@ -121,8 +121,11 @@ model MenuItem {
   description  String?
   price        Decimal  @db.Decimal(10, 2)
   imageUrl     String?
-  isAvailable  Boolean  @default(true)
-  isArchived   Boolean  @default(false)
+  isAvailable     Boolean @default(true)
+  isArchived      Boolean @default(false)
+  readyMin        Int     @default(1)
+  readyMax        Int     @default(5)
+  deliverySeconds Int     @default(45)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
