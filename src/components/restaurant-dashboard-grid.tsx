@@ -771,6 +771,13 @@ export async function RestaurantDashboardGrid({
     prisma.menuCategory.findMany({
       where: { restaurantId },
       orderBy: { createdAt: "asc" },
+      include: {
+        _count: {
+          select: {
+            menuItems: true,
+          },
+        },
+      },
     }),
     prisma.restaurantOrder.count({ where: { restaurantId } }),
     prisma.restaurantOrder.findMany({
@@ -933,7 +940,7 @@ export async function RestaurantDashboardGrid({
   const categoryData = categories.map((category) => ({
     id: category.id,
     name: category.name,
-    itemCount: menuItems.filter((item) => item.categoryId === category.id).length,
+    itemCount: category._count.menuItems,
   }));
 
   const pastOrderData = pastOrders.slice(0, 12).map((row) => ({
