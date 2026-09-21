@@ -1,3 +1,4 @@
+import { RestaurantOrderStatus, StaffRole } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
@@ -68,15 +69,7 @@ function orderStatusLabel(status: string) {
 
 async function orderPage(
   restaurantId: string,
-  statuses: Array<
-    | "CONFIRMED"
-    | "PREPARING"
-    | "READY_FOR_PICKUP"
-    | "OUT_FOR_DELIVERY"
-    | "DELIVERED"
-    | "PICKED_UP"
-    | "CANCELLED"
-  >,
+  statuses: RestaurantOrderStatus[],
   cursor: string | null
 ) {
   const rows = await prisma.restaurantOrder.findMany({
@@ -143,8 +136,8 @@ async function staffPage(
       restaurantId,
       role:
         group === "riders"
-          ? "RIDER"
-          : { in: ["OWNER", "STAFF"] },
+          ? StaffRole.RIDER
+          : { in: [StaffRole.OWNER, StaffRole.STAFF] },
       ...cursorWhere(cursor),
     },
     orderBy: { createdAt: "desc" },
@@ -346,17 +339,25 @@ export async function GET(request: NextRequest) {
   try {
     const result =
       kind === "pending"
-        ? await orderPage(restaurantId, ["CONFIRMED"], cursor)
+        ? await orderPage(restaurantId, [RestaurantOrderStatus.CONFIRMED], cursor)
         : kind === "active"
           ? await orderPage(
               restaurantId,
-              ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"],
+              [
+                RestaurantOrderStatus.PREPARING,
+                RestaurantOrderStatus.READY_FOR_PICKUP,
+                RestaurantOrderStatus.OUT_FOR_DELIVERY,
+              ],
               cursor
             )
           : kind === "past"
             ? await orderPage(
                 restaurantId,
-                ["DELIVERED", "PICKED_UP", "CANCELLED"],
+                [
+                  RestaurantOrderStatus.DELIVERED,
+                  RestaurantOrderStatus.PICKED_UP,
+                  RestaurantOrderStatus.CANCELLED,
+                ],
                 cursor
               )
             : kind === "staff"
