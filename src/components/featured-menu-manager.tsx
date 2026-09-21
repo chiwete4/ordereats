@@ -582,7 +582,7 @@ export function FeaturedMenuManager({
 
   return (
     <>
-      <section className="flex min-h-[682px] w-full flex-col rounded-[12px] bg-black px-6 py-6 text-white sm:px-8">
+      <section className="flex w-full flex-col rounded-[12px] bg-black px-6 py-6 text-white sm:px-8">
         <div className="flex items-start justify-between gap-4">
           <div>
             <RestaurantMeta restaurant={restaurant} />
@@ -600,9 +600,9 @@ export function FeaturedMenuManager({
           Featured Combos
         </p>
 
-        <div className="mt-3 flex-1 divide-y divide-white/10">
+        <div className="mt-3 divide-y divide-white/10">
           {combos.length === 0 ? (
-            <div className="grid min-h-[360px] place-items-center text-center">
+            <div className="grid place-items-center py-16 text-center">
               <div>
                 <span className="mx-auto grid h-12 w-12 place-items-center rounded-[10px] border border-white/10 bg-[#151515] text-[#858585]">
                   <Utensils className="h-5 w-5" strokeWidth={2.3} />
@@ -625,7 +625,7 @@ export function FeaturedMenuManager({
               </div>
             </div>
           ) : (
-            combos.slice(0, 3).map((combo, index) => {
+            combos.slice(0, 6).map((combo, index) => {
               const expanded = expandedComboId === combo.id;
 
               return (
