@@ -377,7 +377,7 @@ function PastOrdersPanel({
     <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
       <DashboardHeading
         title="All Past Orders"
-        count={orders.length}
+        count={count}
         expand={
           <DashboardSectionExplorer
             title="All Past Orders"
@@ -811,9 +811,9 @@ export async function RestaurantDashboardGrid({
     });
   }
 
-  const pendingExplorerItems = orderExplorerItems(pendingOrders);
-  const activeExplorerItems = orderExplorerItems(activeOrders);
-  const pastExplorerItems = orderExplorerItems(pastOrders);
+  const pendingExplorerItems = orderExplorerItems(pendingOrders).slice(0, 20);
+  const activeExplorerItems = orderExplorerItems(activeOrders).slice(0, 20);
+  const pastExplorerItems = orderExplorerItems(pastOrders).slice(0, 20);
 
   const serializeOrder = (row: any): DashboardOrder => ({
     id: row.id,
@@ -836,6 +836,7 @@ export async function RestaurantDashboardGrid({
 
   const staffExplorerItems: DashboardExplorerItem[] = staff
     .filter((member) => member.role !== "RIDER")
+    .slice(0, 20)
     .map((member) => ({
       id: member.id,
       title: personName(member.user),
@@ -849,7 +850,7 @@ export async function RestaurantDashboardGrid({
       ],
     }));
 
-  const riderExplorerItems: DashboardExplorerItem[] = riders.map((rider) => {
+  const riderExplorerItems: DashboardExplorerItem[] = riders.slice(0, 20).map((rider) => {
     const delivering = rider.user.assignedDeliveries?.[0];
     return {
       id: rider.id,
@@ -906,7 +907,7 @@ export async function RestaurantDashboardGrid({
         { label: "Submitted", value: review.createdAt.toLocaleString() },
       ],
     })),
-  ];
+  ].slice(0, 20);
 
   const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
   const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
