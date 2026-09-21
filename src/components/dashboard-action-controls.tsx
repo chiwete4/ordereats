@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { AlertTriangle, Bike, MoreHorizontal, Plus, UserRound, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { cancelRestaurantOrder, assignRider } from "@/actions/orders";
 import { changeRestaurantStaffRole, toggleRestaurantStaffActive } from "@/actions/staff";
@@ -75,6 +76,10 @@ export function StaffMoreMenu({
   role: "OWNER" | "STAFF" | "RIDER";
   disabled?: boolean;
 }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
   if (disabled || role === "OWNER") {
     return (
       <span className="grid h-7 w-7 place-items-center text-[#B0B0B0]" title="Owner role cannot be changed here">
@@ -85,6 +90,23 @@ export function StaffMoreMenu({
 
   const nextRole = role === "RIDER" ? "STAFF" : "RIDER";
 
+  function run(action: (formData: FormData) => Promise<void>, extra?: Record<string, string>) {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("membershipId", membershipId);
+    Object.entries(extra ?? {}).forEach(([key, value]) => formData.set(key, value));
+
+    setError("");
+    startTransition(async () => {
+      try {
+        await action(formData);
+        router.refresh();
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "That change could not be completed.");
+      }
+    });
+  }
+
   return (
     <details className="relative">
       <summary
@@ -94,32 +116,37 @@ export function StaffMoreMenu({
         <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
       </summary>
 
-      <div className="absolute right-0 top-[calc(100%+6px)] z-[70] w-[190px] overflow-hidden rounded-[10px] border border-[#D9D9D9] bg-white p-1.5 shadow-xl">
-        <form action={changeRestaurantStaffRole}>
-          <input type="hidden" name="restaurantId" value={restaurantId} />
-          <input type="hidden" name="membershipId" value={membershipId} />
-          <input type="hidden" name="nextRole" value={nextRole} />
-          <button className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-black hover:bg-[#F4F4F4]">
-            {nextRole === "RIDER" ? (
-              <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
-            ) : (
-              <UserRound className="h-3.5 w-3.5" strokeWidth={2.3} />
-            )}
-            Switch to {nextRole === "RIDER" ? "Rider" : "Staff"}
-          </button>
-        </form>
+      <div className="absolute right-0 top-[calc(100%+6px)] z-[70] w-[205px] overflow-hidden rounded-[10px] border border-[#D9D9D9] bg-white p-1.5 shadow-xl">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(changeRestaurantStaffRole, { nextRole })}
+          className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-black hover:bg-[#F4F4F4] disabled:opacity-40"
+        >
+          {nextRole === "RIDER" ? (
+            <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
+          ) : (
+            <UserRound className="h-3.5 w-3.5" strokeWidth={2.3} />
+          )}
+          Switch to {nextRole === "RIDER" ? "Rider" : "Staff"}
+        </button>
 
         <div className="my-1 h-px bg-[#EAEAEA]" />
 
-        <form action={toggleRestaurantStaffActive}>
-          <input type="hidden" name="restaurantId" value={restaurantId} />
-          <input type="hidden" name="membershipId" value={membershipId} />
-          <button
-            className={`w-full rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold hover:bg-[#F4F4F4] ${isActive ? "text-red-600" : "text-black"}`}
-          >
-            {isActive ? "Deactivate access" : "Reactivate access"}
-          </button>
-        </form>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(toggleRestaurantStaffActive)}
+          className={`w-full rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold hover:bg-[#F4F4F4] disabled:opacity-40 ${isActive ? "text-red-600" : "text-black"}`}
+        >
+          {isActive ? "Deactivate access" : "Reactivate access"}
+        </button>
+
+        {error ? (
+          <p className="mx-1 mt-1 rounded-[7px] bg-red-50 px-2 py-1.5 text-[9px] leading-[1.35] text-red-600">
+            {error}
+          </p>
+        ) : null}
       </div>
     </details>
   );
