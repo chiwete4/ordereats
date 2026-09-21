@@ -139,7 +139,7 @@ function PendingPanel({
         kind="pending"
       />
 
-      <div className="mt-5 divide-y divide-[#EAEAEA]">
+      <div className="mt-5">
         {orders.length === 0 ? (
           <p className="py-5 text-[12px] font-medium text-[#808080]">
             No pending orders right now.
@@ -245,7 +245,7 @@ function ActivePanel({
         kind="active"
       />
 
-      <div className="mt-5 divide-y divide-[#EAEAEA]">
+      <div className="mt-5">
         {orders.length === 0 ? (
           <p className="py-5 text-[12px] font-medium text-[#808080]">
             No active orders right now.
