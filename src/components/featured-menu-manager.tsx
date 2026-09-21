@@ -397,7 +397,15 @@ export function FeaturedMenuManager({
   const selectedCombo =
     combos.find((combo) => combo.id === selectedComboId) ?? combos[0] ?? null;
   const selectedMenu =
-    menuItems.find((item) => item.id === selectedMenuId) ?? menuItems[0] ?? null;
+    menuItems.find(
+      (item) =>
+        item.id === selectedMenuId &&
+        (!selectedCategoryId || item.categoryId === selectedCategoryId)
+    ) ??
+    (selectedCategoryId
+      ? menuItems.find((item) => item.categoryId === selectedCategoryId)
+      : menuItems[0]) ??
+    null;
   const selectedComboIndex = selectedCombo
     ? Math.max(1, combos.findIndex((combo) => combo.id === selectedCombo.id) + 1)
     : 0;
