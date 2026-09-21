@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   BadgeCheck,
   Bike,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
   Minus,
   Navigation,
@@ -124,24 +126,15 @@ function MenuThumb({
   );
 }
 
-function StackedThumb({ combo }: { combo: FeaturedComboData }) {
+function ComboThumb({ combo }: { combo: FeaturedComboData }) {
   const item = combo.items[0]?.menuItem;
-  if (!item) {
-    return (
-      <span className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#2A2A2A]">
-        <Utensils className="h-4 w-4" strokeWidth={2.3} />
-      </span>
-    );
-  }
 
-  return (
-    <div className="relative h-10 w-12 shrink-0">
-      <span className="absolute left-0 top-1 h-9 w-9 rounded-[8px] bg-white/60" />
-      <span className="absolute left-1.5 top-0.5 h-9 w-9 rounded-[8px] bg-white/80" />
-      <div className="absolute right-0 top-0">
-        <MenuThumb item={item} size="sm" />
-      </div>
-    </div>
+  return item ? (
+    <MenuThumb item={item} size="sm" />
+  ) : (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-[#2A2A2A]">
+      <Utensils className="h-4 w-4" strokeWidth={2.3} />
+    </span>
   );
 }
 
@@ -181,26 +174,23 @@ function RestaurantMeta({ restaurant }: { restaurant: RestaurantData }) {
   );
 }
 
-function ComboDetails({ combo }: { combo: FeaturedComboData }) {
-  const branchHeight = Math.max(18, (combo.items.length - 1) * 32 + 18);
-
+function ComboExpandedDetails({
+  combo,
+  compact = false,
+}: {
+  combo: FeaturedComboData;
+  compact?: boolean;
+}) {
   return (
-    <div className="mt-4">
-      <div className="relative ml-[72px] pl-[52px]">
-        {combo.items.length ? (
-          <span
-            className="absolute left-0 top-0 w-px bg-[#777777]"
-            style={{ height: branchHeight }}
-          />
-        ) : null}
+    <div className={compact ? "mt-3 pl-[56px]" : "mt-5 pl-[56px]"}>
+      <div className="space-y-2.5">
         {combo.items.map((entry) => (
           <div
             key={entry.id}
-            className="relative flex min-h-[32px] items-center justify-between gap-4 text-[11px]"
+            className="grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-x-2 text-[11px]"
           >
-            <span className="absolute -left-[52px] top-1/2 h-px w-[34px] -translate-y-1/2 bg-[#777777]" />
-            <span className="min-w-0 truncate font-medium text-white">
-              <span className="mr-3 text-[#858585]">x{entry.quantity}</span>
+            <span className="text-[#858585]">x{entry.quantity}</span>
+            <span className="truncate font-medium text-white">
               {entry.menuItem.name}
             </span>
             <span className="shrink-0 text-[#858585]">
@@ -210,7 +200,7 @@ function ComboDetails({ combo }: { combo: FeaturedComboData }) {
         ))}
       </div>
 
-      <div className="ml-[72px] mt-5 space-y-2 text-[11px] text-[#858585]">
+      <div className="mt-4 space-y-2 text-[11px] text-[#858585]">
         <p className="flex items-center gap-1.5">
           <UtensilsCrossed className="h-3.5 w-3.5" strokeWidth={2.3} />
           Ready within{" "}
@@ -232,65 +222,6 @@ function ComboDetails({ combo }: { combo: FeaturedComboData }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function ComboEditorBreakdown({ combo }: { combo: FeaturedComboData }) {
-  const branchHeight = Math.max(58, (combo.items.length - 1) * 38 + 58);
-
-  return (
-    <>
-      <div className="relative ml-[104px] mt-6 pl-[42px]">
-        {combo.items.length ? (
-          <span
-            className="absolute -top-[10px] left-0 w-[1.5px] rounded-full bg-[#777777]"
-            style={{ height: branchHeight }}
-          />
-        ) : null}
-
-        {combo.items.map((entry) => (
-          <div
-            key={entry.id}
-            className="relative grid min-h-[38px] grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2 text-[12px]"
-          >
-            <span className="absolute -left-[42px] top-1/2 h-[1.5px] w-[32px] -translate-y-1/2 rounded-full bg-[#777777]" />
-            <span className="text-[#888888]">x{entry.quantity}</span>
-            <span className="truncate font-medium text-white">
-              {entry.menuItem.name}
-            </span>
-            <span className="shrink-0 text-[#888888]">
-              {money(entry.menuItem.price * entry.quantity)}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="ml-[76px] mt-7 space-y-2.5 text-[12px] text-[#888888]">
-        <p className="flex items-center gap-2">
-          <UtensilsCrossed className="h-4 w-4 shrink-0" strokeWidth={2.3} />
-          <span>
-            Ready within{" "}
-            <span className="font-semibold text-white">
-              {combo.readyMin}-{combo.readyMax}
-            </span>{" "}
-            minutes
-          </span>
-        </p>
-        <p className="flex items-center gap-2">
-          <Bike className="h-4 w-4 shrink-0" strokeWidth={2.3} />
-          <span>
-            Delivery in{" "}
-            <span className="font-semibold text-white">
-              &lt;{combo.deliverySeconds}
-            </span>{" "}
-            seconds
-          </span>
-        </p>
-        <p className="pl-6 text-[10px] leading-none text-[#777777]">
-          Ensure these claims are accurate.
-        </p>
-      </div>
-    </>
   );
 }
 
@@ -412,6 +343,7 @@ export function FeaturedMenuManager({
   const [pending, startTransition] = useTransition();
   const [manager, setManager] = useState<"combos" | "menu" | null>(null);
   const [selectedComboId, setSelectedComboId] = useState(combos[0]?.id ?? "");
+  const [expandedComboId, setExpandedComboId] = useState<string | null>(null);
   const [selectedMenuId, setSelectedMenuId] = useState(menuItems[0]?.id ?? "");
   const [nested, setNested] = useState<
     "newCombo" | "editCombo" | "newItem" | "editItem" | "times" | null
@@ -595,48 +527,72 @@ export function FeaturedMenuManager({
               </div>
             </div>
           ) : (
-            combos.slice(0, 3).map((combo, index) => (
-              <article key={combo.id} className="py-5 first:pt-0">
-                <div className="flex items-start gap-3">
-                  <span className="pt-2 text-[12px] font-semibold">#{index + 1}</span>
-                  <StackedThumb combo={combo} />
-                  <div className="min-w-0 flex-1 pt-1">
-                    <p className="truncate text-[12px] font-medium leading-none">
-                      {combo.name}
-                    </p>
-                    <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-[#858585]">
-                      <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
-                      <span>{totalQuantity(combo)}/9</span>
-                      <span>•</span>
-                      <span>{money(comboTotal(combo))} total</span>
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedComboId(combo.id);
-                        setManager("combos");
-                      }}
-                      className="rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-medium"
-                    >
-                      Edit
-                    </button>
+            combos.slice(0, 3).map((combo, index) => {
+              const expanded = expandedComboId === combo.id;
+
+              return (
+                <article key={combo.id} className="py-5 first:pt-0">
+                  <div className="flex items-start gap-3">
                     <button
                       type="button"
                       onClick={() =>
-                        setDeleteTarget({ kind: "combo", id: combo.id, name: combo.name })
+                        setExpandedComboId((current) =>
+                          current === combo.id ? null : combo.id
+                        )
                       }
-                      className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500"
-                      aria-label={`Delete ${combo.name}`}
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                      aria-expanded={expanded}
                     >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
+                      <span className="pt-2 text-[12px] font-semibold">#{index + 1}</span>
+                      <ComboThumb combo={combo} />
+                      <div className="min-w-0 flex-1 pt-1">
+                        <p className="truncate text-[12px] font-medium leading-none">
+                          {combo.name}
+                        </p>
+                        <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-[#858585]">
+                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
+                          <span>
+                            {combo.items.filter((entry) => entry.menuItem.isAvailable).length}/{combo.items.length}
+                          </span>
+                          <span>•</span>
+                          <span>{money(comboTotal(combo))} total</span>
+                        </p>
+                      </div>
+                      {expanded ? (
+                        <ChevronUp className="mt-2 h-4 w-4 shrink-0 text-[#858585]" strokeWidth={2.3} />
+                      ) : (
+                        <ChevronDown className="mt-2 h-4 w-4 shrink-0 text-[#858585]" strokeWidth={2.3} />
+                      )}
                     </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedComboId(combo.id);
+                          setManager("combos");
+                        }}
+                        className="rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeleteTarget({ kind: "combo", id: combo.id, name: combo.name })
+                        }
+                        className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500"
+                        aria-label={`Delete ${combo.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                {index === 0 ? <ComboDetails combo={combo} /> : null}
-              </article>
-            ))
+
+                  {expanded ? <ComboExpandedDetails combo={combo} /> : null}
+                </article>
+              );
+            })
           )}
         </div>
 
@@ -722,7 +678,7 @@ export function FeaturedMenuManager({
                         className={`flex w-full items-center gap-3 border-b border-white/10 px-3 py-4 text-left ${selectedCombo?.id === combo.id ? "bg-[#303030]" : ""}`}
                       >
                         <span className="text-[11px] font-semibold">#{index + 1}</span>
-                        <StackedThumb combo={combo} />
+                        <ComboThumb combo={combo} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[11px] font-medium">
                             {combo.name}
@@ -780,39 +736,20 @@ export function FeaturedMenuManager({
                       Edit Combo
                     </p>
 
-                    <div className="mt-7 grid grid-cols-[34px_68px_minmax(0,1fr)_42px] items-start gap-x-3">
-                      <span className="pt-4 text-[14px] font-semibold leading-none text-white">
-                        #{selectedComboIndex}
-                      </span>
-
-                      <div className="relative h-14 w-[68px]">
-                        <span className="absolute left-0 top-1.5 h-12 w-12 rounded-[9px] border border-white/20 bg-[#D8D8D8]" />
-                        <span className="absolute left-2 top-1 h-12 w-12 rounded-[9px] border border-white/30 bg-[#EEEEEE]" />
-                        <div className="absolute right-0 top-0">
-                          {selectedCombo.items[0]?.menuItem ? (
-                            <MenuThumb item={selectedCombo.items[0].menuItem} />
-                          ) : (
-                            <span className="grid h-11 w-11 place-items-center rounded-[8px] bg-[#2A2A2A]">
-                              <Utensils className="h-4 w-4" strokeWidth={2.3} />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="min-w-0 pt-1">
-                        <p className="truncate text-[16px] font-medium leading-[1.05] tracking-[-0.025em] text-white">
-                          {selectedCombo.name}
-                        </p>
-                        <p className="mt-2 flex items-center gap-2 text-[12px] leading-none text-[#858585]">
-                          <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={2.3} />
+                    <div className="mt-6 flex items-start gap-3">
+                      <span className="pt-2 text-[12px] font-semibold">#{selectedComboIndex}</span>
+                      <ComboThumb combo={selectedCombo} />
+                      <div className="min-w-0 flex-1 pt-1">
+                        <p className="truncate text-[13px] font-medium">{selectedCombo.name}</p>
+                        <p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#858585]">
+                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.3} />
                           <span>
                             {selectedCombo.items.filter((entry) => entry.menuItem.isAvailable).length}/{selectedCombo.items.length}
                           </span>
-                          <span className="text-[#666666]">•</span>
+                          <span>•</span>
                           <span>{money(comboTotal(selectedCombo))} total</span>
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() =>
@@ -823,30 +760,29 @@ export function FeaturedMenuManager({
                           })
                         }
                         aria-label={`Delete ${selectedCombo.name}`}
-                        className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[#4A0000] text-red-500"
+                        className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
                       >
-                        <Trash2 className="h-[18px] w-[18px]" strokeWidth={2.3} />
+                        <Trash2 className="h-4 w-4" strokeWidth={2.3} />
                       </button>
                     </div>
 
-                    <ComboEditorBreakdown combo={selectedCombo} />
+                    <ComboExpandedDetails combo={selectedCombo} />
 
-                    <div className="ml-[76px] mt-5 space-y-2.5">
+                    <div className="mt-5 space-y-2">
                       <button
                         type="button"
                         onClick={() => openComboBuilder(selectedCombo)}
-                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-white text-[12px] font-semibold text-black"
+                        className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-white text-[11px] font-semibold text-black"
                       >
-                        <Plus className="h-4 w-4" strokeWidth={2.3} />
+                        <Plus className="h-3.5 w-3.5" strokeWidth={2.3} />
                         Add Items
                       </button>
-
                       <button
                         type="button"
                         onClick={() => setNested("times")}
-                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border-2 border-[#242424] text-[12px] font-semibold text-white"
+                        className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] border border-white/20 text-[11px] font-semibold"
                       >
-                        <Pencil className="h-4 w-4 fill-current" strokeWidth={2.3} />
+                        <Pencil className="h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
                         Adjust Times
                       </button>
                     </div>
@@ -1012,7 +948,7 @@ export function FeaturedMenuManager({
             {nested === "editCombo" && selectedCombo ? (
               <div className="mb-4">
                 <div className="flex items-start gap-3">
-                  <StackedThumb combo={selectedCombo} />
+                  <ComboThumb combo={selectedCombo} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-medium">{selectedCombo.name}</p>
                     <p className="mt-1 flex items-center gap-1 text-[9px] text-[#858585]">
@@ -1025,23 +961,12 @@ export function FeaturedMenuManager({
                     </p>
                   </div>
                 </div>
-                <div className="relative ml-6 mt-3 pl-9">
-                  {selectedCombo.items.length ? (
-                    <span
-                      className="absolute left-0 top-0 w-px bg-[#555555]"
-                      style={{
-                        height: Math.max(18, (selectedCombo.items.length - 1) * 32 + 18),
-                      }}
-                    />
-                  ) : null}
+                <div className="ml-1 mt-3 space-y-2">
                   {selectedCombo.items.map((entry) => (
-                    <div key={entry.id} className="relative flex min-h-[32px] items-center gap-3 text-[10px]">
-                      <span className="absolute -left-9 top-1/2 h-px w-6 -translate-y-1/2 bg-[#555555]" />
-                      <span className="min-w-0 flex-1 truncate">
-                        <span className="mr-2 text-[#777777]">x{entry.quantity}</span>
-                        {entry.menuItem.name}
-                      </span>
-                      <span className="shrink-0 text-[#858585]">
+                    <div key={entry.id} className="grid grid-cols-[26px_minmax(0,1fr)_auto_24px] items-center gap-2 text-[10px]">
+                      <span className="text-[#777777]">x{entry.quantity}</span>
+                      <span className="truncate">{entry.menuItem.name}</span>
+                      <span className="text-[#858585]">
                         {money(entry.menuItem.price * entry.quantity)}
                       </span>
                       <button
@@ -1053,7 +978,7 @@ export function FeaturedMenuManager({
                             name: entry.menuItem.name,
                           })
                         }
-                        className="grid h-6 w-6 shrink-0 place-items-center text-red-500"
+                        className="grid h-6 w-6 place-items-center text-red-500"
                         aria-label={`Remove ${entry.menuItem.name} from combo`}
                       >
                         <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
