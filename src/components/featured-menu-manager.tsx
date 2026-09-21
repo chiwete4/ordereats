@@ -1244,141 +1244,150 @@ export function FeaturedMenuManager({
           title={nested === "newItem" ? "Create Menu Item" : "Edit Menu Item"}
           onClose={() => setNested(null)}
         >
-          <div className="px-5 pb-5">
-            <div className="mb-4 flex items-center gap-3">
-              {itemImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={itemImage}
-                  alt={itemName || "Menu item preview"}
-                  className="h-11 w-11 shrink-0 rounded-[8px] border border-white/10 object-cover"
-                />
-              ) : (
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] bg-[#242424] text-[#8A8A8A]">
-                  <Sandwich className="h-5 w-5" strokeWidth={2.3} />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-medium">
-                  {itemName || "Item name"}
-                </p>
-                <p className="mt-1 text-[10px] text-[#858585]">
-                  {Number(itemPrice.replaceAll(",", "")) > 0
-                    ? money(Number(itemPrice.replaceAll(",", "")))
-                    : "₦0"}
-                </p>
-              </div>
-              {nested === "editItem" && selectedMenu ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDeleteTarget({
-                      kind: "menuItem",
-                      id: selectedMenu.id,
-                      name: selectedMenu.name,
-                    })
-                  }
-                  className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
-                  aria-label={`Remove ${selectedMenu.name}`}
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={2.3} />
-                </button>
-              ) : null}
-            </div>
-
-            <div className="space-y-3">
-              <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                <span className="block text-[11px] text-[#777777]">Name</span>
-                <input
-                  value={itemName}
-                  onChange={(event) => setItemName(event.target.value)}
-                  placeholder="Item name"
-                  className="mt-1 w-full bg-transparent text-[12px] outline-none"
-                />
-              </label>
-              <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                <span className="block text-[11px] text-[#777777]">Price</span>
-                <input
-                  value={itemPrice}
-                  onChange={(event) => setItemPrice(event.target.value)}
-                  inputMode="decimal"
-                  placeholder="₦0"
-                  className="mt-1 w-full bg-transparent text-[12px] outline-none"
-                />
-              </label>
-              <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                <span className="block text-[11px] text-[#777777]">Category</span>
-                <select
-                  value={itemCategoryId}
-                  onChange={(event) => setItemCategoryId(event.target.value)}
-                  className="mt-1 w-full bg-black text-[12px] outline-none"
-                >
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="grid grid-cols-3 gap-2">
-                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                  <span className="block text-[9px] text-[#777777]">Ready min</span>
-                  <input
-                    value={itemReadyMin}
-                    onChange={(event) => setItemReadyMin(event.target.value)}
-                    type="number"
-                    min={0}
-                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+              <div className="mb-4 flex items-center gap-3">
+                {itemImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={itemImage}
+                    alt={itemName || "Menu item preview"}
+                    className="h-11 w-11 shrink-0 rounded-[8px] border border-white/10 object-cover"
                   />
-                </label>
-                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                  <span className="block text-[9px] text-[#777777]">Ready max</span>
-                  <input
-                    value={itemReadyMax}
-                    onChange={(event) => setItemReadyMax(event.target.value)}
-                    type="number"
-                    min={0}
-                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
-                  />
-                </label>
-                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                  <span className="block text-[9px] text-[#777777]">Delivery sec</span>
-                  <input
-                    value={itemDeliverySeconds}
-                    onChange={(event) => setItemDeliverySeconds(event.target.value)}
-                    type="number"
-                    min={1}
-                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
-                  />
-                </label>
+                ) : (
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] bg-[#242424] text-[#8A8A8A]">
+                    <Sandwich className="h-5 w-5" strokeWidth={2.3} />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-medium">
+                    {itemName || "Item name"}
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#858585]">
+                    {Number(itemPrice.replaceAll(",", "")) > 0
+                      ? money(Number(itemPrice.replaceAll(",", "")))
+                      : "₦0"}
+                  </p>
+                </div>
+                {nested === "editItem" && selectedMenu ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDeleteTarget({
+                        kind: "menuItem",
+                        id: selectedMenu.id,
+                        name: selectedMenu.name,
+                      })
+                    }
+                    className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
+                    aria-label={`Remove ${selectedMenu.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={2.3} />
+                  </button>
+                ) : null}
               </div>
 
-              <MenuImagePicker
-                value={itemImage}
-                onChange={setItemImage}
-                onUploadingChange={setImageUploading}
-              />
+              <div className="space-y-3">
+                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[11px] text-[#777777]">Name</span>
+                  <input
+                    value={itemName}
+                    onChange={(event) => setItemName(event.target.value)}
+                    placeholder="Item name"
+                    className="mt-1 w-full bg-transparent text-[12px] outline-none"
+                  />
+                </label>
+
+                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[11px] text-[#777777]">Price</span>
+                  <input
+                    value={itemPrice}
+                    onChange={(event) => setItemPrice(event.target.value)}
+                    inputMode="decimal"
+                    placeholder="₦0"
+                    className="mt-1 w-full bg-transparent text-[12px] outline-none"
+                  />
+                </label>
+
+                <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[11px] text-[#777777]">Category</span>
+                  <select
+                    value={itemCategoryId}
+                    onChange={(event) => setItemCategoryId(event.target.value)}
+                    className="mt-1 w-full bg-black text-[12px] outline-none"
+                  >
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                    <span className="block text-[9px] text-[#777777]">Ready min</span>
+                    <input
+                      value={itemReadyMin}
+                      onChange={(event) => setItemReadyMin(event.target.value)}
+                      type="number"
+                      min={0}
+                      className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                    />
+                  </label>
+
+                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                    <span className="block text-[9px] text-[#777777]">Ready max</span>
+                    <input
+                      value={itemReadyMax}
+                      onChange={(event) => setItemReadyMax(event.target.value)}
+                      type="number"
+                      min={0}
+                      className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                    />
+                  </label>
+
+                  <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                    <span className="block text-[9px] text-[#777777]">Delivery sec</span>
+                    <input
+                      value={itemDeliverySeconds}
+                      onChange={(event) => setItemDeliverySeconds(event.target.value)}
+                      type="number"
+                      min={1}
+                      className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                    />
+                  </label>
+                </div>
+
+                <MenuImagePicker
+                  value={itemImage}
+                  onChange={setItemImage}
+                  onUploadingChange={setImageUploading}
+                />
+              </div>
+
+              {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
             </div>
 
-            {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
-            <button
-              type="button"
-              disabled={pending || imageUploading}
-              onClick={() => submitItem(nested === "editItem")}
-              className="mt-24 h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {imageUploading ? (
-                "Uploading image..."
-              ) : nested === "newItem" ? (
-                <>
-                  <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
-                  Create Item
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
+            <div className="shrink-0 border-t border-white/10 bg-black px-5 py-4">
+              <button
+                type="button"
+                disabled={pending || imageUploading}
+                onClick={() => submitItem(nested === "editItem")}
+                className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {imageUploading ? (
+                  "Uploading image..."
+                ) : nested === "newItem" ? (
+                  <>
+                    <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                    Create Item
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </div>
           </div>
         </NestedModal>
       ) : null}
@@ -1517,7 +1526,7 @@ export function FeaturedMenuManager({
       {nested === "times" && selectedCombo ? (
         <NestedModal title="Adjust Times" onClose={() => setNested(null)}>
           <form
-            className="px-5 pb-5"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={(event) => {
               event.preventDefault();
               const formData = new FormData(event.currentTarget);
@@ -1526,45 +1535,52 @@ export function FeaturedMenuManager({
               run(updateFeaturedComboTimes, formData, () => setNested(null));
             }}
           >
-            <div className="grid grid-cols-2 gap-3">
-              <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                <span className="block text-[10px] text-[#777777]">Ready min</span>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[10px] text-[#777777]">Ready min</span>
+                  <input
+                    name="readyMin"
+                    type="number"
+                    min={0}
+                    defaultValue={selectedCombo.readyMin}
+                    className="mt-1 w-full bg-transparent text-[12px] outline-none"
+                  />
+                </label>
+                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[10px] text-[#777777]">Ready max</span>
+                  <input
+                    name="readyMax"
+                    type="number"
+                    min={0}
+                    defaultValue={selectedCombo.readyMax}
+                    className="mt-1 w-full bg-transparent text-[12px] outline-none"
+                  />
+                </label>
+              </div>
+
+              <label className="mt-3 block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <span className="block text-[10px] text-[#777777]">Delivery seconds</span>
                 <input
-                  name="readyMin"
+                  name="deliverySeconds"
                   type="number"
-                  min={0}
-                  defaultValue={selectedCombo.readyMin}
+                  min={1}
+                  defaultValue={selectedCombo.deliverySeconds}
                   className="mt-1 w-full bg-transparent text-[12px] outline-none"
                 />
               </label>
-              <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-                <span className="block text-[10px] text-[#777777]">Ready max</span>
-                <input
-                  name="readyMax"
-                  type="number"
-                  min={0}
-                  defaultValue={selectedCombo.readyMax}
-                  className="mt-1 w-full bg-transparent text-[12px] outline-none"
-                />
-              </label>
+
+              {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
             </div>
-            <label className="mt-3 block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
-              <span className="block text-[10px] text-[#777777]">Delivery seconds</span>
-              <input
-                name="deliverySeconds"
-                type="number"
-                min={1}
-                defaultValue={selectedCombo.deliverySeconds}
-                className="mt-1 w-full bg-transparent text-[12px] outline-none"
-              />
-            </label>
-            {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
-            <button
-              disabled={pending}
-              className="mt-5 h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black"
-            >
-              Save Times
-            </button>
+
+            <div className="shrink-0 border-t border-white/10 bg-black px-5 py-4">
+              <button
+                disabled={pending}
+                className="h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:opacity-50"
+              >
+                Save Times
+              </button>
+            </div>
           </form>
         </NestedModal>
       ) : null}
