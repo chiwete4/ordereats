@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { clerkClient } from "@clerk/nextjs/server";
+import { createClerkClient } from "@clerk/backend";
 import { PrismaClient } from "@prisma/client";
 
 function loadEnvFile(filePath) {
@@ -259,7 +259,7 @@ async function getOrCreateClerkUser(person) {
     );
   }
 
-  const client = await clerkClient();
+  const client = createClerkClient({ secretKey: secret });
   const existing = await client.users.getUserList({
     emailAddress: [person.email],
     limit: 1,
