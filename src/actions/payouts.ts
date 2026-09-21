@@ -4,7 +4,11 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
-import { initiatePaystackTransfer } from "@/lib/paystack";
+import {
+  initiatePaystackTransfer,
+  isPaystackConfigured,
+  verifyPaystackTransfer,
+} from "@/lib/paystack";
 import { prisma } from "@/lib/prisma";
 
 async function requireOwner(restaurantId: string) {
@@ -34,6 +38,10 @@ export async function requestRestaurantPayout(formData: FormData) {
   if (!restaurantId) throw new Error("Restaurant is required.");
 
   await requireOwner(restaurantId);
+
+  if (!isPaystackConfigured()) {
+    throw new Error("Paystack is not configured. Add PAYSTACK_SECRET_KEY first.");
+  }
 
   const restaurant = await prisma.restaurant.findUnique({
     where: { id: restaurantId },
@@ -164,4 +172,101 @@ export async function requestRestaurantPayout(formData: FormData) {
     revalidatePath("/restaurant/dashboard");
     throw new Error(message);
   }
+}
+
+
+function payoutStatusFromPaystack(status: string) {
+  return status === "success"
+    ? "SUCCESS"
+    : status === "failed"
+      ? "FAILED"
+      : status === "reversed"
+        ? "REVERSED"
+        : "PROCESSING";
+}
+
+export async function retryRestaurantPayout(formData: FormData) {
+  const restaurantId = formData.get("restaurantId")?.toString();
+  const payoutId = formData.get("payoutId")?.toString();
+
+  if (!restaurantId || !payoutId) {
+    throw new Error("Restaurant and payout are required.");
+  }
+
+  await requireOwner(restaurantId);
+
+  if (!isPaystackConfigured()) {
+    throw new Error("Paystack is not configured. Add PAYSTACK_SECRET_KEY first.");
+  }
+
+  const payout = await prisma.restaurantPayout.findFirst({
+    where: {
+      id: payoutId,
+      restaurantId,
+    },
+    include: {
+      restaurant: {
+        select: {
+          name: true,
+          payoutRecipientCode: true,
+          payoutVerifiedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!payout) throw new Error("Payout not found.");
+  if (payout.status === "SUCCESS") {
+    return {
+      status: "SUCCESS",
+      amount: Number(payout.amount),
+      reference: payout.reference,
+      requiresOtp: false,
+    };
+  }
+  if (
+    !payout.restaurant.payoutRecipientCode ||
+    !payout.restaurant.payoutVerifiedAt
+  ) {
+    throw new Error("Verify a Paystack payout account before retrying this payout.");
+  }
+
+  let transfer;
+  try {
+    transfer = await verifyPaystackTransfer(payout.reference);
+  } catch {
+    transfer = await initiatePaystackTransfer({
+      amountKobo: Math.round(Number(payout.amount) * 100),
+      recipientCode: payout.restaurant.payoutRecipientCode,
+      reference: payout.reference,
+      reason: `Paperbag payout for ${payout.restaurant.name}`,
+    });
+  }
+
+  const status = payoutStatusFromPaystack(transfer.status);
+
+  await prisma.restaurantPayout.update({
+    where: { id: payout.id },
+    data: {
+      status,
+      paystackTransferCode: transfer.transfer_code || null,
+      paystackTransferId: String(transfer.id),
+      completedAt: status === "SUCCESS" ? new Date() : null,
+      failureReason:
+        transfer.status === "otp"
+          ? "Paystack requires transfer OTP. Disable transfer confirmation in Paystack for automated payouts."
+          : status === "FAILED"
+            ? "Paystack reported that the payout failed."
+            : null,
+    },
+  });
+
+  revalidatePath("/restaurant/dashboard");
+
+  return {
+    status,
+    amount: Number(payout.amount),
+    reference: payout.reference,
+    requiresOtp: transfer.status === "otp",
+  };
 }
