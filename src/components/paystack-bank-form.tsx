@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { BadgeCheck, LoaderCircle } from "lucide-react";
+import { BadgeCheck, LoaderCircle, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { requestRestaurantPayout } from "@/actions/payouts";
 import { saveRestaurantBankInfo } from "@/actions/verification";
 
 type Bank = {
@@ -12,6 +13,25 @@ type Bank = {
   code: string;
 };
 
+type PayoutSummary = {
+  availableAmount: number;
+  eligibleOrderCount: number;
+  latestPayout: null | {
+    id: string;
+    amount: number;
+    status: string;
+    reference: string;
+    createdAt: string;
+    failureReason: string | null;
+  };
+};
+
+const moneyFormatter = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  maximumFractionDigits: 0,
+});
+
 export function PaystackBankForm({
   restaurantId,
   initialBankName,
@@ -19,6 +39,7 @@ export function PaystackBankForm({
   initialAccountName,
   initialAccountNumber,
   isVerified,
+  canRequestPayout,
   onSaved,
 }: {
   restaurantId: string;
@@ -27,6 +48,7 @@ export function PaystackBankForm({
   initialAccountName: string | null;
   initialAccountNumber: string | null;
   isVerified: boolean;
+  canRequestPayout: boolean;
   onSaved: () => void;
 }) {
   const router = useRouter();
@@ -42,6 +64,9 @@ export function PaystackBankForm({
   const [loadingBanks, setLoadingBanks] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
+  const [payoutSummary, setPayoutSummary] = useState<PayoutSummary | null>(null);
+  const [payoutMessage, setPayoutMessage] = useState("");
+  const [confirmPayout, setConfirmPayout] = useState(false);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -56,7 +81,7 @@ export function PaystackBankForm({
       .then((nextBanks) => {
         if (!active) return;
         setBanks(nextBanks);
-        if (!bankCode && initialBankName) {
+        if (!initialBankCode && initialBankName) {
           const match = nextBanks.find(
             (bank) => bank.name.toLowerCase() === initialBankName.toLowerCase()
           );
@@ -75,7 +100,33 @@ export function PaystackBankForm({
     return () => {
       active = false;
     };
-  }, [bankCode, initialBankName]);
+  }, [initialBankCode, initialBankName]);
+
+  async function refreshPayoutSummary() {
+    if (!canRequestPayout) return;
+
+    try {
+      const response = await fetch(
+        `/api/restaurant/payout/summary?restaurantId=${encodeURIComponent(restaurantId)}`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not load payout balance.");
+      setPayoutSummary(payload as PayoutSummary);
+    } catch (caught) {
+      setPayoutMessage(
+        caught instanceof Error ? caught.message : "Could not load payout balance."
+      );
+    }
+  }
+
+  useEffect(() => {
+    if (isVerified && canRequestPayout) {
+      void refreshPayoutSummary();
+    }
+    // Refresh once when the saved payout account changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVerified, canRequestPayout, restaurantId]);
 
   const selectedBank = useMemo(
     () => banks.find((bank) => bank.code === bankCode) ?? null,
@@ -152,6 +203,32 @@ export function PaystackBankForm({
     });
   }
 
+  function sendPayout() {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+
+    setPayoutMessage("");
+    startTransition(async () => {
+      try {
+        const result = await requestRestaurantPayout(formData);
+        setConfirmPayout(false);
+        setPayoutMessage(
+          result.requiresOtp
+            ? "Paystack created the transfer, but your Paystack account still requires transfer OTP confirmation."
+            : result.status === "SUCCESS"
+              ? "Payout completed successfully."
+              : "Payout queued with Paystack. Its final status will update from the Paystack webhook."
+        );
+        await refreshPayoutSummary();
+        router.refresh();
+      } catch (caught) {
+        setPayoutMessage(
+          caught instanceof Error ? caught.message : "The payout could not be started."
+        );
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
@@ -223,6 +300,75 @@ export function PaystackBankForm({
             ) : null}
           </div>
 
+          {isVerified && canRequestPayout && payoutSummary ? (
+            <div className="rounded-[10px] border-2 border-[#EAEAEA] p-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-medium text-[#808080]">
+                    Available payout
+                  </p>
+                  <p className="mt-1 text-[18px] font-semibold tracking-[-0.03em]">
+                    {moneyFormatter.format(payoutSummary.availableAmount)}
+                  </p>
+                </div>
+                <p className="text-[9px] font-medium text-[#808080]">
+                  {payoutSummary.eligibleOrderCount} settled {payoutSummary.eligibleOrderCount === 1 ? "order" : "orders"}
+                </p>
+              </div>
+
+              {payoutSummary.latestPayout ? (
+                <p className="mt-3 text-[9px] font-medium text-[#808080]">
+                  Latest payout:{" "}
+                  <span className="font-semibold text-black">
+                    {payoutSummary.latestPayout.status}
+                  </span>{" "}
+                  · {moneyFormatter.format(payoutSummary.latestPayout.amount)}
+                </p>
+              ) : null}
+
+              {!confirmPayout ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmPayout(true)}
+                  disabled={pending || payoutSummary.availableAmount <= 0}
+                  className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] border-2 border-[#EAEAEA] text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Send className="h-3.5 w-3.5" strokeWidth={2.3} />
+                  Send Available Payout
+                </button>
+              ) : (
+                <div className="mt-3 rounded-[8px] bg-[#F5F5F5] p-3">
+                  <p className="text-[10px] font-medium leading-[1.45] text-[#606060]">
+                    Send {moneyFormatter.format(payoutSummary.availableAmount)} to the verified Paystack recipient? Only successfully paid, completed restaurant orders are included.
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmPayout(false)}
+                      className="h-8 rounded-[7px] border border-[#D8D8D8] text-[10px] font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={sendPayout}
+                      disabled={pending}
+                      className="h-8 rounded-[7px] bg-black text-[10px] font-semibold text-white disabled:opacity-40"
+                    >
+                      {pending ? "Sending..." : "Send Payout"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {payoutMessage ? (
+                <p className="mt-3 text-[9px] font-medium leading-[1.45] text-[#606060]">
+                  {payoutMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           {error ? (
             <p className="rounded-[10px] bg-red-50 px-3 py-2.5 text-[11px] font-medium text-red-600">
               {error}
@@ -238,7 +384,7 @@ export function PaystackBankForm({
           disabled={pending || !verified}
           className="h-10 w-full rounded-[10px] bg-black text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {pending ? "Creating payout recipient..." : "Save Verified Payout Account"}
+          {pending ? "Working..." : "Save Verified Payout Account"}
         </button>
       </div>
     </div>
