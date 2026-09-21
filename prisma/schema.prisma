@@ -50,6 +50,14 @@ enum ComplaintStatus {
   RESOLVED
 }
 
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
 model User {
   id          String    @id @default(cuid())
   clerkId     String    @unique
@@ -85,9 +93,13 @@ model Restaurant {
   closingTime   String   @default("22:00")
   operatingDays Int[]    @default([1, 2, 3, 4, 5])
   timezone          String   @default("Africa/Lagos")
-  payoutBankName    String?
-  payoutAccountName String?
-  payoutAccountNumber String?
+  payoutBankName       String?
+  payoutBankCode       String?
+  payoutAccountName    String?
+  payoutAccountNumber  String?
+  payoutRecipientCode  String?
+  payoutRecipientId    String?
+  payoutVerifiedAt     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -98,6 +110,7 @@ model Restaurant {
   featuredCombos   FeaturedCombo[]
   reviews          Review[]
   complaints       CustomerComplaint[]
+  payouts          RestaurantPayout[]
 }
 
 model RestaurantStaff {
@@ -218,6 +231,7 @@ model RestaurantOrder {
   delivery   Delivery?
   reviews    Review[]
   complaints CustomerComplaint[]
+  payoutOrder RestaurantPayoutOrder?
 
   @@unique([orderId, restaurantId])
 }
@@ -293,6 +307,38 @@ model CustomerComplaint {
   restaurantOrder RestaurantOrder? @relation(fields: [restaurantOrderId], references: [id], onDelete: SetNull)
 
   @@index([restaurantId, status, createdAt])
+}
+
+model RestaurantPayout {
+  id                   String       @id @default(cuid())
+  restaurantId         String
+  amount               Decimal      @db.Decimal(10, 2)
+  currency             String       @default("NGN")
+  reference            String       @unique
+  paystackTransferCode String?
+  paystackTransferId   String?
+  status               PayoutStatus @default(PENDING)
+  failureReason        String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  completedAt          DateTime?
+
+  restaurant Restaurant              @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orders     RestaurantPayoutOrder[]
+
+  @@index([restaurantId, status, createdAt])
+}
+
+model RestaurantPayoutOrder {
+  payoutId          String
+  restaurantOrderId String
+  createdAt         DateTime @default(now())
+
+  payout          RestaurantPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  restaurantOrder RestaurantOrder  @relation(fields: [restaurantOrderId], references: [id], onDelete: Restrict)
+
+  @@id([payoutId, restaurantOrderId])
+  @@unique([restaurantOrderId])
 }
 
 model Payment {
