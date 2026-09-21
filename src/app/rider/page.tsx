@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Bike, MapPin, ShoppingBag } from "lucide-react";
 
+import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
 import { RiderLocationTracker } from "@/components/rider-location-tracker";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -63,6 +64,7 @@ export default async function RiderPage() {
 
   return (
     <main className="min-h-screen bg-white px-4 py-12 sm:px-8">
+      <DashboardLiveRefresh intervalMs={12000} />
       <div className="mx-auto max-w-[620px]">
         <div className="flex items-center gap-2">
           <Bike className="h-5 w-5" strokeWidth={2.3} />
