@@ -1057,13 +1057,30 @@ export function FeaturedMenuManager({
           onClose={() => setNested(null)}
         >
           <div className="px-5 pb-5">
-            {nested === "editItem" && selectedMenu ? (
-              <div className="mb-4 flex items-center gap-3">
-                <MenuThumb item={selectedMenu} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-medium">{selectedMenu.name}</p>
-                  <p className="mt-1 text-[10px] text-[#858585]">{money(selectedMenu.price)}</p>
-                </div>
+            <div className="mb-4 flex items-center gap-3">
+              {itemImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={itemImage}
+                  alt={itemName || "Menu item preview"}
+                  className="h-11 w-11 shrink-0 rounded-[8px] border border-white/10 object-cover"
+                />
+              ) : (
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[8px] bg-[#242424] text-[#8A8A8A]">
+                  <Sandwich className="h-5 w-5" strokeWidth={2.3} />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-medium">
+                  {itemName || "Item name"}
+                </p>
+                <p className="mt-1 text-[10px] text-[#858585]">
+                  {Number(itemPrice.replaceAll(",", "")) > 0
+                    ? money(Number(itemPrice.replaceAll(",", "")))
+                    : "₦0"}
+                </p>
+              </div>
+              {nested === "editItem" && selectedMenu ? (
                 <button
                   type="button"
                   onClick={() =>
@@ -1074,11 +1091,12 @@ export function FeaturedMenuManager({
                     })
                   }
                   className="grid h-8 w-8 place-items-center rounded-full bg-[#520000] text-red-500"
+                  aria-label={`Remove ${selectedMenu.name}`}
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={2.3} />
                 </button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
 
             <div className="space-y-3">
               <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
@@ -1100,20 +1118,74 @@ export function FeaturedMenuManager({
                   className="mt-1 w-full bg-transparent text-[12px] outline-none"
                 />
               </label>
-              <MenuImagePicker value={itemImage} onChange={setItemImage} />
+              <MenuImagePicker
+                value={itemImage}
+                onChange={setItemImage}
+                onUploadingChange={setImageUploading}
+              />
             </div>
 
             {error ? <p className="mt-3 text-[10px] text-red-500">{error}</p> : null}
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || imageUploading}
               onClick={() => submitItem(nested === "editItem")}
-              className="mt-24 h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:opacity-50"
+              className="mt-24 h-9 w-full rounded-[8px] bg-white text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {nested === "newItem" ? "+ Create Item" : "Save Changes"}
+              {imageUploading ? (
+                "Uploading image..."
+              ) : nested === "newItem" ? (
+                <>
+                  <Plus className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+                  Create Item
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </button>
           </div>
         </NestedModal>
+      ) : null}
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/65 p-4">
+          <div className="w-[min(430px,92vw)] rounded-[12px] border border-white/10 bg-black p-5 text-white shadow-2xl">
+            <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#3A1600] text-amber-400">
+              <AlertTriangle className="h-5 w-5" strokeWidth={2.3} />
+            </span>
+            <h3 className="mt-4 text-[14px] font-semibold tracking-[-0.02em]">
+              {deleteTarget.kind === "combo"
+                ? "Delete featured combo?"
+                : deleteTarget.kind === "menuItem"
+                  ? "Remove menu item?"
+                  : "Remove item from combo?"}
+            </h3>
+            <p className="mt-2 text-[11px] leading-[1.5] text-[#858585]">
+              {deleteTarget.kind === "combo"
+                ? `“${deleteTarget.name}” will be removed from Featured Combos. Its menu items will stay in your full menu and past orders are unchanged.`
+                : deleteTarget.kind === "menuItem"
+                  ? `“${deleteTarget.name}” will be hidden from your restaurant menu and removed from every featured combo. Existing past order records will remain intact.`
+                  : `“${deleteTarget.name}” will be removed from this combo only. The menu item itself will remain in your full menu.`}
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="h-9 rounded-[8px] border border-white/15 text-[11px] font-semibold"
+              >
+                Keep it
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={confirmDelete}
+                className="h-9 rounded-[8px] bg-red-600 text-[11px] font-semibold text-white disabled:opacity-50"
+              >
+                {deleteTarget.kind === "combo" ? "Delete Combo" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {nested === "times" && selectedCombo ? (
