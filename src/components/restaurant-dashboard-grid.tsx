@@ -980,7 +980,7 @@ export async function RestaurantDashboardGrid({
       title: personName(member.user),
       subtitle: member.user.email,
       status: member.isActive ? "Active" : "Inactive",
-      statusTone: member.isActive ? "green" : "neutral",
+      statusTone: (member.isActive ? "green" : "neutral") as DashboardExplorerItem["statusTone"],
       details: [
         { label: "Role", value: member.role },
         { label: "Access", value: member.isActive ? "Active" : "Inactive" },
@@ -995,7 +995,7 @@ export async function RestaurantDashboardGrid({
       title: personName(rider.user),
       subtitle: rider.user.email,
       status: delivering ? "Delivering" : rider.isActive ? "Available" : "Off duty",
-      statusTone: delivering ? "amber" : rider.isActive ? "green" : "neutral",
+      statusTone: (delivering ? "amber" : rider.isActive ? "green" : "neutral") as DashboardExplorerItem["statusTone"],
       details: [
         { label: "Role", value: "RIDER" },
         { label: "Access", value: rider.isActive ? "Active" : "Inactive" },
@@ -1020,7 +1020,7 @@ export async function RestaurantDashboardGrid({
       title: complaint.subject,
       subtitle: `${personName(complaint.customer)}${complaint.restaurantOrder ? ` · #${complaint.restaurantOrder.order.orderNumber}` : ""}`,
       status: complaint.status,
-      statusTone: complaint.status === "OPEN" ? "red" : "green",
+      statusTone: (complaint.status === "OPEN" ? "red" : "green") as DashboardExplorerItem["statusTone"],
       body: complaint.body,
       details: [
         { label: "Type", value: "Customer complaint" },
@@ -1037,7 +1037,7 @@ export async function RestaurantDashboardGrid({
             : review.menuItem?.name ?? "Meal review",
       subtitle: `${personName(review.customer)}${review.restaurantOrder ? ` · #${review.restaurantOrder.order.orderNumber}` : ""}`,
       status: `${review.rating}/5`,
-      statusTone: "green",
+      statusTone: "green" as DashboardExplorerItem["statusTone"],
       body: review.body,
       details: [
         { label: "Rating", value: `${review.rating}/5` },
