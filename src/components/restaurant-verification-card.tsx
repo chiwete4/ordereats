@@ -147,6 +147,18 @@ export function RestaurantVerificationCard({
                   detailsDialogRef.current?.showModal();
                   return;
                 }
+                if (nextIncomplete?.label === "Add at least 1 Rider") {
+                  const riderDetails = document.getElementById("rider-add-details") as HTMLDetailsElement | null;
+                  if (riderDetails) {
+                    riderDetails.open = true;
+                    riderDetails.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                  return;
+                }
+                if (nextIncomplete?.label === "Create your menu") {
+                  window.dispatchEvent(new Event("paperbag:open-menu-manager"));
+                  return;
+                }
                 if (nextIncomplete?.label === "Add your Bank Info") {
                   bankDialogRef.current?.showModal();
                 }
