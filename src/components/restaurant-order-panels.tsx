@@ -9,7 +9,6 @@ import {
   PackageCheck,
   Send,
   ShoppingBag,
-  Utensils,
 } from "lucide-react";
 
 import {
