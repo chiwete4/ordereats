@@ -258,7 +258,9 @@ function ModalFrame({
         >
           <X className="h-5 w-5" strokeWidth={2.3} />
         </button>
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -838,7 +840,13 @@ export function FeaturedMenuManager({
                         <MenuThumb item={item} size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[11px] font-medium">{item.name}</p>
-                          <p className="mt-1 text-[9px] text-[#8B8B8B]">{money(item.price)}</p>
+                          <p className="mt-1 flex items-center gap-1.5 text-[9px]">
+                            <span className="text-[#8B8B8B]">{money(item.price)}</span>
+                            <span className="text-[#5E5E5E]">•</span>
+                            <span className={item.isAvailable ? "font-semibold text-green-400" : "font-semibold text-red-400"}>
+                              {item.isAvailable ? "Available" : "Unavailable"}
+                            </span>
+                          </p>
                         </div>
                         <span className="rounded-full border border-white/15 px-3 py-1.5 text-[9px] font-medium">
                           Edit
