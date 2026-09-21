@@ -2,14 +2,19 @@
 
 import { useMemo, useState, useTransition } from "react";
 import {
+  AlertTriangle,
   BadgeCheck,
   Bike,
-  ImagePlus,
-  MapPin,
+  ClipboardList,
+  Minus,
+  Navigation,
   Pencil,
+  Plus,
+  Sandwich,
   Search,
   ShoppingBag,
   Trash2,
+  Utensils,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -114,7 +119,7 @@ function MenuThumb({
     <span
       className={`grid ${classes} shrink-0 place-items-center rounded-[8px] bg-[#2A2A2A] text-white`}
     >
-      <ShoppingBag className="h-4 w-4" strokeWidth={2.3} />
+      <Utensils className="h-4 w-4" strokeWidth={2.3} />
     </span>
   );
 }
@@ -124,7 +129,7 @@ function StackedThumb({ combo }: { combo: FeaturedComboData }) {
   if (!item) {
     return (
       <span className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#2A2A2A]">
-        <ShoppingBag className="h-4 w-4" strokeWidth={2.3} />
+        <Utensils className="h-4 w-4" strokeWidth={2.3} />
       </span>
     );
   }
@@ -161,13 +166,13 @@ function RestaurantMeta({ restaurant }: { restaurant: RestaurantData }) {
         </h2>
         {restaurant.isVerified ? (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#969696]">
-            <BadgeCheck className="h-3.5 w-3.5" strokeWidth={2.3} />
+            <BadgeCheck className="h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
             Verified by Paperbag
           </span>
         ) : null}
         {restaurant.address ? (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#969696]">
-            <MapPin className="h-3.5 w-3.5" strokeWidth={2.3} />
+            <Navigation className="h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
             {restaurant.address}
           </span>
         ) : null}
@@ -177,29 +182,36 @@ function RestaurantMeta({ restaurant }: { restaurant: RestaurantData }) {
 }
 
 function ComboDetails({ combo }: { combo: FeaturedComboData }) {
+  const branchHeight = Math.max(18, (combo.items.length - 1) * 32 + 18);
+
   return (
     <div className="mt-4">
-      <div className="ml-[72px] border-l border-[#787878] pl-5">
-        <div className="space-y-3">
-          {combo.items.map((entry) => (
-            <div
-              key={entry.id}
-              className="flex items-center justify-between gap-3 text-[11px]"
-            >
-              <span className="min-w-0 truncate font-medium text-white">
-                <span className="mr-3 text-[#858585]">x{entry.quantity}</span>
-                {entry.menuItem.name}
-              </span>
-              <span className="shrink-0 text-[#858585]">
-                {money(entry.menuItem.price * entry.quantity)}
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="relative ml-[72px] pl-[52px]">
+        {combo.items.length ? (
+          <span
+            className="absolute left-0 top-0 w-px bg-[#777777]"
+            style={{ height: branchHeight }}
+          />
+        ) : null}
+        {combo.items.map((entry) => (
+          <div
+            key={entry.id}
+            className="relative flex min-h-[32px] items-center justify-between gap-4 text-[11px]"
+          >
+            <span className="absolute -left-[52px] top-1/2 h-px w-[34px] -translate-y-1/2 bg-[#777777]" />
+            <span className="min-w-0 truncate font-medium text-white">
+              <span className="mr-3 text-[#858585]">x{entry.quantity}</span>
+              {entry.menuItem.name}
+            </span>
+            <span className="shrink-0 text-[#858585]">
+              {money(entry.menuItem.price * entry.quantity)}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="ml-[72px] mt-5 space-y-2 text-[11px] text-[#858585]">
-        <p className="inline-flex items-center gap-1.5">
+        <p className="flex items-center gap-1.5">
           <UtensilsCrossed className="h-3.5 w-3.5" strokeWidth={2.3} />
           Ready within{" "}
           <span className="font-semibold text-white">
@@ -281,9 +293,11 @@ function NestedModal({
 function MenuImagePicker({
   value,
   onChange,
+  onUploadingChange,
 }: {
   value: string;
   onChange: (url: string) => void;
+  onUploadingChange: (uploading: boolean) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const { startUpload } = useUploadThing("menuImage", {
@@ -291,9 +305,11 @@ function MenuImagePicker({
       const url = files?.[0]?.ufsUrl;
       if (url) onChange(url);
       setUploading(false);
+      onUploadingChange(false);
     },
     onUploadError() {
       setUploading(false);
+      onUploadingChange(false);
     },
   });
 
@@ -301,8 +317,7 @@ function MenuImagePicker({
     <label className="block rounded-[8px] border border-[#2A2A2A] p-3">
       <span className="block text-[11px] text-[#7F7F7F]">Image</span>
       <span className="mt-2 flex h-8 cursor-pointer items-center justify-center rounded-[6px] bg-[#333333] text-[11px] font-semibold text-white">
-        <ImagePlus className="mr-2 h-3.5 w-3.5" strokeWidth={2.3} />
-        {uploading ? "Uploading..." : value ? "Change Image" : "Upload Image"}
+{uploading ? "Uploading..." : value ? "Change Image" : "Upload Image"}
       </span>
       <input
         type="file"
@@ -313,6 +328,7 @@ function MenuImagePicker({
           const file = event.target.files?.[0];
           if (!file) return;
           setUploading(true);
+          onUploadingChange(true);
           await startUpload([file]);
         }}
       />
