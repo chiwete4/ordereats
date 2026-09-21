@@ -55,7 +55,7 @@ export function OrderMoreMenu({
   }
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div ref={rootRef} className="relative z-[60] shrink-0">
       <button type="button" onClick={() => changeOpen(!open)} disabled={pending} className="grid h-8 w-8 place-items-center rounded-[8px] bg-[#EAEAEA] disabled:opacity-50" aria-label="Order options">
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" strokeWidth={2.3} /> : <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />}
       </button>
