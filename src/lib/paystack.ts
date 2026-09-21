@@ -143,6 +143,13 @@ export async function createNigerianTransferRecipient({
   return response.data;
 }
 
+export async function verifyPaystackTransfer(reference: string) {
+  const response = await paystackFetch<PaystackTransfer>(
+    `/transfer/verify/${encodeURIComponent(reference)}`
+  );
+  return response.data;
+}
+
 export async function initiatePaystackTransfer({
   amountKobo,
   recipientCode,
