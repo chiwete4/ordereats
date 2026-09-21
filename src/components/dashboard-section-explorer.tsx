@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -66,7 +67,7 @@ export function DashboardSectionExplorer({
   title: string;
   count?: number;
   items: DashboardExplorerItem[];
-  triggerLabel?: string;
+  triggerLabel?: ReactNode;
   triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
