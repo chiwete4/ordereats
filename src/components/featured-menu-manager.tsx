@@ -507,6 +507,32 @@ export function FeaturedMenuManager({
     run(archiveDashboardMenuItem, formData, () => setNested(null));
   }
 
+  function toggleAvailability(item: FeaturedMenuItemData) {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("menuItemId", item.id);
+    run(toggleDashboardMenuItemAvailability, formData);
+  }
+
+  function createCategory() {
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("name", newCategoryName);
+    run(createDashboardCategory, formData, () => setNewCategoryName(""));
+  }
+
+  function saveCategoryName() {
+    if (!editingCategoryId) return;
+    const formData = new FormData();
+    formData.set("restaurantId", restaurantId);
+    formData.set("categoryId", editingCategoryId);
+    formData.set("name", editingCategoryName);
+    run(updateDashboardCategory, formData, () => {
+      setEditingCategoryId("");
+      setEditingCategoryName("");
+    });
+  }
+
   function confirmDelete() {
     if (!deleteTarget) return;
 
@@ -964,14 +990,26 @@ export function FeaturedMenuManager({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => openEditItem(selectedMenu)}
-                    className="mt-3 h-9 w-full rounded-[8px] border border-white/20 text-[11px] font-semibold"
-                  >
-                    <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
-                    Edit Item
-                  </button>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleAvailability(selectedMenu)}
+                      className={`h-9 rounded-[8px] border text-[11px] font-semibold ${selectedMenu.isAvailable ? "border-green-500/40 text-green-400" : "border-white/20 text-[#A0A0A0]"}`}
+                    >
+                      {selectedMenu.isAvailable ? "Available" : "Unavailable"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditItem(selectedMenu)}
+                      className="h-9 rounded-[8px] border border-white/20 text-[11px] font-semibold"
+                    >
+                      <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
+                      Edit Item
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[9px] text-[#686868]">
+                    Category: {selectedMenu.categoryName}
+                  </p>
 
                   <div className="mt-6 border-t border-white/10 pt-5">
                     <p className="text-[11px] font-medium text-[#858585]">Past Orders</p>
@@ -1237,6 +1275,54 @@ export function FeaturedMenuManager({
                   className="mt-1 w-full bg-transparent text-[12px] outline-none"
                 />
               </label>
+              <label className="block rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                <span className="block text-[11px] text-[#777777]">Category</span>
+                <select
+                  value={itemCategoryId}
+                  onChange={(event) => setItemCategoryId(event.target.value)}
+                  className="mt-1 w-full bg-black text-[12px] outline-none"
+                >
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid grid-cols-3 gap-2">
+                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[9px] text-[#777777]">Ready min</span>
+                  <input
+                    value={itemReadyMin}
+                    onChange={(event) => setItemReadyMin(event.target.value)}
+                    type="number"
+                    min={0}
+                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                  />
+                </label>
+                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[9px] text-[#777777]">Ready max</span>
+                  <input
+                    value={itemReadyMax}
+                    onChange={(event) => setItemReadyMax(event.target.value)}
+                    type="number"
+                    min={0}
+                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                  />
+                </label>
+                <label className="rounded-[8px] border border-[#2A2A2A] px-3 py-2">
+                  <span className="block text-[9px] text-[#777777]">Delivery sec</span>
+                  <input
+                    value={itemDeliverySeconds}
+                    onChange={(event) => setItemDeliverySeconds(event.target.value)}
+                    type="number"
+                    min={1}
+                    className="mt-1 w-full bg-transparent text-[11px] outline-none"
+                  />
+                </label>
+              </div>
+
               <MenuImagePicker
                 value={itemImage}
                 onChange={setItemImage}
@@ -1266,6 +1352,85 @@ export function FeaturedMenuManager({
         </NestedModal>
       ) : null}
 
+      {nested === "categories" ? (
+        <NestedModal title="Manage Categories" onClose={() => setNested(null)}>
+          <div className="px-5 pb-5">
+            <div className="flex gap-2">
+              <input
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                placeholder="New category name"
+                className="h-9 min-w-0 flex-1 rounded-[8px] border border-[#2A2A2A] bg-transparent px-3 text-[11px] outline-none"
+              />
+              <button
+                type="button"
+                disabled={pending || !newCategoryName.trim()}
+                onClick={createCategory}
+                className="h-9 rounded-[8px] bg-white px-3 text-[10px] font-semibold text-black disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+
+            <div className="mt-4 max-h-[360px] divide-y divide-[#282828] overflow-y-auto">
+              {categories.length === 0 ? (
+                <p className="py-8 text-center text-[10px] text-[#777777]">
+                  No categories yet. Create your first one above.
+                </p>
+              ) : (
+                categories.map((category) => (
+                  <div key={category.id} className="flex items-center gap-2 py-3">
+                    {editingCategoryId === category.id ? (
+                      <>
+                        <input
+                          value={editingCategoryName}
+                          onChange={(event) => setEditingCategoryName(event.target.value)}
+                          className="h-8 min-w-0 flex-1 rounded-[7px] border border-[#333333] bg-transparent px-2 text-[11px] outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveCategoryName}
+                          className="rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-black"
+                        >
+                          Save
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-medium">{category.name}</p>
+                          <p className="mt-1 text-[9px] text-[#777777]">{category.itemCount} items</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCategoryId(category.id);
+                            setEditingCategoryName(category.name);
+                          }}
+                          className="rounded-full border border-white/15 px-3 py-1.5 text-[9px] font-medium"
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({ kind: "category", id: category.id, name: category.name })
+                          }
+                          className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500"
+                          aria-label={`Delete ${category.name}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </NestedModal>
+      ) : null}
+
       {deleteTarget ? (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/65 p-4">
           <div className="w-[min(430px,92vw)] rounded-[12px] border border-white/10 bg-black p-5 text-white shadow-2xl">
@@ -1277,14 +1442,18 @@ export function FeaturedMenuManager({
                 ? "Delete featured combo?"
                 : deleteTarget.kind === "menuItem"
                   ? "Remove menu item?"
-                  : "Remove item from combo?"}
+                  : deleteTarget.kind === "category"
+                    ? "Delete category?"
+                    : "Remove item from combo?"}
             </h3>
             <p className="mt-2 text-[11px] leading-[1.5] text-[#858585]">
               {deleteTarget.kind === "combo"
                 ? `“${deleteTarget.name}” will be removed from Featured Combos. Its menu items will stay in your full menu and past orders are unchanged.`
                 : deleteTarget.kind === "menuItem"
                   ? `“${deleteTarget.name}” will be hidden from your restaurant menu and removed from every featured combo. Existing past order records will remain intact.`
-                  : `“${deleteTarget.name}” will be removed from this combo only. The menu item itself will remain in your full menu.`}
+                  : deleteTarget.kind === "category"
+                    ? `“${deleteTarget.name}” can only be deleted when it has no active menu items. Deleting it does not delete archived items or historical orders.`
+                    : `“${deleteTarget.name}” will be removed from this combo only. The menu item itself will remain in your full menu.`}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button
@@ -1300,7 +1469,11 @@ export function FeaturedMenuManager({
                 onClick={confirmDelete}
                 className="h-9 rounded-[8px] bg-red-600 text-[11px] font-semibold text-white disabled:opacity-50"
               >
-                {deleteTarget.kind === "combo" ? "Delete Combo" : "Remove"}
+                {deleteTarget.kind === "combo"
+                  ? "Delete Combo"
+                  : deleteTarget.kind === "category"
+                    ? "Delete Category"
+                    : "Remove"}
               </button>
             </div>
           </div>
