@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, Navigation, PencilLine, Store, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { saveRestaurantBankInfo } from "@/actions/verification";
 import { RestaurantImageUpload } from "@/components/restaurant-image-upload";
@@ -45,8 +46,14 @@ export function RestaurantVerificationCard({
 }) {
   const bankDialogRef = useRef<HTMLDialogElement>(null);
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
+  const [detailsError, setDetailsError] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
   useEffect(() => {
-    const openEditor = () => detailsDialogRef.current?.showModal();
+    const openEditor = () => {
+      setDetailsError("");
+      detailsDialogRef.current?.showModal();
+    };
     window.addEventListener("paperbag:edit-restaurant", openEditor);
     return () => window.removeEventListener("paperbag:edit-restaurant", openEditor);
   }, []);
@@ -101,7 +108,10 @@ export function RestaurantVerificationCard({
 
             <button
               type="button"
-              onClick={() => detailsDialogRef.current?.showModal()}
+              onClick={() => {
+                setDetailsError("");
+                detailsDialogRef.current?.showModal();
+              }}
               className="shrink-0 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black underline decoration-[1.5px] underline-offset-2"
             >
               Edit Restaurant
@@ -179,7 +189,36 @@ export function RestaurantVerificationCard({
       </section>
 
       <dialog ref={detailsDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
-        <form action={updateRestaurant} className="p-6">
+        <form
+          className="p-6"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const formData = new FormData(form);
+
+            if (formData.getAll("operatingDays").length === 0) {
+              setDetailsError("Choose at least one operating day.");
+              return;
+            }
+
+            setDetailsError("");
+            setSavingDetails(true);
+
+            try {
+              await updateRestaurant(formData);
+              detailsDialogRef.current?.close();
+              router.refresh();
+            } catch (error) {
+              setDetailsError(
+                error instanceof Error
+                  ? error.message
+                  : "We couldn't save your restaurant. Check the details and try again."
+              );
+            } finally {
+              setSavingDetails(false);
+            }
+          }}
+        >
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <div className="flex items-center justify-between">
             <h3 className="text-[24px] leading-none tracking-[-0.035em]">Edit Restaurant</h3>
@@ -234,7 +273,17 @@ export function RestaurantVerificationCard({
               <input type="hidden" name="timezone" value={timezone} />
             </fieldset>
           </div>
-          <button className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white">Save Restaurant</button>
+          {detailsError ? (
+            <p className="mt-4 rounded-[10px] bg-red-50 px-3 py-2.5 text-[11px] font-medium text-red-600">
+              {detailsError}
+            </p>
+          ) : null}
+          <button
+            disabled={savingDetails}
+            className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {savingDetails ? "Saving..." : "Save Restaurant"}
+          </button>
         </form>
       </dialog>
 
