@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, MoreHorizontal, Plus, X } from "lucide-react";
+import { AlertTriangle, Bike, MoreHorizontal, Plus, UserRound, X } from "lucide-react";
 
 import { cancelRestaurantOrder, assignRider } from "@/actions/orders";
-import { toggleRestaurantStaffActive } from "@/actions/staff";
+import { changeRestaurantStaffRole, toggleRestaurantStaffActive } from "@/actions/staff";
 
 export function OrderMoreMenu({
   restaurantId,
@@ -65,50 +65,63 @@ export function StaffMoreMenu({
   membershipId,
   name,
   isActive,
+  role,
   disabled = false,
 }: {
   restaurantId: string;
   membershipId: string;
   name: string;
   isActive: boolean;
+  role: "OWNER" | "STAFF" | "RIDER";
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-
-  if (disabled) {
-    return <MoreHorizontal className="h-4 w-4 text-[#B0B0B0]" strokeWidth={2.3} />;
+  if (disabled || role === "OWNER") {
+    return (
+      <span className="grid h-7 w-7 place-items-center text-[#B0B0B0]" title="Owner role cannot be changed here">
+        <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
+      </span>
+    );
   }
 
+  const nextRole = role === "RIDER" ? "STAFF" : "RIDER";
+
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`Options for ${name}`}>
+    <details className="relative">
+      <summary
+        className="grid h-7 w-7 cursor-pointer list-none place-items-center rounded-[7px] text-black transition-colors hover:bg-[#F0F0F0] [&::-webkit-details-marker]:hidden"
+        aria-label={`Options for ${name}`}
+      >
         <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
-      </button>
-      {open ? (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/25 p-4">
-          <div className="w-[min(400px,92vw)] rounded-[12px] border border-[#D5D5D5] bg-white p-5 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold">{name}</h3>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close">
-                <X className="h-4 w-4" strokeWidth={2.3} />
-              </button>
-            </div>
-            <p className="mt-2 text-[11px] text-[#777777]">
-              {isActive
-                ? "Deactivating removes this person's restaurant dashboard access until you reactivate them."
-                : "Reactivating restores this person's restaurant dashboard access."}
-            </p>
-            <form action={toggleRestaurantStaffActive} className="mt-5">
-              <input type="hidden" name="restaurantId" value={restaurantId} />
-              <input type="hidden" name="membershipId" value={membershipId} />
-              <button className={`h-9 w-full rounded-[8px] text-[11px] font-semibold text-white ${isActive ? "bg-red-600" : "bg-black"}`}>
-                {isActive ? "Deactivate Access" : "Reactivate Access"}
-              </button>
-            </form>
-          </div>
-        </div>
-      ) : null}
-    </>
+      </summary>
+
+      <div className="absolute right-0 top-[calc(100%+6px)] z-[70] w-[190px] overflow-hidden rounded-[10px] border border-[#D9D9D9] bg-white p-1.5 shadow-xl">
+        <form action={changeRestaurantStaffRole}>
+          <input type="hidden" name="restaurantId" value={restaurantId} />
+          <input type="hidden" name="membershipId" value={membershipId} />
+          <input type="hidden" name="nextRole" value={nextRole} />
+          <button className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-black hover:bg-[#F4F4F4]">
+            {nextRole === "RIDER" ? (
+              <Bike className="h-3.5 w-3.5" strokeWidth={2.3} />
+            ) : (
+              <UserRound className="h-3.5 w-3.5" strokeWidth={2.3} />
+            )}
+            Switch to {nextRole === "RIDER" ? "Rider" : "Staff"}
+          </button>
+        </form>
+
+        <div className="my-1 h-px bg-[#EAEAEA]" />
+
+        <form action={toggleRestaurantStaffActive}>
+          <input type="hidden" name="restaurantId" value={restaurantId} />
+          <input type="hidden" name="membershipId" value={membershipId} />
+          <button
+            className={`w-full rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold hover:bg-[#F4F4F4] ${isActive ? "text-red-600" : "text-black"}`}
+          >
+            {isActive ? "Deactivate access" : "Reactivate access"}
+          </button>
+        </form>
+      </div>
+    </details>
   );
 }
 
