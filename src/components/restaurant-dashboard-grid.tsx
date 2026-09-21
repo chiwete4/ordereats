@@ -22,6 +22,7 @@ import {
 import { deleteMenuItem } from "@/actions/menu";
 import { addRestaurantStaff } from "@/actions/staff";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
+import { FeaturedMenuManager } from "@/components/featured-menu-manager";
 import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { StaffUserSearch } from "@/components/staff-user-search";
 import { prisma } from "@/lib/prisma";
@@ -752,7 +753,7 @@ export async function RestaurantDashboardGrid({
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 6);
 
-  const [orders, staff, menuItems, totalOrders, customerRows, revenueRows, weeklyRows] =
+  const [orders, staff, menuItems, featuredCombos, totalOrders, customerRows, revenueRows, weeklyRows] =
     await Promise.all([
       prisma.restaurantOrder.findMany({
         where: { restaurantId },
@@ -813,9 +814,21 @@ export async function RestaurantDashboardGrid({
         },
       }),
       prisma.menuItem.findMany({
-        where: { restaurantId },
+        where: { restaurantId, isArchived: false },
         orderBy: { createdAt: "asc" },
-        take: 6,
+        take: 50,
+      }),
+      prisma.featuredCombo.findMany({
+        where: { restaurantId },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        include: {
+          items: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              menuItem: true,
+            },
+          },
+        },
       }),
       prisma.restaurantOrder.count({ where: { restaurantId } }),
       prisma.restaurantOrder.findMany({
@@ -863,6 +876,46 @@ export async function RestaurantDashboardGrid({
   const revenueToday = revenueRows.reduce((sum, row) => sum + Number(row.subtotal), 0);
   const totalCustomers = new Set(customerRows.map((row) => row.order.customerId)).size;
 
+  const menuItemData = menuItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    price: Number(item.price),
+    imageUrl: item.imageUrl,
+    isAvailable: item.isAvailable,
+    readyMin: item.readyMin,
+    readyMax: item.readyMax,
+    deliverySeconds: item.deliverySeconds,
+  }));
+
+  const comboData = featuredCombos.map((combo) => ({
+    id: combo.id,
+    name: combo.name,
+    readyMin: combo.readyMin,
+    readyMax: combo.readyMax,
+    deliverySeconds: combo.deliverySeconds,
+    items: combo.items.map((entry) => ({
+      id: entry.id,
+      quantity: entry.quantity,
+      menuItem: {
+        id: entry.menuItem.id,
+        name: entry.menuItem.name,
+        price: Number(entry.menuItem.price),
+        imageUrl: entry.menuItem.imageUrl,
+        isAvailable: entry.menuItem.isAvailable,
+        readyMin: entry.menuItem.readyMin,
+        readyMax: entry.menuItem.readyMax,
+        deliverySeconds: entry.menuItem.deliverySeconds,
+      },
+    })),
+  }));
+
+  const pastOrderData = pastOrders.slice(0, 12).map((row) => ({
+    id: row.id,
+    orderNumber: row.order.orderNumber,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+  }));
+
   const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
   const weeklyCounts = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
@@ -900,10 +953,17 @@ export async function RestaurantDashboardGrid({
           />
         </div>
 
-        <FeaturedMenuPanel
+        <FeaturedMenuManager
           restaurantId={restaurantId}
-          restaurant={restaurant}
-          items={menuItems}
+          restaurant={{
+            name: restaurant.name,
+            address: restaurant.address,
+            imageUrl: restaurant.imageUrl,
+            isVerified: restaurant.isVerified,
+          }}
+          menuItems={menuItemData}
+          combos={comboData}
+          pastOrders={pastOrderData}
         />
 
         <LiveMapPanel restaurant={restaurant} latestDelivery={latestDelivery} />
