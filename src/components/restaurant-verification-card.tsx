@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { AlertTriangle, Check, MapPin, PencilLine, Store, X } from "lucide-react";
 
 import { saveRestaurantBankInfo } from "@/actions/verification";
+import { RestaurantImageUpload } from "@/components/restaurant-image-upload";
 import { updateRestaurant } from "@/actions/restaurant";
 
 type VerificationStep = {
@@ -14,6 +15,7 @@ type VerificationStep = {
 export function RestaurantVerificationCard({
   restaurantId,
   restaurantName,
+  imageUrl,
   description,
   phoneNumber,
   address,
@@ -28,6 +30,7 @@ export function RestaurantVerificationCard({
 }: {
   restaurantId: string;
   restaurantName: string;
+  imageUrl: string | null;
   description: string | null;
   phoneNumber: string | null;
   address: string | null;
@@ -66,7 +69,12 @@ export function RestaurantVerificationCard({
           </div>
 
           <div className="relative grid h-[56px] w-[56px] shrink-0 place-items-center overflow-visible rounded-[8px] bg-white/70">
-            <Store className="h-5 w-5 text-black" strokeWidth={2.3} />
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt={restaurantName} className="h-full w-full rounded-[8px] object-cover" />
+            ) : (
+              <Store className="h-5 w-5 text-black" strokeWidth={2.3} />
+            )}
             <span className="absolute bottom-[-2px] right-[-2px] grid h-5 w-5 place-items-center rounded-full border-[3px] border-[#FFF3C4] bg-black">
               <PencilLine className="h-2.5 w-2.5 fill-white text-white" strokeWidth={2.3} />
             </span>
@@ -157,6 +165,7 @@ export function RestaurantVerificationCard({
             </button>
           </div>
           <div className="mt-6 grid gap-4">
+            <RestaurantImageUpload defaultValue={imageUrl} />
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Restaurant name<input name="name" defaultValue={restaurantName} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Description<textarea name="description" defaultValue={description ?? ""} rows={3} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Phone number<input name="phoneNumber" defaultValue={phoneNumber ?? ""} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
