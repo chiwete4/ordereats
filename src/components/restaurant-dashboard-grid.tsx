@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   Ban,
@@ -30,6 +31,9 @@ import {
 import { addRestaurantStaff } from "@/actions/staff";
 import { OrderElapsedTime } from "@/components/order-elapsed-time";
 import { FeaturedMenuManager } from "@/components/featured-menu-manager";
+import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
+import { PerformanceChart, type PerformanceDay } from "@/components/performance-chart";
+import { OrderMoreMenu, RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
 import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { StaffUserSearch } from "@/components/staff-user-search";
 import { prisma } from "@/lib/prisma";
@@ -75,9 +79,11 @@ function personName(person: { firstName: string; lastName: string; email: string
 function DashboardHeading({
   title,
   count,
+  expand,
 }: {
   title: string;
   count?: number;
+  expand?: ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -91,12 +97,7 @@ function DashboardHeading({
           </span>
         ) : null}
       </div>
-      <button
-        type="button"
-        className="text-[11px] font-semibold leading-none tracking-[-0.02em] text-black underline underline-offset-2"
-      >
-        Expand
-      </button>
+      {expand ?? null}
     </div>
   );
 }
