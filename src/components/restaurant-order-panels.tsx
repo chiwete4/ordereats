@@ -121,10 +121,12 @@ function Heading({
 function PendingPanel({
   restaurantId,
   orders,
+  count,
   explorerItems,
 }: {
   restaurantId: string;
   orders: DashboardOrder[];
+  count: number;
   explorerItems: DashboardExplorerItem[];
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(orders[0]?.id ?? null);
@@ -133,7 +135,7 @@ function PendingPanel({
     <section className="w-full bg-white">
       <Heading
         title="Pending Orders"
-        count={orders.length}
+        count={count}
         explorerItems={explorerItems}
         restaurantId={restaurantId}
         kind="pending"
@@ -226,10 +228,12 @@ function ActiveStatus({ status }: { status: string }) {
 function ActivePanel({
   restaurantId,
   orders,
+  count,
   explorerItems,
 }: {
   restaurantId: string;
   orders: DashboardOrder[];
+  count: number;
   explorerItems: DashboardExplorerItem[];
 }) {
   const initialExpanded = orders.find((order) => order.status === "PREPARING")?.id ?? orders[0]?.id ?? null;
@@ -239,7 +243,7 @@ function ActivePanel({
     <section className="w-full bg-white">
       <Heading
         title="Active Orders"
-        count={orders.length}
+        count={count}
         explorerItems={explorerItems}
         restaurantId={restaurantId}
         kind="active"
@@ -346,12 +350,16 @@ export function RestaurantOrderPanels({
   restaurantId,
   pendingOrders,
   activeOrders,
+  pendingCount,
+  activeCount,
   pendingExplorerItems,
   activeExplorerItems,
 }: {
   restaurantId: string;
   pendingOrders: DashboardOrder[];
   activeOrders: DashboardOrder[];
+  pendingCount: number;
+  activeCount: number;
   pendingExplorerItems: DashboardExplorerItem[];
   activeExplorerItems: DashboardExplorerItem[];
 }) {
@@ -360,11 +368,13 @@ export function RestaurantOrderPanels({
       <PendingPanel
         restaurantId={restaurantId}
         orders={pendingOrders}
+        count={pendingCount}
         explorerItems={pendingExplorerItems}
       />
       <ActivePanel
         restaurantId={restaurantId}
         orders={activeOrders}
+        count={activeCount}
         explorerItems={activeExplorerItems}
       />
     </>
