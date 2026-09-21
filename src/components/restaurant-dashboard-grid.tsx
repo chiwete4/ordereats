@@ -1,12 +1,8 @@
 import {
   Bike,
-  Check,
-  CircleSlash2,
-  Clock3,
   Heart,
   MapPin,
   MoreHorizontal,
-  PackageCheck,
   Search,
   ShoppingBag,
   Star,
@@ -742,12 +738,10 @@ function PerformancePanel({
 
 export async function RestaurantDashboardGrid({
   restaurantId,
-  currentUserId,
   restaurant,
   verificationSteps,
 }: {
   restaurantId: string;
-  currentUserId: string;
   restaurant: RestaurantForDashboard;
   verificationSteps: VerificationStep[];
 }) {
