@@ -104,7 +104,7 @@ export default async function RestaurantDashboardPage({
 
         <section
           aria-label="Dashboard overview"
-          className="flex min-h-[112px] w-full items-center bg-white"
+          className="flex w-full items-center bg-white"
         >
           <div className="flex w-full flex-col gap-3">
             <div className="shrink-0">
