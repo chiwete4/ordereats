@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Ban,
   Bike,
-  EyeOff,
   Heart,
   MapPin,
   PackageCheck,
@@ -19,6 +18,7 @@ import { addRestaurantStaff } from "@/actions/staff";
 import { FeaturedMenuManager } from "@/components/featured-menu-manager";
 import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
 import { PerformanceChart, type PerformanceDay } from "@/components/performance-chart";
+import { PerformanceMetrics } from "@/components/performance-metrics";
 import { RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
 import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
 import { RestaurantOrderPanels, type DashboardOrder } from "@/components/restaurant-order-panels";
@@ -418,27 +418,11 @@ function PerformancePanel({
         />
       </div>
 
-      <div className="mt-5 divide-y divide-[#EAEAEA]">
-        {[
-          { icon: Store, value: money(revenueToday), label: "Revenue today" },
-          { icon: ShoppingBag, value: totalOrders.toLocaleString(), label: "Orders made" },
-          { icon: UserRound, value: totalCustomers.toLocaleString(), label: "Customers" },
-        ].map((row, index) => {
-          const Icon = row.icon;
-          return (
-            <div key={row.label} className="flex items-center gap-3 py-4 first:pt-0">
-              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] ${index === 0 ? "bg-black text-white" : "bg-[#EFEFEF] text-black"}`}>
-                <Icon className="h-4 w-4" strokeWidth={2.3} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-semibold tracking-[-0.02em] text-black">{row.value}</p>
-                <p className="mt-1 text-[10px] font-medium text-[#808080]">{row.label}</p>
-              </div>
-              <EyeOff className="h-3.5 w-3.5 text-[#808080]" strokeWidth={2.3} />
-            </div>
-          );
-        })}
-      </div>
+      <PerformanceMetrics
+        revenue={money(revenueToday)}
+        orders={totalOrders.toLocaleString()}
+        customers={totalCustomers.toLocaleString()}
+      />
     </section>
   );
 }
