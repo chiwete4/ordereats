@@ -154,7 +154,7 @@ export function DashboardSectionExplorer({
   }, [open, pagination?.restaurantId, pagination?.kind]);
 
   useEffect(() => {
-    if (!open || !pagination || !hasMore || loading) return;
+    if (!open || !pagination || !hasMore || loading || !cursor) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -167,7 +167,7 @@ export function DashboardSectionExplorer({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [open, pagination, hasMore, loading, loadPage]);
+  }, [open, pagination, hasMore, loading, cursor, loadPage]);
 
   const selected = useMemo(
     () =>
