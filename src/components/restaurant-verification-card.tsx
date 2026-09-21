@@ -200,7 +200,7 @@ export function RestaurantVerificationCard({
 
       <dialog ref={detailsDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
         <form
-          className="p-6"
+          className="max-h-[90vh] overflow-y-auto p-6 pb-4"
           onSubmit={async (event) => {
             event.preventDefault();
             const form = event.currentTarget;
@@ -290,7 +290,7 @@ export function RestaurantVerificationCard({
           ) : null}
           <button
             disabled={savingDetails}
-            className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="sticky bottom-0 z-10 mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white shadow-[0_-18px_28px_rgba(255,255,255,0.96)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {savingDetails ? "Saving..." : "Save Restaurant"}
           </button>
@@ -299,7 +299,7 @@ export function RestaurantVerificationCard({
 
       <dialog ref={riderDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
         <form
-          className="p-6"
+          className="max-h-[90vh] overflow-y-auto p-6 pb-4"
           onSubmit={async (event) => {
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
@@ -356,7 +356,7 @@ export function RestaurantVerificationCard({
 
           <button
             disabled={savingRider}
-            className="mt-6 h-10 w-full rounded-[10px] bg-black text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="sticky bottom-0 z-10 mt-6 h-10 w-full rounded-[10px] bg-black text-[12px] font-semibold text-white shadow-[0_-18px_28px_rgba(255,255,255,0.96)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {savingRider ? "Adding Rider..." : "Add Rider"}
           </button>
@@ -364,7 +364,7 @@ export function RestaurantVerificationCard({
       </dialog>
 
       <dialog ref={bankDialogRef} className="w-[min(92vw,520px)] rounded-[16px] p-0 backdrop:bg-black/30">
-        <form action={saveRestaurantBankInfo} className="p-6">
+        <form action={saveRestaurantBankInfo} className="max-h-[90vh] overflow-y-auto p-6 pb-4">
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <div className="flex items-center justify-between">
             <div>
@@ -380,7 +380,7 @@ export function RestaurantVerificationCard({
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Account name<input name="accountName" defaultValue={accountName ?? ""} required className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
             <label className="text-[12px] font-semibold tracking-[-0.02em]">Account number<input name="accountNumber" defaultValue={accountNumber ?? ""} required inputMode="numeric" pattern="\d{10}" maxLength={10} className="mt-2 w-full rounded-[10px] border-2 border-[#EAEAEA] px-3 py-2.5 text-[14px] font-normal outline-none focus:border-black" /></label>
           </div>
-          <button className="mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white">Save Bank Information</button>
+          <button className="sticky bottom-0 z-10 mt-6 h-10 w-full rounded-[10px] bg-black text-[14px] font-semibold text-white shadow-[0_-18px_28px_rgba(255,255,255,0.96)]">Save Bank Information</button>
         </form>
       </dialog>
     </>
