@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { ChevronRight, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid";
 import { DashboardProfileEditButton } from "@/components/dashboard-profile-edit-button";
+import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -100,6 +102,7 @@ export default async function RestaurantDashboardPage({
 
   return (
     <main className="min-h-screen bg-white">
+      <DashboardLiveRefresh intervalMs={12000} />
       <div className="w-full px-4 sm:px-6 lg:px-[125px]">
         <div className="h-[32px]" />
 
@@ -147,13 +150,13 @@ export default async function RestaurantDashboardPage({
 
               <div className="hidden min-w-4 flex-1 xl:block" />
 
-              <button
-                type="button"
+              <Link
+                href="/#discover"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
               >
                 <RefreshCw className="h-3 w-3" strokeWidth={2.3} />
                 Switch to Customer
-              </button>
+              </Link>
             </div>
           </div>
         </section>
