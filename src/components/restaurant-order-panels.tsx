@@ -313,7 +313,10 @@ function ActivePanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className={`border-b border-[#EAEAEA] py-4 first:pt-0 transition-opacity ${menuOpenId === order.id ? "opacity-20" : "opacity-100"}`}>
+              <article key={order.id} className="relative border-b border-[#EAEAEA] py-4 first:pt-0">
+                {menuOpenId === order.id ? (
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[40] bg-white/80" />
+                ) : null}
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
