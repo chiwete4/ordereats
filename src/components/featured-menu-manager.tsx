@@ -801,6 +801,34 @@ export function FeaturedMenuManager({
           onClose={() => setNested(null)}
         >
           <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
+            {nested === "editCombo" && selectedCombo ? (
+              <div className="mb-4">
+                <div className="flex items-start gap-3">
+                  <StackedThumb combo={selectedCombo} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[11px] font-medium">{selectedCombo.name}</p>
+                    <p className="mt-1 text-[9px] text-[#858585]">
+                      {totalQuantity(selectedCombo)} items · {money(comboTotal(selectedCombo))} total
+                    </p>
+                  </div>
+                </div>
+                <div className="ml-4 mt-3 border-l border-[#505050] pl-5">
+                  {selectedCombo.items.map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between py-1.5 text-[10px]">
+                      <span className="min-w-0 truncate">
+                        <span className="mr-2 text-[#777777]">x{entry.quantity}</span>
+                        {entry.menuItem.name}
+                      </span>
+                      <span className="text-[#858585]">
+                        {money(entry.menuItem.price * entry.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] font-medium text-[#777777]">New additions</p>
+              </div>
+            ) : null}
+
             <label className="flex h-10 items-center gap-2 rounded-[8px] border border-[#333333] px-3">
               <Search className="h-4 w-4 text-[#8A8A8A]" strokeWidth={2.3} />
               <input
