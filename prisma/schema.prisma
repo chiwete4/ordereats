@@ -63,6 +63,7 @@ model Restaurant {
   description String?
   phoneNumber String?
   address     String?
+  imageUrl    String?
   latitude    Float?
   longitude   Float?
   isOpen        Boolean  @default(true)
