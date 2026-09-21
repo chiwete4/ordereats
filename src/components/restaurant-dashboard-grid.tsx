@@ -170,11 +170,13 @@ function LiveMapPanel({
 }
 
 function ReviewsPanel({
+  restaurantId,
   complaintsOpen,
   mealUnread,
   restaurantRating,
   explorerItems,
 }: {
+  restaurantId: string;
   complaintsOpen: number;
   mealUnread: number;
   restaurantRating: number | null;
@@ -190,7 +192,13 @@ function ReviewsPanel({
     <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
       <DashboardHeading
         title="Reviews"
-        expand={<DashboardSectionExplorer title="Reviews" items={explorerItems} />}
+        expand={
+          <DashboardSectionExplorer
+            title="Reviews"
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "reviews" }}
+          />
+        }
       />
       <div className="mt-5 divide-y divide-[#DEDEDE]">
         {rows.map((row) => {
@@ -228,7 +236,14 @@ function StaffPanel({
       <DashboardHeading
         title="Your Staff"
         count={visible.length}
-        expand={<DashboardSectionExplorer title="Your Staff" count={visible.length} items={explorerItems} />}
+        expand={
+          <DashboardSectionExplorer
+            title="Your Staff"
+            count={visible.length}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "staff" }}
+          />
+        }
       />
 
       <details className="group mt-4">
@@ -284,7 +299,14 @@ function RidersPanel({
       <DashboardHeading
         title="Riders on Duty"
         count={riders.length}
-        expand={<DashboardSectionExplorer title="Riders on Duty" count={riders.length} items={explorerItems} />}
+        expand={
+          <DashboardSectionExplorer
+            title="Riders on Duty"
+            count={riders.length}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "riders" }}
+          />
+        }
       />
 
       <details id="rider-add-details" className="group mt-4">
@@ -341,9 +363,11 @@ function RidersPanel({
 }
 
 function PastOrdersPanel({
+  restaurantId,
   orders,
   explorerItems,
 }: {
+  restaurantId: string;
   orders: Array<any>;
   explorerItems: DashboardExplorerItem[];
 }) {
@@ -352,7 +376,14 @@ function PastOrdersPanel({
       <DashboardHeading
         title="All Past Orders"
         count={orders.length}
-        expand={<DashboardSectionExplorer title="All Past Orders" count={orders.length} items={explorerItems} />}
+        expand={
+          <DashboardSectionExplorer
+            title="All Past Orders"
+            count={orders.length}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "past" }}
+          />
+        }
       />
 
       <div className="mt-5 grid gap-x-8 sm:grid-cols-2">
@@ -939,13 +970,18 @@ export async function RestaurantDashboardGrid({
         <LiveMapPanel restaurant={restaurant} latestDelivery={latestDelivery} />
 
         <ReviewsPanel
+          restaurantId={restaurantId}
           complaintsOpen={complaintsOpen}
           mealUnread={mealUnread}
           restaurantRating={restaurantRating}
           explorerItems={reviewExplorerItems}
         />
 
-        <PastOrdersPanel orders={pastOrders} explorerItems={pastExplorerItems} />
+        <PastOrdersPanel
+          restaurantId={restaurantId}
+          orders={pastOrders}
+          explorerItems={pastExplorerItems}
+        />
       </div>
 
       <div className="mt-[20px] flex min-w-0 flex-col gap-[60px] lg:mt-0">
