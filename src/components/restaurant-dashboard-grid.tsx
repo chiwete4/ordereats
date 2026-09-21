@@ -940,7 +940,7 @@ export async function RestaurantDashboardGrid({
   const categoryData = categories.map((category) => ({
     id: category.id,
     name: category.name,
-    itemCount: category._count.menuItems,
+    itemCount: menuItems.filter((item) => item.categoryId === category.id).length,
   }));
 
   const pastOrderData = pastOrders.slice(0, 12).map((row) => ({
