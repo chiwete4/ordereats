@@ -135,13 +135,16 @@ async function orderPage(
 
 async function staffPage(
   restaurantId: string,
-  role: "STAFF" | "RIDER",
+  group: "staff" | "riders",
   cursor: string | null
 ) {
   const rows = await prisma.restaurantStaff.findMany({
     where: {
       restaurantId,
-      role,
+      role:
+        group === "riders"
+          ? "RIDER"
+          : { in: ["OWNER", "STAFF"] },
       ...cursorWhere(cursor),
     },
     orderBy: { createdAt: "desc" },
@@ -171,13 +174,13 @@ async function staffPage(
   const page = rows.slice(0, PAGE_SIZE);
   return {
     items: page.map((member) => {
-      const delivering = role === "RIDER" && member.user.assignedDeliveries.length > 0;
+      const delivering = group === "riders" && member.user.assignedDeliveries.length > 0;
       return {
         id: member.id,
         title: personName(member.user),
         subtitle: member.user.email,
         status:
-          role === "RIDER"
+          group === "riders"
             ? delivering
               ? "Delivering"
               : member.isActive
@@ -187,7 +190,7 @@ async function staffPage(
               ? "Active"
               : "Inactive",
         statusTone:
-          role === "RIDER"
+          group === "riders"
             ? delivering
               ? "amber"
               : member.isActive
@@ -198,7 +201,7 @@ async function staffPage(
               : "neutral",
         cursor: member.createdAt.toISOString(),
         details:
-          role === "RIDER"
+          group === "riders"
             ? [
                 { label: "Role", value: "RIDER" },
                 { label: "Access", value: member.isActive ? "Active" : "Inactive" },
@@ -357,9 +360,9 @@ export async function GET(request: NextRequest) {
                 cursor
               )
             : kind === "staff"
-              ? await staffPage(restaurantId, "STAFF", cursor)
+              ? await staffPage(restaurantId, "staff", cursor)
               : kind === "riders"
-                ? await staffPage(restaurantId, "RIDER", cursor)
+                ? await staffPage(restaurantId, "riders", cursor)
                 : kind === "reviews"
                   ? await reviewPage(restaurantId, cursor)
                   : null;
