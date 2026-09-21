@@ -665,9 +665,21 @@ export async function RestaurantDashboardGrid({
   ]);
 
   const pendingOrders = orders.filter((row) => row.status === "CONFIRMED");
-  const activeOrders = orders.filter((row) =>
-    ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"].includes(row.status)
-  );
+  const activeOrderPriority: Record<string, number> = {
+    PREPARING: 0,
+    READY_FOR_PICKUP: 1,
+    OUT_FOR_DELIVERY: 2,
+  };
+  const activeOrders = orders
+    .filter((row) =>
+      ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"].includes(row.status)
+    )
+    .sort((a, b) => {
+      const statusDifference =
+        (activeOrderPriority[a.status] ?? 99) - (activeOrderPriority[b.status] ?? 99);
+      if (statusDifference !== 0) return statusDifference;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
   const pastOrders = orders.filter((row) =>
     ["DELIVERED", "PICKED_UP", "CANCELLED"].includes(row.status)
   );
