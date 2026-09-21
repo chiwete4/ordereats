@@ -505,7 +505,7 @@ function RidersPanel({
         expand={<DashboardSectionExplorer title="Riders on Duty" count={riders.length} items={explorerItems} />}
       />
 
-      <details className="group mt-4">
+      <details id="rider-add-details" className="group mt-4">
         <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-[8px] border-2 border-[#EAEAEA] px-3 text-[10px] font-medium text-[#9A9A9A]">
           <Search className="h-3.5 w-3.5" strokeWidth={2.3} /> Search or Add New...
         </summary>
