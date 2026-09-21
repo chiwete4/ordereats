@@ -613,7 +613,12 @@ function PerformancePanel({
       <PerformanceChart days={weeklyDays} />
 
       <div className="mt-3">
-        <DashboardSectionExplorer title="Performance" items={explorerItems} triggerLabel="All-time performance →" />
+        <DashboardSectionExplorer
+          title="Performance"
+          items={explorerItems}
+          triggerLabel="All-time performance →"
+          triggerClassName="h-8 w-full rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold text-black"
+        />
       </div>
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
