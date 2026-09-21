@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const accountNumber = body.accountNumber?.trim();
   const bankCode = body.bankCode?.trim();
 
-  if (!restaurantId || !/^\d{10}$/.test(accountNumber || "") || !bankCode) {
+  if (!restaurantId || !accountNumber || !/^\d{10}$/.test(accountNumber) || !bankCode) {
     return NextResponse.json(
       { error: "Choose a bank and enter a valid 10-digit account number." },
       { status: 400 }
