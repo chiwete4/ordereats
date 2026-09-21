@@ -236,14 +236,14 @@ function ComboDetails({ combo }: { combo: FeaturedComboData }) {
 }
 
 function ComboEditorBreakdown({ combo }: { combo: FeaturedComboData }) {
-  const branchHeight = Math.max(18, (combo.items.length - 1) * 38 + 19);
+  const branchHeight = Math.max(58, (combo.items.length - 1) * 38 + 58);
 
   return (
     <>
-      <div className="relative ml-[76px] mt-6 pl-[62px]">
+      <div className="relative ml-[104px] mt-6 pl-[42px]">
         {combo.items.length ? (
           <span
-            className="absolute left-0 top-0 w-[1.5px] rounded-full bg-[#777777]"
+            className="absolute -top-[10px] left-0 w-[1.5px] rounded-full bg-[#777777]"
             style={{ height: branchHeight }}
           />
         ) : null}
@@ -251,9 +251,9 @@ function ComboEditorBreakdown({ combo }: { combo: FeaturedComboData }) {
         {combo.items.map((entry) => (
           <div
             key={entry.id}
-            className="relative grid min-h-[38px] grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-x-3 text-[12px]"
+            className="relative grid min-h-[38px] grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2 text-[12px]"
           >
-            <span className="absolute -left-[62px] top-1/2 h-[1.5px] w-[44px] -translate-y-1/2 rounded-full bg-[#777777]" />
+            <span className="absolute -left-[42px] top-1/2 h-[1.5px] w-[32px] -translate-y-1/2 rounded-full bg-[#777777]" />
             <span className="text-[#888888]">x{entry.quantity}</span>
             <span className="truncate font-medium text-white">
               {entry.menuItem.name}
@@ -780,7 +780,7 @@ export function FeaturedMenuManager({
                       Edit Combo
                     </p>
 
-                    <div className="mt-7 grid grid-cols-[34px_56px_minmax(0,1fr)_42px] items-start gap-x-3">
+                    <div className="mt-7 grid grid-cols-[34px_68px_minmax(0,1fr)_42px] items-start gap-x-3">
                       <span className="pt-4 text-[14px] font-semibold leading-none text-white">
                         #{selectedComboIndex}
                       </span>
