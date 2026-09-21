@@ -277,7 +277,7 @@ function NestedModal({
 }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4">
-      <div className="flex h-[min(720px,82vh)] w-[min(500px,92vw)] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-black text-white shadow-2xl">
+      <div className="flex max-h-[82vh] w-[min(500px,92vw)] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-black text-white shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4">
           <h3 className="text-[14px] font-semibold tracking-[-0.02em]">
             {title}
@@ -1110,7 +1110,7 @@ export function FeaturedMenuManager({
           title={nested === "newCombo" ? "New Combo" : "Edit Combo"}
           onClose={() => setNested(null)}
         >
-          <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
+          <div className="flex h-[min(620px,72vh)] min-h-0 flex-1 flex-col px-5 pb-5">
             {nested === "editCombo" && selectedCombo ? (
               <div className="mb-4">
                 <div className="flex items-start gap-3">
