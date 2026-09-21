@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -387,6 +387,12 @@ export function FeaturedMenuManager({
     | null
   >(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const openMenuManager = () => setManager("menu");
+    window.addEventListener("paperbag:open-menu-manager", openMenuManager);
+    return () => window.removeEventListener("paperbag:open-menu-manager", openMenuManager);
+  }, []);
 
   const selectedCombo =
     combos.find((combo) => combo.id === selectedComboId) ?? combos[0] ?? null;
