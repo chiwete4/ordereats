@@ -131,7 +131,7 @@ export function RestaurantVerificationCard({
             </button>
           </div>
 
-          <p className="max-w-[560px] text-[15px] font-medium leading-[1.25] tracking-[-0.01em] text-[#808080]">
+          <p className="max-w-[560px] text-[12px] font-medium leading-[1.35] tracking-[-0.01em] text-[#808080]">
             {helperText}
           </p>
 
