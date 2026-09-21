@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, MoreHorizontal, X } from "lucide-react";
+import { AlertTriangle, MoreHorizontal, Plus, X } from "lucide-react";
 
 import { cancelRestaurantOrder, assignRider } from "@/actions/orders";
 import { toggleRestaurantStaffActive } from "@/actions/staff";
@@ -140,7 +140,8 @@ export function RiderAssignButton({
         onClick={() => setOpen(true)}
         className="rounded-full bg-black px-3 py-1.5 text-[9px] font-semibold text-white"
       >
-        + Assign
+        <Plus className="mr-1 inline h-3 w-3" strokeWidth={2.3} />
+        Assign
       </button>
       {open ? (
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/25 p-4">
