@@ -544,7 +544,10 @@ export async function RestaurantDashboardGrid({
       },
     }),
     prisma.menuCategory.findMany({
-      where: { restaurantId },
+      where: {
+        restaurantId,
+        name: { not: "Archived" },
+      },
       orderBy: { createdAt: "asc" },
       include: {
         _count: {
