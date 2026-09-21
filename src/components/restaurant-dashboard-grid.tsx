@@ -388,16 +388,29 @@ function LiveMapPanel({
   );
 }
 
-function ReviewsPanel() {
+function ReviewsPanel({
+  complaintsOpen,
+  mealUnread,
+  restaurantRating,
+  explorerItems,
+}: {
+  complaintsOpen: number;
+  mealUnread: number;
+  restaurantRating: number | null;
+  explorerItems: DashboardExplorerItem[];
+}) {
   const rows = [
-    { icon: Heart, title: "Customer Complaints", detail: "0 unresolved", tone: "bg-red-50 text-red-500" },
-    { icon: ShoppingBag, title: "Meal Reviews", detail: "0 unread", tone: "bg-green-50 text-green-500" },
-    { icon: Star, title: "Restaurant Ratings", detail: "No ratings yet", tone: "bg-yellow-50 text-yellow-500" },
+    { icon: Heart, title: "Customer Complaints", detail: `${complaintsOpen.toLocaleString()} unresolved`, tone: "bg-red-50 text-red-500" },
+    { icon: ShoppingBag, title: "Meal Reviews", detail: `${mealUnread.toLocaleString()} unread`, tone: "bg-green-50 text-green-500" },
+    { icon: Star, title: "Restaurant Ratings", detail: restaurantRating === null ? "No ratings yet" : `${restaurantRating.toFixed(1)}/5 stars`, tone: "bg-yellow-50 text-yellow-500" },
   ];
 
   return (
     <section className="min-h-[337px] rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
-      <DashboardHeading title="Reviews" />
+      <DashboardHeading
+        title="Reviews"
+        expand={<DashboardSectionExplorer title="Reviews" items={explorerItems} />}
+      />
       <div className="mt-5 divide-y divide-[#DEDEDE]">
         {rows.map((row) => {
           const Icon = row.icon;
@@ -421,28 +434,31 @@ function ReviewsPanel() {
 function StaffPanel({
   restaurantId,
   staff,
+  explorerItems,
 }: {
   restaurantId: string;
   staff: Array<any>;
+  explorerItems: DashboardExplorerItem[];
 }) {
   const visible = staff.filter((member) => member.role !== "RIDER");
 
   return (
     <section className="min-h-[350px] bg-white">
-      <DashboardHeading title="Your Staff" count={visible.length} />
+      <DashboardHeading
+        title="Your Staff"
+        count={visible.length}
+        expand={<DashboardSectionExplorer title="Your Staff" count={visible.length} items={explorerItems} />}
+      />
 
       <details className="group mt-4">
         <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-[8px] border-2 border-[#EAEAEA] px-3 text-[10px] font-medium text-[#9A9A9A]">
-          <Search className="h-3.5 w-3.5" strokeWidth={2.3} />
-          Search or Add New...
+          <Search className="h-3.5 w-3.5" strokeWidth={2.3} /> Search or Add New...
         </summary>
         <form action={addRestaurantStaff} className="mt-3 rounded-[10px] border border-[#EAEAEA] p-3">
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <input type="hidden" name="role" value="STAFF" />
           <StaffUserSearch restaurantId={restaurantId} />
-          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">
-            Add Staff Member
-          </button>
+          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">Add Staff Member</button>
         </form>
       </details>
 
@@ -454,13 +470,15 @@ function StaffPanel({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-semibold text-black">{personName(member.user)}</p>
-              <p className="mt-1 text-[9px] font-medium uppercase text-[#808080]">
-                {member.role} · {member.isActive ? "Active" : "Inactive"}
-              </p>
+              <p className="mt-1 text-[9px] font-medium uppercase text-[#808080]">{member.role} · {member.isActive ? "Active" : "Inactive"}</p>
             </div>
-            <button type="button" aria-label="Staff options">
-              <MoreHorizontal className="h-4 w-4" strokeWidth={2.3} />
-            </button>
+            <StaffMoreMenu
+              restaurantId={restaurantId}
+              membershipId={member.id}
+              name={personName(member.user)}
+              isActive={member.isActive}
+              disabled={member.role === "OWNER"}
+            />
           </div>
         ))}
       </div>
@@ -471,28 +489,31 @@ function StaffPanel({
 function RidersPanel({
   restaurantId,
   riders,
-  assignableOrder,
+  assignableOrders,
+  explorerItems,
 }: {
   restaurantId: string;
   riders: Array<any>;
-  assignableOrder: any | null;
+  assignableOrders: Array<{ id: string; orderNumber: string; total: string }>;
+  explorerItems: DashboardExplorerItem[];
 }) {
   return (
     <section className="min-h-[350px] bg-white">
-      <DashboardHeading title="Riders on Duty" count={riders.length} />
+      <DashboardHeading
+        title="Riders on Duty"
+        count={riders.length}
+        expand={<DashboardSectionExplorer title="Riders on Duty" count={riders.length} items={explorerItems} />}
+      />
 
       <details className="group mt-4">
         <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-[8px] border-2 border-[#EAEAEA] px-3 text-[10px] font-medium text-[#9A9A9A]">
-          <Search className="h-3.5 w-3.5" strokeWidth={2.3} />
-          Search or Add New...
+          <Search className="h-3.5 w-3.5" strokeWidth={2.3} /> Search or Add New...
         </summary>
         <form action={addRestaurantStaff} className="mt-3 rounded-[10px] border border-[#EAEAEA] p-3">
           <input type="hidden" name="restaurantId" value={restaurantId} />
           <input type="hidden" name="role" value="RIDER" />
           <StaffUserSearch restaurantId={restaurantId} />
-          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">
-            Add Rider
-          </button>
+          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">Add Rider</button>
         </form>
       </details>
 
@@ -512,15 +533,13 @@ function RidersPanel({
                   {delivering ? "Delivering an order" : rider.isActive ? "Available to deliver" : "Off duty"}
                 </p>
               </div>
-              {!delivering && rider.isActive && assignableOrder ? (
-                <form action={assignRider}>
-                  <HiddenOrderFields restaurantId={restaurantId} restaurantOrderId={assignableOrder.id} />
-                  <input type="hidden" name="riderId" value={rider.userId} />
-                  <button className="inline-flex items-center gap-1 rounded-full bg-black px-3 py-1.5 text-[9px] font-semibold text-white">
-                    <Plus className="h-3 w-3" strokeWidth={2.3} />
-                    Assign
-                  </button>
-                </form>
+              {!delivering && rider.isActive ? (
+                <RiderAssignButton
+                  restaurantId={restaurantId}
+                  riderId={rider.userId}
+                  riderName={personName(rider.user)}
+                  orders={assignableOrders}
+                />
               ) : null}
             </div>
           );
@@ -532,12 +551,18 @@ function RidersPanel({
 
 function PastOrdersPanel({
   orders,
+  explorerItems,
 }: {
   orders: Array<any>;
+  explorerItems: DashboardExplorerItem[];
 }) {
   return (
     <section className="min-h-[337px] rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
-      <DashboardHeading title="All Past Orders" count={orders.length} />
+      <DashboardHeading
+        title="All Past Orders"
+        count={orders.length}
+        expand={<DashboardSectionExplorer title="All Past Orders" count={orders.length} items={explorerItems} />}
+      />
 
       <div className="mt-5 grid gap-x-8 sm:grid-cols-2">
         {orders.length === 0 ? (
@@ -545,38 +570,16 @@ function PastOrdersPanel({
         ) : (
           orders.slice(0, 6).map((row) => {
             const image = row.items[0]?.menuItem?.imageUrl;
-            const statusTone =
-              row.status === "DELIVERED"
-                ? "text-green-500"
-                : row.status === "CANCELLED"
-                  ? "text-red-500"
-                  : "text-[#808080]";
+            const statusTone = row.status === "DELIVERED" ? "text-green-500" : row.status === "CANCELLED" ? "text-red-500" : "text-[#808080]";
             return (
               <div key={row.id} className="flex items-center gap-3 border-b border-[#DEDEDE] py-4 first:pt-0">
                 <OrderThumb src={image} alt={row.items[0]?.name ?? "Order"} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[10px] font-semibold text-black">#{row.order.orderNumber}</p>
-                  <p className="mt-1 truncate text-[9px] font-medium text-[#808080]">
-                    {money(row.subtotal)} total · {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items
-                  </p>
+                  <p className="mt-1 truncate text-[9px] font-medium text-[#808080]">{money(row.subtotal)} total · {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items</p>
                 </div>
                 <span className={`inline-flex shrink-0 items-center gap-1 text-[9px] font-semibold ${statusTone}`}>
-                  {row.status === "DELIVERED" ? (
-                    <>
-                      Delivered
-                      <PackageCheck className="h-3 w-3" strokeWidth={2.3} />
-                    </>
-                  ) : row.status === "CANCELLED" ? (
-                    <>
-                      Cancelled
-                      <Ban className="h-3 w-3" strokeWidth={2.3} />
-                    </>
-                  ) : (
-                    <>
-                      Picked up
-                      <Store className="h-3 w-3" strokeWidth={2.3} />
-                    </>
-                  )}
+                  {row.status === "DELIVERED" ? <>Delivered <PackageCheck className="h-3 w-3" strokeWidth={2.3} /></> : row.status === "CANCELLED" ? <>Cancelled <Ban className="h-3 w-3" strokeWidth={2.3} /></> : <>Picked up <Store className="h-3 w-3" strokeWidth={2.3} /></>}
                 </span>
               </div>
             );
@@ -588,52 +591,31 @@ function PastOrdersPanel({
 }
 
 function PerformancePanel({
-  weeklyCounts,
+  weeklyDays,
   revenueToday,
   totalOrders,
   totalCustomers,
+  explorerItems,
 }: {
-  weeklyCounts: Array<{ label: string; count: number }>;
+  weeklyDays: PerformanceDay[];
   revenueToday: number;
   totalOrders: number;
   totalCustomers: number;
+  explorerItems: DashboardExplorerItem[];
 }) {
-  const max = Math.max(1, ...weeklyCounts.map((day) => day.count));
-
   return (
     <section className="min-h-[594px] bg-white">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[14px] font-semibold tracking-[-0.02em] text-black">Performance</h2>
-          <span className="text-[12px] font-medium text-[#9A9A9A]">This week</span>
-        </div>
-        <button type="button" className="text-[11px] font-semibold underline underline-offset-2">
-          Expand
-        </button>
-      </div>
+      <DashboardHeading
+        title="Performance"
+        expand={<DashboardSectionExplorer title="Performance" items={explorerItems} />}
+      />
+      <span className="-mt-3 ml-[88px] block text-[12px] font-medium text-[#9A9A9A]">Past 7 days</span>
 
-      <div className="mt-8 flex h-[150px] items-end gap-3 border-b border-[#EAEAEA] px-2">
-        {weeklyCounts.map((day, index) => {
-          const height = Math.max(28, Math.round((day.count / max) * 120));
-          const active = index === weeklyCounts.length - 1;
-          return (
-            <div key={day.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
-              <div
-                className={`w-full max-w-[34px] rounded-t-[8px] ${active ? "bg-black" : "bg-[#E5E5E5]"}`}
-                style={{ height }}
-              />
-              <span className={`pb-2 text-[8px] font-semibold ${active ? "text-black" : "text-[#9A9A9A]"}`}>
-                {day.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <PerformanceChart days={weeklyDays} />
 
-      <button type="button" className="mt-3 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold">
-        All-time performance
-        <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.3} />
-      </button>
+      <div className="mt-3">
+        <DashboardSectionExplorer title="Performance" items={explorerItems} triggerLabel="All-time performance →" />
+      </div>
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
         {[
