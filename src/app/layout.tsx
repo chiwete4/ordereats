@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hedvig_Letters_Serif, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 
@@ -14,11 +14,6 @@ const inter = Inter({
   display: "swap",
 });
 
-const hedvigLettersSerif = Hedvig_Letters_Serif({
-  subsets: ["latin"],
-  variable: "--font-hedvig-serif",
-  display: "swap",
-});
 
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
@@ -41,7 +36,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${inter.variable} ${hedvigLettersSerif.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${inter.variable} ${geistMono.variable} antialiased`}>
           <div className="flex min-h-screen flex-col">
             <SiteHeader />
             <div className="flex-1">{children}</div>
