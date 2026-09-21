@@ -89,10 +89,14 @@ function Heading({
   title,
   count,
   explorerItems,
+  restaurantId,
+  kind,
 }: {
   title: string;
   count: number;
   explorerItems: DashboardExplorerItem[];
+  restaurantId: string;
+  kind: "pending" | "active";
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -104,7 +108,12 @@ function Heading({
           {count.toLocaleString()}
         </span>
       </div>
-      <DashboardSectionExplorer title={title} count={count} items={explorerItems} />
+      <DashboardSectionExplorer
+        title={title}
+        count={count}
+        items={explorerItems}
+        pagination={{ restaurantId, kind }}
+      />
     </div>
   );
 }
@@ -122,7 +131,13 @@ function PendingPanel({
 
   return (
     <section className="w-full bg-white">
-      <Heading title="Pending Orders" count={orders.length} explorerItems={explorerItems} />
+      <Heading
+        title="Pending Orders"
+        count={orders.length}
+        explorerItems={explorerItems}
+        restaurantId={restaurantId}
+        kind="pending"
+      />
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
         {orders.length === 0 ? (
@@ -135,7 +150,7 @@ function PendingPanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className="py-4 first:pt-0">
+              <article key={order.id} className="border-b border-[#EAEAEA] py-4 first:pt-0">
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
@@ -222,7 +237,13 @@ function ActivePanel({
 
   return (
     <section className="w-full bg-white">
-      <Heading title="Active Orders" count={orders.length} explorerItems={explorerItems} />
+      <Heading
+        title="Active Orders"
+        count={orders.length}
+        explorerItems={explorerItems}
+        restaurantId={restaurantId}
+        kind="active"
+      />
 
       <div className="mt-5 divide-y divide-[#EAEAEA]">
         {orders.length === 0 ? (
@@ -235,7 +256,7 @@ function ActivePanel({
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className="py-4 first:pt-0">
+              <article key={order.id} className="border-b border-[#EAEAEA] py-4 first:pt-0">
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
