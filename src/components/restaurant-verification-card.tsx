@@ -93,9 +93,17 @@ export function RestaurantVerificationCard({
             ) : (
               <Store className="h-5 w-5 text-black" strokeWidth={2.3} />
             )}
-            <span className="absolute bottom-[-2px] right-[-2px] grid h-5 w-5 place-items-center rounded-full border-[3px] border-[#FFF3C4] bg-black">
+            <button
+              type="button"
+              onClick={() => {
+                setDetailsError("");
+                detailsDialogRef.current?.showModal();
+              }}
+              aria-label="Edit restaurant"
+              className="absolute bottom-[-2px] right-[-2px] grid h-5 w-5 place-items-center rounded-full border-[3px] border-[#FFF3C4] bg-black"
+            >
               <PencilLine className="h-2.5 w-2.5 fill-white text-white" strokeWidth={2.3} />
-            </span>
+            </button>
           </div>
 
           <div className="flex min-w-0 items-center justify-between gap-4">
