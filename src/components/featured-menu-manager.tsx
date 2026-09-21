@@ -714,19 +714,19 @@ export function FeaturedMenuManager({
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={() => setManager("menu")}
+            onClick={() => setManager("combos")}
             className="h-9 rounded-[8px] bg-white text-[11px] font-semibold text-black"
           >
-            <ClipboardList className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
-            Edit Full Menu
+            <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
+            Edit Featured Combos
           </button>
           <button
             type="button"
-            onClick={() => setManager("combos")}
+            onClick={() => setManager("menu")}
             className="h-9 rounded-[8px] border border-white/20 text-[11px] font-semibold text-white"
           >
-            <Pencil className="mr-1 inline h-3.5 w-3.5 fill-current" strokeWidth={2.3} />
-            Change Featured Combos
+            <ClipboardList className="mr-1 inline h-3.5 w-3.5" strokeWidth={2.3} />
+            Edit Full Menu
           </button>
         </div>
       </section>
@@ -1164,28 +1164,6 @@ export function FeaturedMenuManager({
               />
             </label>
 
-            <div className="mt-3 touch-pan-x overflow-x-auto overscroll-x-contain px-0.5 pb-2 pt-0.5">
-              <div className="flex w-max gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => chooseCategory(null)}
-                  className={`shrink-0 rounded-full border px-3 py-2 text-[9px] font-semibold leading-none ${selectedCategoryId === null ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
-                >
-                  All
-                </button>
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => chooseCategory(category.id)}
-                    className={`shrink-0 rounded-full border px-3 py-2 text-[9px] font-semibold leading-none ${selectedCategoryId === category.id ? "border-white bg-white text-black" : "border-white/15 text-white"}`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
               <div className="mb-2 flex items-center justify-between text-[11px] text-[#777777]">
                 <span>Menu Items</span>
@@ -1500,6 +1478,7 @@ export function FeaturedMenuManager({
                             setDeleteTarget({ kind: "category", id: category.id, name: category.name })
                           }
                           className="grid h-7 w-7 place-items-center rounded-full bg-[#520000] text-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+                          title={category.itemCount > 0 ? "Move its menu items to another category before deleting it." : "Delete category"}
                           aria-label={category.itemCount > 0 ? `Move items out of ${category.name} before deleting` : `Delete ${category.name}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={2.3} />
