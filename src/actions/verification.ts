@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import {
-  createNigerianTransferRecipient,
+  createPaystackSubaccount,
   resolveNigerianAccount,
+  updatePaystackSubaccount,
 } from "@/lib/paystack";
 import { prisma } from "@/lib/prisma";
 
@@ -48,22 +49,42 @@ export async function saveRestaurantBankInfo(formData: FormData) {
     throw new Error("Paystack could not verify the account name.");
   }
 
-  const recipient = await createNigerianTransferRecipient({
-    name: resolved.account_name,
-    accountNumber,
-    bankCode,
-    restaurantId,
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { id: restaurantId },
+    select: {
+      name: true,
+      paystackSubaccountCode: true,
+      paystackSubaccountId: true,
+    },
   });
+
+  if (!restaurant) {
+    throw new Error("Restaurant not found.");
+  }
+
+  const subaccount = restaurant.paystackSubaccountCode
+    ? await updatePaystackSubaccount({
+        idOrCode: restaurant.paystackSubaccountCode,
+        businessName: restaurant.name,
+        accountNumber,
+        bankCode,
+      })
+    : await createPaystackSubaccount({
+        businessName: restaurant.name,
+        accountNumber,
+        bankCode,
+        restaurantId,
+      });
 
   await prisma.restaurant.update({
     where: { id: restaurantId },
     data: {
-      payoutBankName: recipient.details?.bank_name || bankName,
+      payoutBankName: subaccount.settlement_bank || bankName,
       payoutBankCode: bankCode,
       payoutAccountName: resolved.account_name,
       payoutAccountNumber: accountNumber,
-      payoutRecipientCode: recipient.recipient_code,
-      payoutRecipientId: String(recipient.id),
+      paystackSubaccountCode: subaccount.subaccount_code,
+      paystackSubaccountId: String(subaccount.id),
       payoutVerifiedAt: new Date(),
     },
   });
@@ -72,6 +93,6 @@ export async function saveRestaurantBankInfo(formData: FormData) {
 
   return {
     accountName: resolved.account_name,
-    bankName: recipient.details?.bank_name || bankName,
+    bankName: subaccount.settlement_bank || bankName,
   };
 }
