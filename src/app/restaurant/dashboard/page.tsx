@@ -18,8 +18,23 @@ export default async function RestaurantDashboardPage({
   const user = await getOrCreateCurrentUser();
   if (!user) redirect("/");
 
-  const { restaurantId } = await searchParams;
-  if (!restaurantId) redirect("/restaurant/new");
+  const { restaurantId: requestedRestaurantId } = await searchParams;
+
+  let restaurantId = requestedRestaurantId;
+  if (!restaurantId) {
+    const defaultMembership = await prisma.restaurantStaff.findFirst({
+      where: {
+        userId: user.id,
+        isActive: true,
+        role: { in: ["OWNER", "STAFF"] },
+      },
+      select: { restaurantId: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (!defaultMembership) redirect("/");
+    restaurantId = defaultMembership.restaurantId;
+  }
 
   const membership = await prisma.restaurantStaff.findUnique({
     where: {
