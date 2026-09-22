@@ -249,6 +249,19 @@ export function StaffMoreMenu({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const details = detailsRef.current;
+      if (details?.open && !details.contains(event.target as Node)) {
+        details.open = false;
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, []);
 
   if (disabled || role === "OWNER") {
     return (
@@ -279,7 +292,7 @@ export function StaffMoreMenu({
 
   return (
     <>
-    <details className="relative">
+    <details ref={detailsRef} className="relative">
       <summary
         className="grid h-7 w-7 cursor-pointer list-none place-items-center rounded-[7px] text-black transition-colors hover:bg-[#F0F0F0] [&::-webkit-details-marker]:hidden"
         aria-label={`Options for ${name}`}
