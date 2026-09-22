@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, StaffRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +45,7 @@ async function main() {
       id: membership.id,
     },
     data: {
-      role: "OWNER",
+      role: StaffRole.OWNER,
       isActive: true,
     },
     include: {
