@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ToastProvider } from "@/components/toast-provider";
 
-import "./globals.css";
+import "mapbox-gl/dist/mapbox-gl.css";\nimport "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
