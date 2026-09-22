@@ -40,10 +40,17 @@ export async function GET(request: NextRequest) {
       restaurantOrder: {
         restaurantId,
       },
-      status: {
-        notIn: ["DELIVERED", "CANCELLED"],
-      },
+      status: "OUT_FOR_DELIVERY",
       riderId: {
+        not: null,
+      },
+      lastLatitude: {
+        not: null,
+      },
+      lastLongitude: {
+        not: null,
+      },
+      lastLocationAt: {
         not: null,
       },
     },
