@@ -211,7 +211,6 @@ export default async function RestaurantDashboardPage({
             payoutVerifiedAt: membership.restaurant.payoutVerifiedAt?.toISOString() ?? null,
           }}
           verificationSteps={verificationSteps}
-          canRequestPayout={membership.role === "OWNER"}
         />
 
         <div className="h-[168px]" />
