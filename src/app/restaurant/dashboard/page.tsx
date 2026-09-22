@@ -66,6 +66,8 @@ export default async function RestaurantDashboardPage({
           payoutAccountName: true,
           payoutAccountNumber: true,
           payoutRecipientCode: true,
+          paystackSubaccountCode: true,
+          paystackSubaccountId: true,
           payoutVerifiedAt: true,
           _count: {
             select: {
@@ -106,7 +108,7 @@ export default async function RestaurantDashboardPage({
       membership.restaurant.payoutBankCode?.trim() &&
       membership.restaurant.payoutAccountName?.trim() &&
       membership.restaurant.payoutAccountNumber?.trim() &&
-      membership.restaurant.payoutRecipientCode?.trim() &&
+      membership.restaurant.paystackSubaccountCode?.trim() &&
       membership.restaurant.payoutVerifiedAt
   );
   const verificationSteps = [
@@ -204,6 +206,8 @@ export default async function RestaurantDashboardPage({
             payoutAccountName: membership.restaurant.payoutAccountName,
             payoutAccountNumber: membership.restaurant.payoutAccountNumber,
             payoutRecipientCode: membership.restaurant.payoutRecipientCode,
+            paystackSubaccountCode: membership.restaurant.paystackSubaccountCode,
+            paystackSubaccountId: membership.restaurant.paystackSubaccountId,
             payoutVerifiedAt: membership.restaurant.payoutVerifiedAt?.toISOString() ?? null,
           }}
           verificationSteps={verificationSteps}
