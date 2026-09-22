@@ -48,6 +48,8 @@ type RestaurantForDashboard = {
   payoutAccountName: string | null;
   payoutAccountNumber: string | null;
   payoutRecipientCode: string | null;
+  paystackSubaccountCode: string | null;
+  paystackSubaccountId: string | null;
   payoutVerifiedAt: string | null;
 };
 
@@ -993,9 +995,9 @@ export async function RestaurantDashboardGrid({
               accountName={restaurant.payoutAccountName}
               accountNumber={restaurant.payoutAccountNumber}
               payoutVerified={Boolean(
-                restaurant.payoutRecipientCode && restaurant.payoutVerifiedAt
+                restaurant.paystackSubaccountCode && restaurant.payoutVerifiedAt
               )}
-              canRequestPayout={canRequestPayout}
+              canRequestPayout={false}
               openingTime={restaurant.openingTime}
               closingTime={restaurant.closingTime}
               operatingDays={restaurant.operatingDays}
