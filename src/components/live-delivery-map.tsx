@@ -72,6 +72,18 @@ export function LiveDeliveryMap({
   const routeCoordinatesRef = useRef<[number, number][]>([]);
   const currentDeliveryRef = useRef<LiveDeliveryState | null>(initialDelivery);
   const followingRef = useRef(true);
+  const initialCenterRef = useRef<[number, number]>([
+    typeof initialDelivery?.longitude === "number"
+      ? initialDelivery.longitude
+      : typeof restaurantLongitude === "number"
+        ? restaurantLongitude
+        : 7.3986,
+    typeof initialDelivery?.latitude === "number"
+      ? initialDelivery.latitude
+      : typeof restaurantLatitude === "number"
+        ? restaurantLatitude
+        : 9.0765,
+  ]);
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
@@ -110,24 +122,11 @@ export function LiveDeliveryMap({
   useEffect(() => {
     if (!mapboxToken || !mapContainerRef.current || mapRef.current) return;
 
-    const initialLng =
-      typeof initialDelivery?.longitude === "number"
-        ? initialDelivery.longitude
-        : typeof restaurantLongitude === "number"
-          ? restaurantLongitude
-          : 7.3986;
-    const initialLat =
-      typeof initialDelivery?.latitude === "number"
-        ? initialDelivery.latitude
-        : typeof restaurantLatitude === "number"
-          ? restaurantLatitude
-          : 9.0765;
-
     const map = new mapboxgl.Map({
       accessToken: mapboxToken,
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/standard",
-      center: [initialLng, initialLat],
+      center: initialCenterRef.current,
       zoom: 14.5,
       attributionControl: false,
     });
@@ -200,13 +199,7 @@ export function LiveDeliveryMap({
       mapRef.current = null;
       map.remove();
     };
-  }, [
-    initialDelivery?.latitude,
-    initialDelivery?.longitude,
-    mapboxToken,
-    restaurantLatitude,
-    restaurantLongitude,
-  ]);
+  }, [mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;
