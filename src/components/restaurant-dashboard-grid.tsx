@@ -410,12 +410,10 @@ export async function RestaurantDashboardGrid({
   restaurantId,
   restaurant,
   verificationSteps,
-  canRequestPayout,
 }: {
   restaurantId: string;
   restaurant: RestaurantForDashboard;
   verificationSteps: VerificationStep[];
-  canRequestPayout: boolean;
 }) {
   const now = new Date();
   const todayStart = new Date(now);
