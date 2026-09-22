@@ -97,9 +97,11 @@ model Restaurant {
   payoutBankCode       String?
   payoutAccountName    String?
   payoutAccountNumber  String?
-  payoutRecipientCode  String?
-  payoutRecipientId    String?
-  payoutVerifiedAt     DateTime?
+  payoutRecipientCode    String?
+  payoutRecipientId      String?
+  paystackSubaccountCode String?
+  paystackSubaccountId   String?
+  payoutVerifiedAt       DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
