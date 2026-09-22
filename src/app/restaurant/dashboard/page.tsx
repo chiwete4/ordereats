@@ -7,6 +7,7 @@ import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid"
 import { DashboardProfileEditButton } from "@/components/dashboard-profile-edit-button";
 import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
 import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
+import { RestaurantPayoutSettingsButton } from "@/components/restaurant-payout-settings-button";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -172,6 +173,18 @@ export default async function RestaurantDashboardPage({
               />
 
               <div className="hidden min-w-4 flex-1 xl:block" />
+
+              <RestaurantPayoutSettingsButton
+                restaurantId={restaurantId}
+                bankName={membership.restaurant.payoutBankName}
+                bankCode={membership.restaurant.payoutBankCode}
+                accountName={membership.restaurant.payoutAccountName}
+                accountNumber={membership.restaurant.payoutAccountNumber}
+                payoutVerified={Boolean(
+                  membership.restaurant.paystackSubaccountCode &&
+                  membership.restaurant.payoutVerifiedAt
+                )}
+              />
 
               <Link
                 href="/#discover"
