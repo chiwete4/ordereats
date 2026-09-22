@@ -43,6 +43,18 @@ export type PaystackTransferRecipient = {
   };
 };
 
+export type PaystackSubaccount = {
+  id: number;
+  subaccount_code: string;
+  business_name: string;
+  settlement_bank: string;
+  account_number: string;
+  percentage_charge: number;
+  active: boolean;
+};
+
+export const PAPERBAG_PLATFORM_COMMISSION_PERCENT = 5;
+
 export type PaystackTransfer = {
   id: number;
   amount: number;
@@ -112,6 +124,61 @@ export async function resolveNigerianAccount(
   });
   const response = await paystackFetch<PaystackResolvedAccount>(
     `/bank/resolve?${params.toString()}`
+  );
+  return response.data;
+}
+
+export async function createPaystackSubaccount({
+  businessName,
+  accountNumber,
+  bankCode,
+  restaurantId,
+}: {
+  businessName: string;
+  accountNumber: string;
+  bankCode: string;
+  restaurantId: string;
+}) {
+  const response = await paystackFetch<PaystackSubaccount>("/subaccount", {
+    method: "POST",
+    body: JSON.stringify({
+      business_name: businessName,
+      settlement_bank: bankCode,
+      account_number: accountNumber,
+      percentage_charge: PAPERBAG_PLATFORM_COMMISSION_PERCENT,
+      description: `Paperbag restaurant ${restaurantId}`,
+      metadata: JSON.stringify({
+        restaurantId,
+        product: "paperbag",
+      }),
+    }),
+  });
+  return response.data;
+}
+
+export async function updatePaystackSubaccount({
+  idOrCode,
+  businessName,
+  accountNumber,
+  bankCode,
+}: {
+  idOrCode: string;
+  businessName: string;
+  accountNumber: string;
+  bankCode: string;
+}) {
+  const response = await paystackFetch<PaystackSubaccount>(
+    `/subaccount/${encodeURIComponent(idOrCode)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        business_name: businessName,
+        bank_code: bankCode,
+        account_number: accountNumber,
+        percentage_charge: PAPERBAG_PLATFORM_COMMISSION_PERCENT,
+        active: true,
+      }),
+    }
   );
   return response.data;
 }
