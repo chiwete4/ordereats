@@ -47,40 +47,71 @@ export async function toggleFavoriteRestaurant(formData: FormData) {
 }
 
 export async function submitCustomerComplaint(formData: FormData) {
-  const restaurantOrderId = String(formData.get("restaurantOrderId") || "");
+  const orderId = String(formData.get("orderId") || "");
   const body = String(formData.get("body") || "").trim();
+  const selectedItemIds = formData
+    .getAll("orderItemId")
+    .map((value) => String(value))
+    .filter(Boolean);
 
-  if (!restaurantOrderId) throw new Error("Order is required.");
+  if (!orderId) throw new Error("Order is required.");
+  if (selectedItemIds.length === 0) throw new Error("Choose at least one item.");
   if (body.length < 4) throw new Error("Tell us briefly what went wrong.");
 
   const user = await getOrCreateCurrentUser();
   if (!user) throw new Error("You must be signed in.");
 
-  const restaurantOrder = await prisma.restaurantOrder.findFirst({
+  const order = await prisma.order.findFirst({
     where: {
-      id: restaurantOrderId,
-      order: { customerId: user.id },
+      id: orderId,
+      customerId: user.id,
     },
     select: {
-      id: true,
-      restaurantId: true,
-      order: { select: { orderNumber: true } },
+      orderNumber: true,
+      restaurantOrders: {
+        select: {
+          id: true,
+          restaurantId: true,
+          items: {
+            where: { id: { in: selectedItemIds } },
+            select: {
+              id: true,
+              name: true,
+              quantity: true,
+            },
+          },
+        },
+      },
     },
   });
 
-  if (!restaurantOrder) throw new Error("Order not found.");
+  if (!order) throw new Error("Order not found.");
 
-  await prisma.customerComplaint.create({
-    data: {
-      restaurantId: restaurantOrder.restaurantId,
-      customerId: user.id,
-      restaurantOrderId: restaurantOrder.id,
-      subject: `Order #${restaurantOrder.order.orderNumber} issue`,
-      body,
-    },
-  });
+  const selectedRows = order.restaurantOrders.filter((row) => row.items.length > 0);
+  const foundCount = selectedRows.reduce((sum, row) => sum + row.items.length, 0);
+  if (foundCount !== selectedItemIds.length) {
+    throw new Error("One or more selected items are not part of this order.");
+  }
+
+  await prisma.$transaction(
+    selectedRows.map((row) => {
+      const itemSummary = row.items
+        .map((item) => `${item.quantity}× ${item.name}`)
+        .join(", ");
+
+      return prisma.customerComplaint.create({
+        data: {
+          restaurantId: row.restaurantId,
+          customerId: user.id,
+          restaurantOrderId: row.id,
+          subject: `Order #${order.orderNumber} · ${itemSummary}`,
+          body: `Items with an issue: ${itemSummary}\n\n${body}`,
+        },
+      });
+    })
+  );
 
   revalidatePath("/customer");
   revalidatePath("/restaurant/dashboard");
-  return { ok: true };
+  return { ok: true, complaintCount: selectedRows.length };
 }
