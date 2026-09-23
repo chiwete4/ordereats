@@ -58,11 +58,12 @@ export function CustomerLiveMap({
   useEffect(() => {
     let stopped = false;
     if (!restaurantOrderId) return;
+    const activeRestaurantOrderId = restaurantOrderId;
 
     async function refresh() {
       try {
         const response = await fetch(
-          `/api/customer/dashboard/live?restaurantOrderId=${encodeURIComponent(restaurantOrderId)}`,
+          `/api/customer/dashboard/live?restaurantOrderId=${encodeURIComponent(activeRestaurantOrderId)}`,
           { cache: "no-store" }
         );
         if (!response.ok) return;
