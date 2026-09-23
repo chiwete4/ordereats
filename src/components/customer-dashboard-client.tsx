@@ -14,7 +14,6 @@ import {
   Store,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import {
@@ -153,7 +152,6 @@ export function CustomerDashboardClient({
   const [issueOrder, setIssueOrder] = useState<CustomerOrderCard | null>(null);
   const [issueBody, setIssueBody] = useState("");
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
   const toast = useToast();
 
   useEffect(() => {
@@ -265,7 +263,7 @@ export function CustomerDashboardClient({
     startTransition(async () => {
       try {
         await toggleFavoriteRestaurant(formData);
-        router.refresh();
+        window.location.reload();
       } catch (error) {
         toast({
           title: "Couldn’t update favourite",
@@ -633,17 +631,12 @@ export function CustomerDashboardClient({
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setBasketOpen(false);
-                router.push("/customer/checkout");
-              }}
-              disabled={basket.length === 0}
-              className="mt-5 h-11 w-full rounded-[10px] bg-black text-[11px] font-semibold text-white disabled:opacity-40"
-            >
-              Continue to checkout
-            </button>
+            <div className="mt-5 rounded-[10px] bg-[#F4F4F4] px-4 py-3">
+              <p className="text-[10px] font-semibold">Basket saved</p>
+              <p className="mt-1 text-[9px] leading-[1.45] text-[#808080]">
+                Your selections stay on this device while we move into checkout.
+              </p>
+            </div>
           </div>
         </div>
       ) : null}
