@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Bike,
   Check,
@@ -291,6 +291,39 @@ function ActivePanel({
   const initialExpanded = orders.find((order) => order.status === "PREPARING")?.id ?? orders[0]?.id ?? null;
   const [expandedId, setExpandedId] = useState<string | null>(initialExpanded);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [visibleOrders, setVisibleOrders] = useState(orders);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const incomingById = new Map(orders.map((order) => [order.id, order]));
+    const removedIds = visibleOrders
+      .filter((order) => !incomingById.has(order.id))
+      .map((order) => order.id);
+
+    setVisibleOrders((current) => {
+      const currentIds = new Set(current.map((order) => order.id));
+      return [
+        ...current.map((order) => incomingById.get(order.id) ?? order),
+        ...orders.filter((order) => !currentIds.has(order.id)),
+      ];
+    });
+
+    if (removedIds.length === 0) {
+      setVisibleOrders(orders);
+      return;
+    }
+
+    setExitingIds(new Set(removedIds));
+    const timer = window.setTimeout(() => {
+      setVisibleOrders(orders);
+      setExitingIds(new Set());
+      if (expandedId && removedIds.includes(expandedId)) {
+        setExpandedId(orders[0]?.id ?? null);
+      }
+    }, 280);
+
+    return () => window.clearTimeout(timer);
+  }, [orders]);
 
   return (
     <section className="w-full bg-white">
@@ -303,17 +336,24 @@ function ActivePanel({
       />
 
       <div className="mt-5">
-        {orders.length === 0 ? (
+        {visibleOrders.length === 0 ? (
           <p className="py-5 text-[12px] font-medium text-[#808080]">
             No active orders right now.
           </p>
         ) : (
-          orders.slice(0, 6).map((order) => {
+          visibleOrders.slice(0, 6).map((order) => {
             const expanded = expandedId === order.id;
             const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
             return (
-              <article key={order.id} className="relative border-b border-[#EAEAEA] py-4 first:pt-0">
+              <article
+                key={order.id}
+                className={`relative origin-center overflow-hidden border-b transition-[max-height,opacity,transform,padding,border-color] duration-300 ease-out first:pt-0 ${
+                  exitingIds.has(order.id)
+                    ? "max-h-0 scale-[0.975] border-transparent py-0 opacity-0"
+                    : "max-h-[700px] scale-100 border-[#EAEAEA] py-4 opacity-100"
+                }`}
+              >
                 {menuOpenId === order.id ? (
                   <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[40] bg-white/80" />
                 ) : null}
