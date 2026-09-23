@@ -205,6 +205,8 @@ export default async function CustomerPage() {
       hoursLabel: restaurant.openingTime + "–" + restaurant.closingTime,
       rating,
       favorited: restaurant.favoritedBy.length > 0,
+      latitude: restaurant.latitude,
+      longitude: restaurant.longitude,
       items: restaurant.menuItems.map((item) => ({
         id: item.id,
         name: item.name,
