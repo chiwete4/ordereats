@@ -50,6 +50,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html:has(body [data-rider-page="true"]),
+html:has(body [data-rider-page="true"]) body {
+  background: #000000;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -139,19 +144,19 @@ button {
   background:
     linear-gradient(
       90deg,
-      rgba(255,255,255,0.34) 0%,
-      rgba(255,255,255,0.62) 35%,
+      rgba(255,255,255,0.42) 0%,
+      rgba(255,255,255,0.42) 25%,
       rgba(255,255,255,1) 50%,
-      rgba(255,255,255,0.62) 65%,
-      rgba(255,255,255,0.34) 100%
+      rgba(255,255,255,0.42) 75%,
+      rgba(255,255,255,0.42) 100%
     );
-  background-size: 220% 100%;
+  background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
-  animation: rider-swipe-shimmer 1.9s linear infinite;
+  animation: rider-swipe-shimmer 2.4s linear infinite;
 }
 
 @keyframes rider-swipe-shimmer {
-  from { background-position: 120% 0; }
-  to { background-position: -120% 0; }
+  from { background-position: 200% 0; }
+  to { background-position: 0% 0; }
 }
