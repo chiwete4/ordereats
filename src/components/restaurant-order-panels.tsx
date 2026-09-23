@@ -348,10 +348,10 @@ function ActivePanel({
             return (
               <article
                 key={order.id}
-                className={`relative origin-center overflow-hidden border-b transition-[max-height,opacity,transform,padding,border-color] duration-300 ease-out first:pt-0 ${
+                className={`relative origin-center border-b transition-[max-height,opacity,transform,padding,border-color] duration-300 ease-out first:pt-0 ${
                   exitingIds.has(order.id)
-                    ? "max-h-0 scale-[0.975] border-transparent py-0 opacity-0"
-                    : "max-h-[700px] border-[#EAEAEA] py-4 opacity-100"
+                    ? "max-h-0 scale-[0.975] overflow-hidden border-transparent py-0 opacity-0"
+                    : "max-h-[700px] overflow-visible border-[#EAEAEA] py-4 opacity-100"
                 }`}
               >
                 {menuOpenId === order.id ? (
