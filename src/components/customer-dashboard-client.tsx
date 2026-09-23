@@ -145,6 +145,7 @@ export function CustomerDashboardClient({
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [basketReady, setBasketReady] = useState(false);
   const [basketOpen, setBasketOpen] = useState(false);
+  const [checkoutPending, setCheckoutPending] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<CustomerRestaurant | null>(null);
   const [showAllActive, setShowAllActive] = useState(false);
   const [showAllFavorites, setShowAllFavorites] = useState(false);
@@ -170,6 +171,34 @@ export function CustomerDashboardClient({
     if (!basketReady) return;
     window.localStorage.setItem("paperbag-cart-v1", JSON.stringify(basket));
   }, [basket, basketReady]);
+
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (!payment) return;
+
+    if (payment === "success") {
+      setBasket([]);
+      window.localStorage.removeItem("paperbag-cart-v1");
+      toast({
+        key: "payment",
+        title: "Payment confirmed",
+        description: "Your order is now with the restaurant.",
+        tone: "success",
+      });
+      router.refresh();
+    } else if (payment === "failed") {
+      toast({
+        key: "payment",
+        title: "Payment not confirmed",
+        description: "Your basket is still here. You can try again.",
+        tone: "error",
+      });
+    }
+
+    window.history.replaceState({}, "", "/customer");
+  }, [router, toast]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredRestaurants = useMemo(
@@ -287,6 +316,69 @@ export function CustomerDashboardClient({
           : item.name,
       tone: "success",
     });
+  }
+
+
+  async function currentDeliveryLocation() {
+    if (!navigator.geolocation) {
+      throw new Error("Location is not available in this browser.");
+    }
+
+    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          }),
+        () => reject(new Error("Allow location access so we know where to deliver your order.")),
+        {
+          enableHighAccuracy: true,
+          maximumAge: 10000,
+          timeout: 15000,
+        }
+      );
+    });
+  }
+
+  async function startCheckout() {
+    if (basket.length === 0 || checkoutPending) return;
+
+    setCheckoutPending(true);
+    try {
+      const location = await currentDeliveryLocation();
+      const response = await fetch("/api/customer/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: basket.map((item) => ({
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+          })),
+          deliveryLatitude: location.latitude,
+          deliveryLongitude: location.longitude,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        authorizationUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.authorizationUrl) {
+        throw new Error(payload.error || "Couldn’t start checkout.");
+      }
+
+      window.location.assign(payload.authorizationUrl);
+    } catch (error) {
+      setCheckoutPending(false);
+      toast({
+        key: "checkout",
+        title: "Checkout couldn’t start",
+        description: error instanceof Error ? error.message : "Please try again.",
+        tone: "error",
+      });
+    }
   }
 
   function toggleFavorite(restaurantId: string) {
@@ -666,17 +758,18 @@ export function CustomerDashboardClient({
 
       {basketOpen ? (
         <div className="fixed inset-0 z-[200] flex animate-[modal-backdrop-in_160ms_ease-out] items-end justify-center bg-black/35 p-4 sm:items-center" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setBasketOpen(false);
+          if (event.target === event.currentTarget && !checkoutPending) setBasketOpen(false);
         }}>
           <div className="max-h-[82vh] w-full max-w-[520px] animate-[modal-pop-in_180ms_ease-out] overflow-y-auto rounded-[16px] bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em]">Review your basket</h3>
+                <h3 className="text-[18px] font-semibold tracking-[-0.03em]">Checkout</h3>
                 <p className="mt-1 text-[10px] text-[#808080]">{basketCount} items · {money(basketTotal)}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setBasketOpen(false)}
+                disabled={checkoutPending}
                 aria-label="Close basket"
               >
                 <X className="h-4 w-4" />
@@ -696,16 +789,35 @@ export function CustomerDashboardClient({
               ))}
             </div>
 
-            <div className="mt-5 flex items-center justify-between border-t border-[#EAEAEA] pt-4">
-              <span className="text-[10px] text-[#808080]">Food subtotal</span>
-              <span className="text-[14px] font-semibold">{money(basketTotal)}</span>
+            <div className="mt-5 space-y-2 border-t border-[#EAEAEA] pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#808080]">Food subtotal</span>
+                <span className="text-[12px] font-semibold">{money(basketTotal)}</span>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-[10px] text-[#808080]">Paystack processing fee</span>
+                <span className="text-right text-[9px] leading-[1.4] text-[#808080]">
+                  Added by Paystack at payment
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] font-semibold">Order total</span>
+                <span className="text-[15px] font-semibold">{money(basketTotal)} + fee</span>
+              </div>
             </div>
+
+            <p className="mt-4 rounded-[9px] bg-[#F4F4F4] px-3 py-2.5 text-[9px] leading-[1.45] text-[#777]">
+              We’ll confirm the order only after Paystack verifies a successful payment. Your current location will be used as the delivery point.
+            </p>
+
             <button
               type="button"
-              onClick={() => setBasketOpen(false)}
-              className="mt-4 h-10 w-full rounded-[9px] bg-black text-[10px] font-semibold text-white"
+              disabled={checkoutPending || basketCount === 0}
+              onClick={startCheckout}
+              className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-black text-[10px] font-semibold text-white transition active:scale-[0.99] disabled:opacity-50"
             >
-              Looks good
+              {checkoutPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+              {checkoutPending ? "Opening Paystack…" : "Continue to Paystack"}
             </button>
           </div>
         </div>
