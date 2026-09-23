@@ -153,6 +153,7 @@ export function CustomerDashboardClient({
   const [riderQuery, setRiderQuery] = useState("");
   const [issueOrder, setIssueOrder] = useState<CustomerOrderCard | null>(null);
   const [issueBody, setIssueBody] = useState("");
+  const [selectedIssueItemIds, setSelectedIssueItemIds] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const toast = useToast();
@@ -250,6 +251,10 @@ export function CustomerDashboardClient({
     toast({ title: "Added to basket", description: item.name, tone: "success" });
   }
 
+  function basketQuantity(menuItemId: string) {
+    return basket.find((item) => item.menuItemId === menuItemId)?.quantity ?? 0;
+  }
+
   function changeQuantity(menuItemId: string, delta: number) {
     setBasket((current) =>
       current
@@ -279,11 +284,27 @@ export function CustomerDashboardClient({
     });
   }
 
+  function openIssue(order: CustomerOrderCard) {
+    setIssueOrder(order);
+    setIssueBody("");
+    setSelectedIssueItemIds(new Set());
+  }
+
+  function toggleIssueItem(itemId: string) {
+    setSelectedIssueItemIds((current) => {
+      const next = new Set(current);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   function submitIssue() {
     if (!issueOrder) return;
     const formData = new FormData();
-    formData.set("restaurantOrderId", issueOrder.id);
+    formData.set("orderId", issueOrder.orderId);
     formData.set("body", issueBody);
+    selectedIssueItemIds.forEach((itemId) => formData.append("orderItemId", itemId));
     startTransition(async () => {
       try {
         await submitCustomerComplaint(formData);
@@ -294,6 +315,7 @@ export function CustomerDashboardClient({
         });
         setIssueOrder(null);
         setIssueBody("");
+        setSelectedIssueItemIds(new Set());
       } catch (error) {
         toast({
           title: "Couldn’t send issue",
@@ -316,17 +338,15 @@ export function CustomerDashboardClient({
             fallbackLabel={fallbackLabel}
           />
 
-          <section className="rounded-[12px] bg-black px-5 py-5 text-white sm:px-6">
+          <section className="relative rounded-[12px] bg-black px-5 py-5 text-white sm:px-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <h2 className="text-[14px] font-semibold">Place your order</h2>
                 <span className="text-[9px] text-white/55">Restaurants can see your delivery location.</span>
               </div>
-              {basketCount > 0 ? (
-                <button type="button" onClick={() => setBasketOpen(true)} className="text-[10px] font-semibold underline underline-offset-2">
-                  Basket · {basketCount}
-                </button>
-              ) : null}
+              <span className="text-[9px] text-white/35">
+                {basketCount > 0 ? `${basketCount} in basket` : "Basket empty"}
+              </span>
             </div>
 
             <label className="mt-4 flex h-9 items-center gap-2 rounded-[8px] border border-white/20 px-3 text-white/55">
@@ -380,14 +400,22 @@ export function CustomerDashboardClient({
                           <span className="min-w-0 flex-1 truncate text-[9px] text-white/75">
                             {item.name} · {money(item.price)}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => addItem(item)}
-                            disabled={!restaurant.isOpen}
-                            className="rounded-full border border-white/20 px-2.5 py-1 text-[8px] font-semibold disabled:opacity-35"
-                          >
-                            + Add
-                          </button>
+                          {basketQuantity(item.id) > 0 ? (
+                            <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/20 px-2 py-1">
+                              <button type="button" onClick={() => changeQuantity(item.id, -1)} className="px-1 text-[11px]">−</button>
+                              <span className="min-w-4 text-center text-[9px] font-semibold">{basketQuantity(item.id)}</span>
+                              <button type="button" onClick={() => addItem(item)} className="px-1 text-[11px]">+</button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => addItem(item)}
+                              disabled={!restaurant.isOpen}
+                              className="rounded-full border border-white/20 px-2.5 py-1 text-[8px] font-semibold disabled:opacity-35"
+                            >
+                              + Add
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -407,19 +435,36 @@ export function CustomerDashboardClient({
                       {item.restaurantName} · {money(item.price)}
                     </p>
                   </div>
-                  <button type="button" onClick={() => addItem(item)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-black">
-                    <Plus className="h-3 w-3" />
-                    Add
-                  </button>
+                  {basketQuantity(item.id) > 0 ? (
+                    <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-2 py-1.5 text-black">
+                      <button type="button" onClick={() => changeQuantity(item.id, -1)} className="px-1 text-[12px]">−</button>
+                      <span className="min-w-4 text-center text-[9px] font-semibold">{basketQuantity(item.id)}</span>
+                      <button type="button" onClick={() => addItem(item)} className="px-1 text-[12px]">+</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => addItem(item)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-black">
+                      <Plus className="h-3 w-3" />
+                      Add
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
 
             {basketCount > 0 ? (
-              <button type="button" onClick={() => setBasketOpen(true)} className="mt-4 flex w-full items-center justify-between rounded-[9px] bg-white px-4 py-3 text-black">
-                <span className="text-[10px] font-semibold">{basketCount} items in basket</span>
-                <span className="text-[11px] font-semibold">{money(basketTotal)}</span>
-              </button>
+              <div className="sticky bottom-4 z-20 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setBasketOpen(true)}
+                  className="flex w-full items-center justify-between rounded-[11px] bg-white px-4 py-3.5 text-black shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-1 ring-black/10 transition active:scale-[0.99]"
+                >
+                  <span className="text-left">
+                    <span className="block text-[11px] font-semibold">Review basket</span>
+                    <span className="mt-0.5 block text-[9px] text-black/50">{basketCount} {basketCount === 1 ? "item" : "items"}</span>
+                  </span>
+                  <span className="text-[13px] font-semibold">{money(basketTotal)}</span>
+                </button>
+              </div>
             ) : null}
           </section>
 
@@ -513,7 +558,7 @@ export function CustomerDashboardClient({
                           Rider contact unavailable
                         </span>
                       )}
-                      <button type="button" onClick={() => setIssueOrder(order)} className="h-8 rounded-[7px] bg-red-500 text-[9px] font-semibold text-white">
+                      <button type="button" onClick={() => openIssue(order)} className="h-8 rounded-[7px] bg-red-500 text-[9px] font-semibold text-white">
                         Wrong order?
                       </button>
                     </div>
@@ -611,7 +656,7 @@ export function CustomerDashboardClient({
           <div className="max-h-[82vh] w-full max-w-[520px] overflow-y-auto rounded-[16px] bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[18px] font-semibold tracking-[-0.03em]">Your basket</h3>
+                <h3 className="text-[18px] font-semibold tracking-[-0.03em]">Review your basket</h3>
                 <p className="mt-1 text-[10px] text-[#808080]">{basketCount} items · {money(basketTotal)}</p>
               </div>
               <button type="button" onClick={() => setBasketOpen(false)} aria-label="Close basket">
@@ -627,21 +672,22 @@ export function CustomerDashboardClient({
                     <p className="truncate text-[11px] font-semibold">{item.name}</p>
                     <p className="mt-1 text-[9px] text-[#808080]">{item.restaurantName} · {money(item.price)}</p>
                   </div>
-                  <div className="flex items-center gap-2 rounded-full border border-[#E3E3E3] px-2 py-1">
-                    <button type="button" onClick={() => changeQuantity(item.menuItemId, -1)} className="px-1 text-[12px]">−</button>
-                    <span className="min-w-4 text-center text-[10px] font-semibold">{item.quantity}</span>
-                    <button type="button" onClick={() => changeQuantity(item.menuItemId, 1)} className="px-1 text-[12px]">+</button>
-                  </div>
+                  <span className="shrink-0 text-[10px] font-semibold text-[#666]">x{item.quantity}</span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-5 rounded-[10px] bg-[#F4F4F4] px-4 py-3">
-              <p className="text-[10px] font-semibold">Basket saved</p>
-              <p className="mt-1 text-[9px] leading-[1.45] text-[#808080]">
-                Your selections stay on this device while we move into checkout.
-              </p>
+            <div className="mt-5 flex items-center justify-between border-t border-[#EAEAEA] pt-4">
+              <span className="text-[10px] text-[#808080]">Food subtotal</span>
+              <span className="text-[14px] font-semibold">{money(basketTotal)}</span>
             </div>
+            <button
+              type="button"
+              onClick={() => setBasketOpen(false)}
+              className="mt-4 h-10 w-full rounded-[9px] bg-black text-[10px] font-semibold text-white"
+            >
+              Looks good
+            </button>
           </div>
         </div>
       ) : null}
@@ -654,11 +700,33 @@ export function CustomerDashboardClient({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-[14px] font-semibold">Something wrong with #{issueOrder.orderNumber}?</h3>
-                <p className="mt-1 text-[10px] text-[#808080]">Tell the restaurant what happened.</p>
+                <p className="mt-1 text-[10px] text-[#808080]">Choose the item(s) with an issue, then tell us what happened.</p>
               </div>
               <button type="button" disabled={pending} onClick={() => setIssueOrder(null)}>
                 <X className="h-4 w-4" />
               </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {issueOrder.items.map((item) => {
+                const checked = selectedIssueItemIds.has(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleIssueItem(item.id)}
+                    className={"flex w-full items-center gap-3 rounded-[9px] border px-3 py-3 text-left transition " + (checked ? "border-black bg-black text-white" : "border-[#E2E2E2] bg-white")}
+                  >
+                    <FoodThumb src={item.imageUrl} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[10px] font-semibold">{item.name}</span>
+                      <span className={"mt-1 block text-[9px] " + (checked ? "text-white/60" : "text-[#808080]")}>x{item.quantity} · {money(item.unitPrice * item.quantity)}</span>
+                    </span>
+                    <span className={"grid h-5 w-5 place-items-center rounded-full border text-[10px] " + (checked ? "border-white bg-white text-black" : "border-[#CFCFCF]")}>
+                      {checked ? "✓" : ""}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <textarea
               value={issueBody}
@@ -668,7 +736,7 @@ export function CustomerDashboardClient({
             />
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || selectedIssueItemIds.size === 0 || issueBody.trim().length < 4}
               onClick={submitIssue}
               className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-black text-[10px] font-semibold text-white disabled:opacity-50"
             >
