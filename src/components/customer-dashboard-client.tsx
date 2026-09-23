@@ -14,6 +14,7 @@ import {
   Store,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import {
@@ -140,6 +141,7 @@ export function CustomerDashboardClient({
 }) {
   const [query, setQuery] = useState("");
   const [basket, setBasket] = useState<BasketItem[]>([]);
+  const [basketReady, setBasketReady] = useState(false);
   const [basketOpen, setBasketOpen] = useState(false);
   const [expandedRestaurant, setExpandedRestaurant] = useState<string | null>(
     restaurants[0]?.id ?? null
@@ -152,6 +154,7 @@ export function CustomerDashboardClient({
   const [issueOrder, setIssueOrder] = useState<CustomerOrderCard | null>(null);
   const [issueBody, setIssueBody] = useState("");
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const toast = useToast();
 
   useEffect(() => {
@@ -159,11 +162,13 @@ export function CustomerDashboardClient({
       const stored = window.localStorage.getItem("paperbag-cart-v1");
       if (stored) setBasket(JSON.parse(stored));
     } catch {}
+    setBasketReady(true);
   }, []);
 
   useEffect(() => {
+    if (!basketReady) return;
     window.localStorage.setItem("paperbag-cart-v1", JSON.stringify(basket));
-  }, [basket]);
+  }, [basket, basketReady]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredRestaurants = useMemo(
@@ -263,7 +268,7 @@ export function CustomerDashboardClient({
     startTransition(async () => {
       try {
         await toggleFavoriteRestaurant(formData);
-        window.location.reload();
+        router.refresh();
       } catch (error) {
         toast({
           title: "Couldn’t update favourite",
