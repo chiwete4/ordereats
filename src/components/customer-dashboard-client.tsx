@@ -3,7 +3,6 @@
 import {
   Bike,
   CheckCircle2,
-  ChevronDown,
   Heart,
   LoaderCircle,
   Phone,
