@@ -59,6 +59,11 @@ export type CustomerOrderCard = {
   createdAt: string;
   updatedAt: string;
   deliveredAt: string | null;
+  deliveryLatitude: number;
+  deliveryLongitude: number;
+  riderLatitude: number | null;
+  riderLongitude: number | null;
+  riderLocationAt: string | null;
   items: Array<{
     id: string;
     menuItemId: string;
@@ -118,6 +123,76 @@ function FoodThumb({ src }: { src: string | null }) {
   ) : (
     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#EFEFEF]">
       <ShoppingBag className="h-4 w-4" strokeWidth={2.3} />
+    </span>
+  );
+}
+
+function RiderEta({
+  riderLatitude,
+  riderLongitude,
+  deliveryLatitude,
+  deliveryLongitude,
+  riderLocationAt,
+}: {
+  riderLatitude: number | null;
+  riderLongitude: number | null;
+  deliveryLatitude: number;
+  deliveryLongitude: number;
+  riderLocationAt: string | null;
+}) {
+  const [seconds, setSeconds] = useState<number | null>(null);
+  const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
+
+  useEffect(() => {
+    if (
+      !token ||
+      typeof riderLatitude !== "number" ||
+      typeof riderLongitude !== "number"
+    ) {
+      setSeconds(null);
+      return;
+    }
+
+    let stopped = false;
+    const coordinates = `${riderLongitude},${riderLatitude};${deliveryLongitude},${deliveryLatitude}`;
+
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?overview=false&access_token=${encodeURIComponent(token)}`,
+      { cache: "no-store" }
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        const duration = payload?.routes?.[0]?.duration;
+        if (!stopped && typeof duration === "number") {
+          setSeconds(Math.max(0, Math.round(duration)));
+        }
+      })
+      .catch(() => {
+        if (!stopped) setSeconds(null);
+      });
+
+    return () => {
+      stopped = true;
+    };
+  }, [
+    token,
+    riderLatitude,
+    riderLongitude,
+    deliveryLatitude,
+    deliveryLongitude,
+    riderLocationAt,
+  ]);
+
+  if (seconds === null) {
+    return <span className="font-semibold text-black">on the way</span>;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+
+  return (
+    <span className="font-semibold text-black">
+      {String(minutes).padStart(2, "0")}m:{String(remaining).padStart(2, "0")}s away
     </span>
   );
 }
@@ -700,7 +775,13 @@ export function CustomerDashboardClient({
                     {sentOut ? (
                       <div className="ml-[52px] mt-4">
                         <p className="text-[10px] text-[#858585]">
-                          Rider is <span className="font-semibold text-black">on the way</span>
+                          Rider is <RiderEta
+                            riderLatitude={order.riderLatitude}
+                            riderLongitude={order.riderLongitude}
+                            deliveryLatitude={order.deliveryLatitude}
+                            deliveryLongitude={order.deliveryLongitude}
+                            riderLocationAt={order.riderLocationAt}
+                          />
                         </p>
                         <p className="mt-1 text-[9px] text-[#999]">You’ll be notified once this is delivered.</p>
                       </div>
