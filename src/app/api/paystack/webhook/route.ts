@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { completePaystackPayment } from "@/lib/complete-paystack-payment";
 import { verifyPaystackWebhook } from "@/lib/paystack";
 import { prisma } from "@/lib/prisma";
 
@@ -50,36 +51,23 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.event === "charge.success") {
-    const payment = await prisma.payment.findUnique({
-      where: { reference },
-      select: { id: true, orderId: true, status: true },
-    });
-
-    if (payment && payment.status !== "SUCCESS") {
-      const paidAt = event.data?.paid_at ? new Date(event.data.paid_at) : new Date();
-      const chargedAmount =
-        typeof event.data?.amount === "number" ? event.data.amount / 100 : undefined;
-      const providerFee =
-        typeof event.data?.fees === "number" ? event.data.fees / 100 : undefined;
-
-      await prisma.$transaction([
-        prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: "SUCCESS",
-            paidAt,
-            chargedAmount,
-            providerFee,
-          },
-        }),
-        prisma.restaurantOrder.updateMany({
-          where: {
-            orderId: payment.orderId,
-            status: "PENDING_PAYMENT",
-          },
-          data: { status: "CONFIRMED" },
-        }),
-      ]);
+    if (typeof event.data?.amount === "number") {
+      try {
+        await completePaystackPayment({
+          reference,
+          chargedAmountKobo: event.data.amount,
+          providerFeeKobo:
+            typeof event.data.fees === "number" ? event.data.fees : undefined,
+          paidAt: event.data.paid_at ? new Date(event.data.paid_at) : new Date(),
+        });
+      } catch (error) {
+        if (
+          !(error instanceof Error) ||
+          error.message !== "Payment reference not found."
+        ) {
+          throw error;
+        }
+      }
     }
 
     return NextResponse.json({ received: true });
