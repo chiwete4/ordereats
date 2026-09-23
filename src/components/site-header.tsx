@@ -25,7 +25,7 @@ export function SiteHeader() {
         <div className="flex shrink-0 items-center gap-4">
           {isLoaded && !isSignedIn ? (
             <>
-              <SignInButton mode="modal" forceRedirectUrl="/restaurant/dashboard">
+              <SignInButton mode="modal" forceRedirectUrl="/customer">
                 <button className="rounded-full border-2 border-black px-[11.5px] py-[3px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] transition-colors hover:bg-black hover:text-white sm:px-[11.5px]">
                   Log in
                 </button>
