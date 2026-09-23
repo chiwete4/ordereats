@@ -3,6 +3,7 @@
 import {
   Bike,
   CheckCircle2,
+  Clock3,
   Heart,
   LoaderCircle,
   Phone,
@@ -20,7 +21,7 @@ import {
   submitCustomerComplaint,
   toggleFavoriteRestaurant,
 } from "@/actions/customer";
-import { CustomerLiveMap, type CustomerLiveDelivery } from "@/components/customer-live-map";
+import { CustomerLiveMap, type CustomerTrackingOrder } from "@/components/customer-live-map";
 import { CustomerRestaurantBrowserModal } from "@/components/customer-restaurant-browser-modal";
 import { useToast } from "@/components/toast-provider";
 
@@ -57,6 +58,7 @@ export type CustomerOrderCard = {
   subtotal: number;
   createdAt: string;
   updatedAt: string;
+  deliveredAt: string | null;
   items: Array<{
     id: string;
     menuItemId: string;
@@ -120,13 +122,31 @@ function FoodThumb({ src }: { src: string | null }) {
   );
 }
 
+function CustomerElapsed({ from }: { from: string }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const seconds = Math.max(0, Math.floor((now - new Date(from).getTime()) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+
+  return (
+    <span className="font-semibold text-black">
+      {String(minutes).padStart(2, "0")}m:{String(remaining).padStart(2, "0")}s
+    </span>
+  );
+}
+
 export function CustomerDashboardClient({
   restaurants,
   activeOrders,
   pastOrders,
   riderHistory,
-  liveRestaurantOrderId,
-  initialLiveDelivery,
+  trackingOrders,
   fallbackLatitude,
   fallbackLongitude,
   fallbackLabel,
@@ -135,8 +155,7 @@ export function CustomerDashboardClient({
   activeOrders: CustomerOrderCard[];
   pastOrders: CustomerOrderCard[];
   riderHistory: CustomerRiderHistory[];
-  liveRestaurantOrderId: string | null;
-  initialLiveDelivery: CustomerLiveDelivery | null;
+  trackingOrders: CustomerTrackingOrder[];
   fallbackLatitude: number | null;
   fallbackLongitude: number | null;
   fallbackLabel: string;
@@ -445,8 +464,7 @@ export function CustomerDashboardClient({
       <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
         <div className="min-w-0 space-y-5">
           <CustomerLiveMap
-            restaurantOrderId={liveRestaurantOrderId}
-            initialDelivery={initialLiveDelivery}
+            trackingOrders={trackingOrders}
             fallbackLatitude={fallbackLatitude}
             fallbackLongitude={fallbackLongitude}
             fallbackLabel={fallbackLabel}
@@ -617,44 +635,104 @@ export function CustomerDashboardClient({
             <div className="mt-4 divide-y divide-[#EAEAEA]">
               {visibleActive.length === 0 ? (
                 <p className="py-5 text-[11px] text-[#808080]">No active orders right now.</p>
-              ) : visibleActive.map((order) => (
-                <article key={order.id} className="py-4 first:pt-0">
-                  <div className="flex items-start gap-3">
-                    <FoodThumb src={order.items[0]?.imageUrl ?? null} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold">#{order.orderNumber}</p>
-                      <p className="mt-1 text-[9px] text-[#808080]">
-                        {order.items.reduce((sum, item) => sum + item.quantity, 0)} items · {money(order.subtotal)} total
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-semibold text-[#777]">{statusLabel(order.status)}</span>
-                  </div>
+              ) : visibleActive.map((order) => {
+                const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const delivered = order.status === "DELIVERED";
+                const sentOut = order.status === "OUT_FOR_DELIVERY";
+                const preparing = order.status === "PREPARING";
+                const ready = order.status === "READY_FOR_PICKUP";
+                const confirmed = order.status === "CONFIRMED";
 
-                  <div className="ml-[52px] mt-3 space-y-1">
-                    {order.items.slice(0, 3).map((item) => (
-                      <p key={item.id} className="text-[9px] text-[#777]">x{item.quantity} {item.name}</p>
-                    ))}
-                  </div>
+                return (
+                  <article key={order.id} className="py-5 first:pt-0">
+                    <div className="flex items-start gap-3">
+                      <FoodThumb src={order.items[0]?.imageUrl ?? null} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold">#{order.orderNumber}</p>
+                        <p className="mt-1 text-[10px] text-[#888]">
+                          {itemCount} {itemCount === 1 ? "item" : "items"} · {money(order.subtotal)} total
+                        </p>
+                      </div>
 
-                  {order.status === "OUT_FOR_DELIVERY" ? (
-                    <div className="ml-[52px] mt-3 grid grid-cols-2 gap-2">
-                      {order.riderPhone ? (
-                        <a href={"tel:" + order.riderPhone} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[7px] bg-black text-[9px] font-semibold text-white">
-                          <Phone className="h-3 w-3" />
-                          Contact Rider
-                        </a>
-                      ) : (
-                        <span className="inline-flex h-8 items-center justify-center rounded-[7px] bg-[#EAEAEA] text-[9px] font-semibold text-[#888]">
-                          Rider contact unavailable
-                        </span>
-                      )}
-                      <button type="button" onClick={() => openIssue(order)} className="h-8 rounded-[7px] bg-red-500 text-[9px] font-semibold text-white">
-                        Wrong order?
-                      </button>
+                      <span className={
+                        "inline-flex shrink-0 items-center gap-1 text-[10px] font-medium " +
+                        (delivered ? "text-green-500" : preparing || ready || confirmed ? "text-[#888]" : "text-black")
+                      }>
+                        {delivered ? "Delivered" : sentOut ? "Sent out" : ready ? "Ready" : preparing ? "Preparing" : "Confirmed"}
+                        {delivered ? (
+                          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        ) : sentOut ? (
+                          <Bike className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        ) : (
+                          <Clock3 className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        )}
+                      </span>
                     </div>
-                  ) : null}
-                </article>
-              ))}
+
+                    <div className="ml-[52px] mt-4 space-y-3">
+                      {order.items.slice(0, 4).map((item) => (
+                        <div key={item.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 text-[10px]">
+                          <span className="text-[#999]">x{item.quantity}</span>
+                          <span className="truncate font-medium text-black">{item.name}</span>
+                          <span className="shrink-0 text-[#888]">{money(item.unitPrice * item.quantity)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {delivered ? (
+                      <div className="ml-[52px] mt-4 grid grid-cols-2 gap-2">
+                        {order.riderPhone ? (
+                          <a href={"tel:" + order.riderPhone} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[8px] bg-black text-[9px] font-semibold text-white">
+                            <Phone className="h-3.5 w-3.5" />
+                            Contact Rider
+                          </a>
+                        ) : (
+                          <span className="inline-flex h-9 items-center justify-center rounded-[8px] bg-[#EAEAEA] text-[9px] font-semibold text-[#888]">
+                            Rider unavailable
+                          </span>
+                        )}
+                        <button type="button" onClick={() => openIssue(order)} className="h-9 rounded-[8px] bg-red-500 text-[9px] font-semibold text-white">
+                          Wrong order?
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {sentOut ? (
+                      <div className="ml-[52px] mt-4">
+                        <p className="text-[10px] text-[#858585]">
+                          Rider is <span className="font-semibold text-black">on the way</span>
+                        </p>
+                        <p className="mt-1 text-[9px] text-[#999]">You’ll be notified once this is delivered.</p>
+                      </div>
+                    ) : null}
+
+                    {preparing ? (
+                      <div className="ml-[52px] mt-4">
+                        <p className="text-[10px] text-[#858585]">
+                          Preparation has taken <CustomerElapsed from={order.updatedAt} /> so far
+                        </p>
+                        <p className="mt-1 text-[9px] text-[#999]">You’ll be notified once this is ready.</p>
+                      </div>
+                    ) : null}
+
+                    {ready ? (
+                      <div className="ml-[52px] mt-4">
+                        <p className="text-[10px] text-[#858585]">
+                          Your order is <span className="font-semibold text-black">ready</span>
+                        </p>
+                        <p className="mt-1 text-[9px] text-[#999]">Waiting for the restaurant to send it out.</p>
+                      </div>
+                    ) : null}
+
+                    {confirmed ? (
+                      <div className="ml-[52px] mt-4">
+                        <p className="text-[10px] text-[#858585]">The restaurant has received your order.</p>
+                        <p className="mt-1 text-[9px] text-[#999]">You’ll be notified when preparation starts.</p>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           </section>
 
