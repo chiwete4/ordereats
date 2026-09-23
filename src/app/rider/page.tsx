@@ -1,3 +1,4 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Bike, MapPin } from "lucide-react";
 
@@ -44,6 +45,14 @@ export default async function RiderPage() {
               deliveryNote: true,
               deliveryLatitude: true,
               deliveryLongitude: true,
+              customer: {
+                select: {
+                  clerkId: true,
+                  firstName: true,
+                  lastName: true,
+                  phoneNumber: true,
+                },
+              },
             },
           },
           items: {
@@ -60,6 +69,22 @@ export default async function RiderPage() {
   const itemCount =
     delivery?.restaurantOrder.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
+  const customer = delivery?.restaurantOrder.order.customer ?? null;
+  const customerName = customer
+    ? [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim() || "Customer"
+    : null;
+
+  let customerImageUrl: string | null = null;
+  if (customer?.clerkId) {
+    try {
+      const client = await clerkClient();
+      const clerkCustomer = await client.users.getUser(customer.clerkId);
+      customerImageUrl = clerkCustomer.imageUrl || null;
+    } catch {
+      customerImageUrl = null;
+    }
+  }
+
   return (
     <main data-rider-page="true" className="h-[calc(100dvh-56px)] overflow-hidden bg-black text-white">
       <DashboardLiveRefresh intervalMs={12000} />
@@ -69,13 +94,16 @@ export default async function RiderPage() {
           deliveryId={delivery?.id ?? null}
           destinationLatitude={delivery?.restaurantOrder.order.deliveryLatitude ?? null}
           destinationLongitude={delivery?.restaurantOrder.order.deliveryLongitude ?? null}
+          customerName={customerName}
+          customerPhone={customer?.phoneNumber ?? null}
+          customerImageUrl={customerImageUrl}
         />
 
         {delivery ? (
           <section className="flex min-h-0 flex-col justify-center px-1">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="truncate text-[24px] font-medium leading-none tracking-[-0.045em] sm:text-[28px]">
+                <p className="truncate font-[family-name:var(--font-geist-mono)] text-[23px] font-medium leading-none tracking-[-0.045em] sm:text-[27px]">
                   #{delivery.restaurantOrder.order.orderNumber}
                 </p>
                 <p className="mt-2 truncate text-[14px] font-medium text-white/55">
