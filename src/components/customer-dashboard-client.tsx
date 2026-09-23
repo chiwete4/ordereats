@@ -403,7 +403,7 @@ export function CustomerDashboardClient({
                         {restaurant.name}
                         {restaurant.isVerified ? <CheckCircle2 className="h-3 w-3" /> : null}
                       </span>
-                      <span className={"mt-1 block truncate text-[9px] " + (restaurant.isOpen ? "text-green-400" : "text-white/45")}>
+                      <span className={"mt-1 block truncate text-[9px] " + (restaurant.isOpen ? "text-green-400" : "text-orange-400")}>
                         {restaurant.isOpen ? "Open now" : "Closed"} · {restaurant.hoursLabel}
                       </span>
                     </span>
@@ -588,7 +588,7 @@ export function CustomerDashboardClient({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[10px] font-semibold">{restaurant.name}</p>
-                    <p className={"mt-1 text-[9px] " + (restaurant.isOpen ? "text-green-500" : "text-[#888]")}>
+                    <p className={"mt-1 text-[9px] " + (restaurant.isOpen ? "text-green-500" : "text-orange-500")}>
                       {restaurant.isOpen ? "Open now" : "Closed"} · {restaurant.hoursLabel}
                     </p>
                   </div>
@@ -655,6 +655,12 @@ export function CustomerDashboardClient({
           onAdd={addItem}
           onChangeQuantity={changeQuantity}
           onToggleFavorite={toggleFavorite}
+          basketCount={basketCount}
+          basketTotal={basketTotal}
+          onOpenBasket={() => {
+            setSelectedRestaurant(null);
+            setBasketOpen(true);
+          }}
         />
       ) : null}
 
