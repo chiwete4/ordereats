@@ -681,9 +681,18 @@ export async function RestaurantDashboardGrid({
       if (statusDifference !== 0) return statusDifference;
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
-  const pastOrders = orders.filter((row) =>
-    ["DELIVERED", "PICKED_UP", "CANCELLED"].includes(row.status)
-  );
+  const pastOrders = orders
+    .filter((row) =>
+      ["DELIVERED", "PICKED_UP", "CANCELLED"].includes(row.status)
+    )
+    .sort((a, b) => {
+      const completedAt = (row: (typeof orders)[number]) =>
+        row.status === "DELIVERED"
+          ? row.delivery?.deliveredAt?.getTime() ?? row.updatedAt.getTime()
+          : row.updatedAt.getTime();
+
+      return completedAt(b) - completedAt(a);
+    });
   const riders = staff.filter((member) => member.role === "RIDER");
   const latestDelivery =
     orders
