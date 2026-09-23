@@ -74,6 +74,7 @@ model User {
 
   orders             Order[]
   restaurantStaff    RestaurantStaff[]
+  favoriteRestaurants FavoriteRestaurant[]
   assignedDeliveries Delivery[]        @relation("RiderDeliveries")
   reviews              Review[]
   complaints           CustomerComplaint[]
@@ -114,6 +115,19 @@ model Restaurant {
   reviews          Review[]
   complaints       CustomerComplaint[]
   payouts          RestaurantPayout[]
+  favoritedBy      FavoriteRestaurant[]
+}
+
+model FavoriteRestaurant {
+  userId       String
+  restaurantId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@id([userId, restaurantId])
+  @@index([restaurantId, createdAt])
 }
 
 model RestaurantStaff {
