@@ -47,6 +47,7 @@ export function CustomerRestaurantBrowserModal({
   basketCount,
   basketTotal,
   onOpenBasket,
+  receded = false,
 }: {
   restaurant: Restaurant;
   onClose: () => void;
@@ -57,6 +58,7 @@ export function CustomerRestaurantBrowserModal({
   basketCount: number;
   basketTotal: number;
   onOpenBasket: () => void;
+  receded?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const mapEl = useRef<HTMLDivElement | null>(null);
@@ -116,12 +118,12 @@ export function CustomerRestaurantBrowserModal({
 
   return (
     <div
-      className="fixed inset-0 z-[185] flex items-center justify-center bg-white/80 p-3 backdrop-blur-[1px] sm:p-8"
+      className={"fixed inset-0 z-[185] flex items-center justify-center p-3 backdrop-blur-[1px] transition-[background-color] duration-200 sm:p-8 " + (receded ? "bg-black/20" : "bg-white/80")}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl lg:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.35fr)]">
+      <div className={"relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl transition-[transform,opacity] duration-200 ease-out lg:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.35fr)] " + (receded ? "scale-[0.965] opacity-85" : "animate-[modal-pop-in_180ms_ease-out] scale-100 opacity-100")}>
         <button
           type="button"
           onClick={onClose}
