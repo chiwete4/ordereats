@@ -62,11 +62,13 @@ export function CustomerLiveMap({
   fallbackLatitude,
   fallbackLongitude,
   fallbackLabel,
+  onCustomerLocation,
 }: {
   trackingOrders: CustomerTrackingOrder[];
   fallbackLatitude: number | null;
   fallbackLongitude: number | null;
   fallbackLabel: string;
+  onCustomerLocation?: (location: { latitude: number; longitude: number }) => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedTrackingOrder = trackingOrders[selectedIndex] ?? null;
@@ -125,10 +127,15 @@ export function CustomerLiveMap({
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        setCustomerLocation([
+        const nextLocation: [number, number] = [
           position.coords.longitude,
           position.coords.latitude,
-        ]);
+        ];
+        setCustomerLocation(nextLocation);
+        onCustomerLocation?.({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
         setCustomerLocationError(null);
       },
       (error) => {
