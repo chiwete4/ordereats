@@ -1,6 +1,6 @@
 "use client";
 
-import { Crosshair, MapPin, Radio, SignalLow, WifiOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crosshair, MapPin, Radio, SignalLow, WifiOff } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
@@ -13,6 +13,11 @@ export type CustomerLiveDelivery = {
   riderName: string;
   riderPhone: string | null;
   orderNumber: string;
+};
+
+export type CustomerTrackingOrder = {
+  restaurantOrderId: string;
+  delivery: CustomerLiveDelivery | null;
 };
 
 function createMarker() {
@@ -53,19 +58,22 @@ function createCustomerMarker() {
 }
 
 export function CustomerLiveMap({
-  restaurantOrderId,
-  initialDelivery,
+  trackingOrders,
   fallbackLatitude,
   fallbackLongitude,
   fallbackLabel,
 }: {
-  restaurantOrderId: string | null;
-  initialDelivery: CustomerLiveDelivery | null;
+  trackingOrders: CustomerTrackingOrder[];
   fallbackLatitude: number | null;
   fallbackLongitude: number | null;
   fallbackLabel: string;
 }) {
-  const [delivery, setDelivery] = useState(initialDelivery);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selectedTrackingOrder = trackingOrders[selectedIndex] ?? null;
+  const restaurantOrderId = selectedTrackingOrder?.restaurantOrderId ?? null;
+  const [delivery, setDelivery] = useState<CustomerLiveDelivery | null>(
+    selectedTrackingOrder?.delivery ?? null
+  );
   const [now, setNow] = useState(Date.now());
   const [following, setFollowing] = useState(true);
   const [customerLocation, setCustomerLocation] = useState<[number, number] | null>(null);
@@ -78,8 +86,17 @@ export function CustomerLiveMap({
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
   useEffect(() => {
+    setDelivery(selectedTrackingOrder?.delivery ?? null);
+    followingRef.current = true;
+    setFollowing(true);
+  }, [selectedTrackingOrder?.restaurantOrderId]);
+
+  useEffect(() => {
     let stopped = false;
-    if (!restaurantOrderId) return;
+    if (!restaurantOrderId) {
+      setDelivery(null);
+      return;
+    }
     const activeRestaurantOrderId = restaurantOrderId;
 
     async function refresh() {
@@ -129,7 +146,7 @@ export function CustomerLiveMap({
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [restaurantOrderId]);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -236,6 +253,14 @@ export function CustomerLiveMap({
         : WifiOff
     : MapPin;
 
+  function switchTracking(direction: -1 | 1) {
+    if (trackingOrders.length < 2) return;
+    setSelectedIndex((current) => {
+      const next = (current + direction + trackingOrders.length) % trackingOrders.length;
+      return next;
+    });
+  }
+
   function recenter() {
     if (!mapRef.current) return;
 
@@ -270,6 +295,27 @@ export function CustomerLiveMap({
         {label}
       </span>
 
+      {trackingOrders.length > 1 ? (
+        <>
+          <button
+            type="button"
+            onClick={() => switchTracking(-1)}
+            aria-label="Previous active delivery"
+            className="absolute left-3 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+          <button
+            type="button"
+            onClick={() => switchTracking(1)}
+            aria-label="Next active delivery"
+            className="absolute right-3 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition active:scale-95"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+        </>
+      ) : null}
+
       {(delivery && typeof delivery.latitude === "number") || customerLocation ? (
         <button
           type="button"
@@ -291,7 +337,7 @@ export function CustomerLiveMap({
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] border border-white/15">
           <MapPin className="h-4 w-4" strokeWidth={2.3} />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-semibold">
             {delivery
               ? `${delivery.riderName} · #${delivery.orderNumber}`
@@ -311,6 +357,11 @@ export function CustomerLiveMap({
                   : customerLocationError || "Waiting for your location…"}
           </p>
         </div>
+        {trackingOrders.length > 1 && delivery ? (
+          <span className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[8px] font-semibold text-white/70">
+            {selectedIndex + 1}/{trackingOrders.length}
+          </span>
+        ) : null}
       </div>
     </section>
   );
