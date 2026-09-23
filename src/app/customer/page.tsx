@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { RefreshCw, Store } from "lucide-react";
 
 import { CustomerDashboardClient, type CustomerOrderCard, type CustomerRestaurant, type CustomerRiderHistory } from "@/components/customer-dashboard-client";
-import type { CustomerLiveDelivery } from "@/components/customer-live-map";
+import type { CustomerLiveDelivery, CustomerTrackingOrder } from "@/components/customer-live-map";
 import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -230,6 +230,7 @@ export default async function CustomerPage() {
       subtotal: Number(restaurantOrder.subtotal),
       createdAt: restaurantOrder.createdAt.toISOString(),
       updatedAt: restaurantOrder.updatedAt.toISOString(),
+      deliveredAt: restaurantOrder.delivery?.deliveredAt?.toISOString() ?? null,
       items: restaurantOrder.items.map((item) => ({
         id: item.id,
         menuItemId: item.menuItemId,
@@ -250,8 +251,16 @@ export default async function CustomerPage() {
   const activeStatuses = new Set(["CONFIRMED", "PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"]);
   const terminalStatuses = new Set(["DELIVERED", "PICKED_UP", "CANCELLED"]);
 
+  const recentDeliveredCutoff = Date.now() - 30 * 60 * 1000;
+
   const activeOrders = flattenedOrders
-    .filter((order) => activeStatuses.has(order.status))
+    .filter(
+      (order) =>
+        activeStatuses.has(order.status) ||
+        (order.status === "DELIVERED" &&
+          Boolean(order.deliveredAt) &&
+          new Date(order.deliveredAt as string).getTime() >= recentDeliveredCutoff)
+    )
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const completionTime = (restaurantOrderId: string) => {
@@ -292,7 +301,7 @@ export default async function CustomerPage() {
     });
   }
 
-  const liveRow = orders
+  const liveRows = orders
     .flatMap((order) =>
       order.restaurantOrders.map((row) => ({
         row,
@@ -306,30 +315,35 @@ export default async function CustomerPage() {
       const aTime = a.row.delivery?.lastLocationAt?.getTime() ?? a.row.updatedAt.getTime();
       const bTime = b.row.delivery?.lastLocationAt?.getTime() ?? b.row.updatedAt.getTime();
       return bTime - aTime;
-    })[0];
+    });
 
-  const initialLiveDelivery: CustomerLiveDelivery | null = liveRow?.row.delivery
-    ? {
-        id: liveRow.row.delivery.id,
-        status: liveRow.row.delivery.status,
-        latitude: liveRow.row.delivery.lastLatitude,
-        longitude: liveRow.row.delivery.lastLongitude,
-        lastLocationAt: liveRow.row.delivery.lastLocationAt?.toISOString() ?? null,
-        riderName: liveRow.row.delivery.rider
-          ? personName(liveRow.row.delivery.rider)
-          : "Your rider",
-        riderPhone: liveRow.row.delivery.rider?.phoneNumber ?? null,
-        orderNumber: liveRow.orderNumber,
-      }
-    : null;
+  const trackingOrders: CustomerTrackingOrder[] = liveRows.map(({ row, orderNumber }) => ({
+    restaurantOrderId: row.id,
+    delivery: row.delivery
+      ? {
+          id: row.delivery.id,
+          status: row.delivery.status,
+          latitude: row.delivery.lastLatitude,
+          longitude: row.delivery.lastLongitude,
+          lastLocationAt: row.delivery.lastLocationAt?.toISOString() ?? null,
+          riderName: row.delivery.rider
+            ? personName(row.delivery.rider)
+            : "Your rider",
+          riderPhone: row.delivery.rider?.phoneNumber ?? null,
+          orderNumber,
+        }
+      : null,
+  }));
+
+  const primaryLiveRow = liveRows[0];
 
   const fallbackRestaurant = restaurants[0];
   const fallbackLatitude =
-    liveRow?.deliveryLatitude ?? fallbackRestaurant?.latitude ?? null;
+    primaryLiveRow?.deliveryLatitude ?? fallbackRestaurant?.latitude ?? null;
   const fallbackLongitude =
-    liveRow?.deliveryLongitude ?? fallbackRestaurant?.longitude ?? null;
+    primaryLiveRow?.deliveryLongitude ?? fallbackRestaurant?.longitude ?? null;
   const fallbackLabel =
-    liveRow?.row.restaurant.address ||
+    primaryLiveRow?.row.restaurant.address ||
     fallbackRestaurant?.address ||
     "Your delivery area";
 
@@ -385,8 +399,7 @@ export default async function CustomerPage() {
           activeOrders={activeOrders}
           pastOrders={pastOrders}
           riderHistory={riderHistory}
-          liveRestaurantOrderId={liveRow?.row.id ?? null}
-          initialLiveDelivery={initialLiveDelivery}
+          trackingOrders={trackingOrders}
           fallbackLatitude={fallbackLatitude}
           fallbackLongitude={fallbackLongitude}
           fallbackLabel={fallbackLabel}
