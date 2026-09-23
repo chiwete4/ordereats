@@ -658,23 +658,27 @@ export function CustomerDashboardClient({
           basketCount={basketCount}
           basketTotal={basketTotal}
           onOpenBasket={() => {
-            setSelectedRestaurant(null);
             setBasketOpen(true);
           }}
+          receded={basketOpen}
         />
       ) : null}
 
       {basketOpen ? (
-        <div className="fixed inset-0 z-[180] flex items-end justify-center bg-black/30 p-4 sm:items-center" onMouseDown={(event) => {
+        <div className="fixed inset-0 z-[200] flex animate-[modal-backdrop-in_160ms_ease-out] items-end justify-center bg-black/35 p-4 sm:items-center" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setBasketOpen(false);
         }}>
-          <div className="max-h-[82vh] w-full max-w-[520px] overflow-y-auto rounded-[16px] bg-white p-5 shadow-2xl">
+          <div className="max-h-[82vh] w-full max-w-[520px] animate-[modal-pop-in_180ms_ease-out] overflow-y-auto rounded-[16px] bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-[18px] font-semibold tracking-[-0.03em]">Review your basket</h3>
                 <p className="mt-1 text-[10px] text-[#808080]">{basketCount} items · {money(basketTotal)}</p>
               </div>
-              <button type="button" onClick={() => setBasketOpen(false)} aria-label="Close basket">
+              <button
+                type="button"
+                onClick={() => setBasketOpen(false)}
+                aria-label="Close basket"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -708,10 +712,10 @@ export function CustomerDashboardClient({
       ) : null}
 
       {issueOrder ? (
-        <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/30 p-4" onMouseDown={(event) => {
+        <div className="fixed inset-0 z-[210] flex animate-[modal-backdrop-in_160ms_ease-out] items-center justify-center bg-black/35 p-4" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !pending) setIssueOrder(null);
         }}>
-          <div className="w-full max-w-[430px] rounded-[14px] bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-[430px] animate-[modal-pop-in_180ms_ease-out] rounded-[14px] bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-[14px] font-semibold">Something wrong with #{issueOrder.orderNumber}?</h3>
