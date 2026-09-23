@@ -421,7 +421,7 @@ function ActivePanel({
                         pendingLabel="Saving…"
                         icon={<PackageCheck className="h-3.5 w-3.5" strokeWidth={2.3} />}
                         successTitle="Order marked picked up"
-                        className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#EAEAEA] text-[10px] font-semibold text-black"
+                        className="inline-flex h-8 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] bg-[#EAEAEA] px-2 text-[10px] font-semibold text-black"
                       />
                     </div>
                     <OrderMoreMenu restaurantId={restaurantId} restaurantOrderId={order.id} onOpenChange={(open) => setMenuOpenId(open ? order.id : null)} />
