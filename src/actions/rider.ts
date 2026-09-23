@@ -58,4 +58,5 @@ export async function markRiderDeliveryDelivered(formData: FormData) {
 
   revalidatePath("/rider");
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
