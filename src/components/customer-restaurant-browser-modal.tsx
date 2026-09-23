@@ -44,6 +44,9 @@ export function CustomerRestaurantBrowserModal({
   onAdd,
   onChangeQuantity,
   onToggleFavorite,
+  basketCount,
+  basketTotal,
+  onOpenBasket,
 }: {
   restaurant: Restaurant;
   onClose: () => void;
@@ -51,6 +54,9 @@ export function CustomerRestaurantBrowserModal({
   onAdd: (item: Restaurant["items"][number]) => void;
   onChangeQuantity: (menuItemId: string, delta: number) => void;
   onToggleFavorite: (restaurantId: string) => void;
+  basketCount: number;
+  basketTotal: number;
+  onOpenBasket: () => void;
 }) {
   const [query, setQuery] = useState("");
   const mapEl = useRef<HTMLDivElement | null>(null);
@@ -125,7 +131,7 @@ export function CustomerRestaurantBrowserModal({
           <X className="h-4 w-4" strokeWidth={2.4} />
         </button>
 
-        <aside className="flex min-h-0 flex-col bg-black text-white">
+        <aside className="relative flex min-h-0 flex-col bg-black text-white">
           <div className="border-b border-white/10 px-5 pb-4 pt-5 pr-14">
             <div className="flex items-start gap-3">
               <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[9px] bg-white/10">
@@ -145,7 +151,7 @@ export function CustomerRestaurantBrowserModal({
                     <CheckCircle2 className="h-3.5 w-3.5 text-white/65" />
                   ) : null}
                 </div>
-                <p className={`mt-1 text-[10px] ${restaurant.isOpen ? "text-green-400" : "text-white/45"}`}>
+                <p className={`mt-1 text-[10px] ${restaurant.isOpen ? "text-green-400" : "text-orange-400"}`}>
                   {restaurant.isOpen ? "Open now" : "Closed"} · {restaurant.hoursLabel}
                 </p>
               </div>
@@ -169,7 +175,7 @@ export function CustomerRestaurantBrowserModal({
             </label>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-2">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-24 pt-2">
             {items.length === 0 ? (
               <p className="py-8 text-center text-[10px] text-white/45">No matching menu items.</p>
             ) : (
@@ -233,6 +239,24 @@ export function CustomerRestaurantBrowserModal({
               </div>
             )}
           </div>
+
+          {basketCount > 0 ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/95 to-transparent px-5 pb-5 pt-10">
+              <button
+                type="button"
+                onClick={onOpenBasket}
+                className="pointer-events-auto flex w-full items-center justify-between rounded-[11px] bg-white px-4 py-3.5 text-black shadow-[0_12px_32px_rgba(0,0,0,0.38)] ring-1 ring-black/10 transition active:scale-[0.99]"
+              >
+                <span className="text-left">
+                  <span className="block text-[11px] font-semibold">Review basket</span>
+                  <span className="mt-0.5 block text-[9px] text-black/50">
+                    {basketCount} {basketCount === 1 ? "item" : "items"}
+                  </span>
+                </span>
+                <span className="text-[13px] font-semibold">{money(basketTotal)}</span>
+              </button>
+            </div>
+          ) : null}
         </aside>
 
         <div className="relative min-h-[280px] bg-[#EEE]">
