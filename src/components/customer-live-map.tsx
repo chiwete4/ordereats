@@ -33,6 +33,25 @@ function createMarker() {
   return el;
 }
 
+function createCustomerMarker() {
+  const el = document.createElement("div");
+  el.setAttribute("aria-label", "Your location");
+  el.style.width = "26px";
+  el.style.height = "26px";
+  el.style.borderRadius = "9999px";
+  el.style.background = "#fff";
+  el.style.border = "3px solid #000";
+  el.style.boxShadow = "0 4px 14px rgba(0,0,0,.2)";
+  const dot = document.createElement("div");
+  dot.style.width = "8px";
+  dot.style.height = "8px";
+  dot.style.borderRadius = "9999px";
+  dot.style.background = "#000";
+  dot.style.margin = "6px";
+  el.appendChild(dot);
+  return el;
+}
+
 export function CustomerLiveMap({
   restaurantOrderId,
   initialDelivery,
@@ -81,11 +100,11 @@ export function CustomerLiveMap({
       stopped = true;
       window.clearInterval(timer);
     };
-  }, [restaurantOrderId]);
+  }, []);
 
 
   useEffect(() => {
-    if (restaurantOrderId || !navigator.geolocation) return;
+    if (!navigator.geolocation) return;
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -173,11 +192,11 @@ export function CustomerLiveMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || restaurantOrderId || !customerLocation) return;
+    if (!map || !customerLocation) return;
 
     if (!customerMarkerRef.current) {
       customerMarkerRef.current = new mapboxgl.Marker({
-        element: createMarker(),
+        element: createCustomerMarker(),
         anchor: "center",
       })
         .setLngLat(customerLocation)
@@ -186,18 +205,36 @@ export function CustomerLiveMap({
       customerMarkerRef.current.setLngLat(customerLocation);
     }
 
-    if (followingRef.current) {
+    const hasRiderPoint =
+      typeof delivery?.latitude === "number" &&
+      typeof delivery?.longitude === "number";
+
+    if (followingRef.current && !hasRiderPoint) {
       map.panTo(customerLocation, { duration: 700 });
     }
-  }, [customerLocation, restaurantOrderId]);
+  }, [customerLocation, delivery?.latitude, delivery?.longitude]);
 
   const age = delivery?.lastLocationAt
     ? Math.max(0, (now - new Date(delivery.lastLocationAt).getTime()) / 1000)
     : null;
   const liveState =
     age === null ? "offline" : age <= 30 ? "live" : age <= 120 ? "stale" : "offline";
-  const label = liveState === "live" ? "LIVE" : liveState === "stale" ? "STALE" : "OFFLINE";
-  const Icon = liveState === "live" ? Radio : liveState === "stale" ? SignalLow : WifiOff;
+  const label = delivery
+    ? liveState === "live"
+      ? "LIVE"
+      : liveState === "stale"
+        ? "STALE"
+        : "OFFLINE"
+    : customerLocation
+      ? "YOU"
+      : "LOCATING";
+  const Icon = delivery
+    ? liveState === "live"
+      ? Radio
+      : liveState === "stale"
+        ? SignalLow
+        : WifiOff
+    : MapPin;
 
   function recenter() {
     if (!mapRef.current) return;
@@ -264,10 +301,14 @@ export function CustomerLiveMap({
           </p>
           <p className="mt-1 truncate text-[9px] text-white/55">
             {delivery?.lastLocationAt
-              ? `Updated ${Math.max(0, Math.floor(age ?? 0))}s ago`
-              : customerLocation
-                ? "Location updates stay on this device until an order is on the way."
-                : customerLocationError || "Waiting for your location…"}
+              ? `Rider updated ${Math.max(0, Math.floor(age ?? 0))}s ago`
+              : delivery
+                ? customerLocation
+                  ? "Rider location unavailable · showing your location"
+                  : customerLocationError || "Waiting for your location…"
+                : customerLocation
+                  ? "Your location is updating on this device."
+                  : customerLocationError || "Waiting for your location…"}
           </p>
         </div>
       </div>
