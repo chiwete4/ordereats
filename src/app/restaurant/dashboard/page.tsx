@@ -187,7 +187,7 @@ export default async function RestaurantDashboardPage({
               />
 
               <Link
-                href="/#discover"
+                href="/customer"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
               >
                 <RefreshCw className="h-3 w-3" strokeWidth={2.3} />
