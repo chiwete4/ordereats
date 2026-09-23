@@ -1,6 +1,6 @@
 "use client";
 
-import { LocateFixed, Phone, Radio, WifiOff } from "lucide-react";
+import { LocateFixed, Navigation, Phone, Radio, WifiOff } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
@@ -58,6 +58,8 @@ export function RiderLocationTracker({
   const riderMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const fittedRef = useRef(false);
+  const lastRouteRequestAt = useRef(0);
+  const [routeMeta, setRouteMeta] = useState<{ distance: number; duration: number } | null>(null);
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
   async function send(latitude: number, longitude: number) {
@@ -161,6 +163,50 @@ export function RiderLocationTracker({
     });
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
+
+    map.on("load", () => {
+      if (!map.getSource("rider-route")) {
+        map.addSource("rider-route", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: [] },
+          },
+        });
+
+        map.addLayer({
+          id: "rider-route-casing",
+          type: "line",
+          source: "rider-route",
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": "#000000",
+            "line-width": 8,
+            "line-opacity": 0.9,
+          },
+        });
+
+        map.addLayer({
+          id: "rider-route-line",
+          type: "line",
+          source: "rider-route",
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 4.5,
+            "line-opacity": 0.96,
+          },
+        });
+      }
+    });
+
     mapRef.current = map;
 
     return () => {
@@ -202,10 +248,71 @@ export function RiderLocationTracker({
         duration: 700,
       });
       fittedRef.current = true;
-    } else if (!hasDestination) {
+    } else if (hasDestination) {
+      map.easeTo({
+        center: position,
+        zoom: Math.max(map.getZoom(), 15),
+        duration: 650,
+      });
+    } else {
       map.easeTo({ center: position, duration: 650 });
     }
   }, [position, destinationLatitude, destinationLongitude]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !map ||
+      !token ||
+      !position ||
+      typeof destinationLongitude !== "number" ||
+      typeof destinationLatitude !== "number"
+    ) {
+      setRouteMeta(null);
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastRouteRequestAt.current < 7000) return;
+    lastRouteRequestAt.current = now;
+
+    let stopped = false;
+    const coordinates = `${position[0]},${position[1]};${destinationLongitude},${destinationLatitude}`;
+
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${encodeURIComponent(token)}`,
+      { cache: "no-store" }
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        const route = payload?.routes?.[0];
+        if (!route || stopped) return;
+
+        setRouteMeta({
+          distance: Number(route.distance) || 0,
+          duration: Number(route.duration) || 0,
+        });
+
+        const applyRoute = () => {
+          const source = map.getSource("rider-route") as mapboxgl.GeoJSONSource | undefined;
+          source?.setData({
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          });
+        };
+
+        if (map.isStyleLoaded()) applyRoute();
+        else map.once("load", applyRoute);
+      })
+      .catch(() => {
+        if (!stopped) setRouteMeta(null);
+      });
+
+    return () => {
+      stopped = true;
+    };
+  }, [position, destinationLatitude, destinationLongitude, token]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -254,6 +361,22 @@ export function RiderLocationTracker({
             ? "LOCATION OFF"
             : "LOCATING"}
       </div>
+
+      {routeMeta ? (
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-[9px] bg-black/85 px-3 py-2 text-white shadow-lg backdrop-blur">
+          <Navigation className="h-3.5 w-3.5" strokeWidth={2.3} />
+          <span className="text-[11px] font-semibold">
+            {routeMeta.duration < 60
+              ? "<1 min"
+              : `${Math.max(1, Math.round(routeMeta.duration / 60))} min`}
+          </span>
+          <span className="text-[10px] text-white/45">
+            {routeMeta.distance < 1000
+              ? `${Math.max(1, Math.round(routeMeta.distance))} m`
+              : `${(routeMeta.distance / 1000).toFixed(1)} km`}
+          </span>
+        </div>
+      ) : null}
 
       {customerName ? (
         <div className="absolute inset-x-3 bottom-3 z-10 flex items-center gap-3 rounded-[10px] bg-black px-3 py-3 text-white shadow-lg">
