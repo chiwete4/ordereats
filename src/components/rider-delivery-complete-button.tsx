@@ -36,8 +36,14 @@ export function RiderDeliveryCompleteButton() {
   return (
     <div
       ref={trackRef}
-      className="relative h-[68px] w-full overflow-hidden rounded-full border border-white/12 bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+      className="relative h-[68px] w-full overflow-hidden rounded-[12px] bg-[#202020] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
     >
+      <div
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 bg-white transition-[width] duration-75 ease-linear"
+        style={{ width: `${Math.min(100, ((dragX + 62) / Math.max(1, (trackRef.current?.clientWidth ?? 1))) * 100)}%` }}
+      />
+
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         {pending ? (
           <span className="inline-flex items-center gap-2 text-[15px] font-semibold text-white/70">
@@ -45,9 +51,20 @@ export function RiderDeliveryCompleteButton() {
             Completing…
           </span>
         ) : (
-          <span className="rider-swipe-shimmer text-[15px] font-semibold tracking-[-0.02em]">
-            Swipe to complete
-          </span>
+          <>
+            <span className="rider-swipe-shimmer absolute text-[15px] font-semibold tracking-[-0.02em]">
+              Swipe to complete
+            </span>
+            <span
+              aria-hidden="true"
+              className="absolute overflow-hidden text-[15px] font-semibold tracking-[-0.02em] text-black"
+              style={{
+                clipPath: `inset(0 ${Math.max(0, 100 - Math.min(100, ((dragX + 62) / Math.max(1, (trackRef.current?.clientWidth ?? 1))) * 100))}% 0 0)`,
+              }}
+            >
+              Swipe to complete
+            </span>
+          </>
         )}
       </div>
 
@@ -76,7 +93,7 @@ export function RiderDeliveryCompleteButton() {
         }}
         style={{ transform: `translateX(${dragX}px)` }}
         className={
-          "relative z-10 grid h-[58px] w-[58px] touch-none place-items-center rounded-full bg-white text-black shadow-[0_6px_20px_rgba(0,0,0,0.28)] " +
+          "relative z-10 grid h-[58px] w-[58px] touch-none place-items-center rounded-[9px] bg-white text-black shadow-[0_6px_20px_rgba(0,0,0,0.28)] " +
           (dragging ? "" : "transition-transform duration-300 ease-out")
         }
       >
