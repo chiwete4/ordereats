@@ -55,6 +55,73 @@ export type PaystackSubaccount = {
 
 export const PAPERBAG_PLATFORM_COMMISSION_PERCENT = 5;
 
+
+export type PaystackTransactionInitialization = {
+  authorization_url: string;
+  access_code: string;
+  reference: string;
+};
+
+export type PaystackVerifiedTransaction = {
+  id: number;
+  reference: string;
+  status: string;
+  amount: number;
+  fees?: number | null;
+  paid_at?: string | null;
+  currency?: string;
+};
+
+export type PaystackFlatSplitSubaccount = {
+  subaccount: string;
+  share: number;
+};
+
+export async function initializePaystackTransaction({
+  email,
+  amountKobo,
+  reference,
+  callbackUrl,
+  subaccounts,
+  metadata,
+}: {
+  email: string;
+  amountKobo: number;
+  reference: string;
+  callbackUrl?: string;
+  subaccounts: PaystackFlatSplitSubaccount[];
+  metadata?: Record<string, unknown>;
+}) {
+  const response = await paystackFetch<PaystackTransactionInitialization>(
+    "/transaction/initialize",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        amount: String(amountKobo),
+        reference,
+        ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+        metadata: JSON.stringify(metadata ?? {}),
+        split: {
+          type: "flat",
+          bearer_type: "account",
+          subaccounts,
+          reference: `paperbag-${reference}`,
+        },
+      }),
+    }
+  );
+
+  return response.data;
+}
+
+export async function verifyPaystackTransaction(reference: string) {
+  const response = await paystackFetch<PaystackVerifiedTransaction>(
+    `/transaction/verify/${encodeURIComponent(reference)}`
+  );
+  return response.data;
+}
+
 export type PaystackTransfer = {
   id: number;
   amount: number;
