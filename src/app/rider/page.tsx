@@ -61,7 +61,7 @@ export default async function RiderPage() {
     delivery?.restaurantOrder.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   return (
-    <main className="h-[calc(100dvh-56px)] overflow-hidden bg-black text-white">
+    <main data-rider-page="true" className="h-[calc(100dvh-56px)] overflow-hidden bg-black text-white">
       <DashboardLiveRefresh intervalMs={12000} />
 
       <div className="mx-auto grid h-full w-full max-w-[560px] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-3 sm:gap-4 sm:px-4 sm:pb-4 sm:pt-4">
