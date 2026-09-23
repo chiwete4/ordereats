@@ -25,6 +25,7 @@ export async function acknowledgeOrder(formData: FormData) {
   if (order.status !== "CONFIRMED") throw new Error("Only confirmed orders can be acknowledged.");
   await prisma.restaurantOrder.update({ where: { id: order.id }, data: { status: "PREPARING" } });
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
 
 export async function markOrderReady(formData: FormData) {
@@ -35,6 +36,7 @@ export async function markOrderReady(formData: FormData) {
   if (order.status !== "PREPARING") throw new Error("Only preparing orders can be marked ready.");
   await prisma.restaurantOrder.update({ where: { id: order.id }, data: { status: "READY_FOR_PICKUP" } });
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
 
 export async function sendOrderForDelivery(formData: FormData) {
@@ -48,6 +50,7 @@ export async function sendOrderForDelivery(formData: FormData) {
     prisma.delivery.upsert({ where: { restaurantOrderId: order.id }, create: { restaurantOrderId: order.id, status: "WAITING_FOR_RIDER" }, update: { status: "WAITING_FOR_RIDER", riderId: null, assignedAt: null } }),
   ]);
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
 
 export async function assignReadyOrderToRider(formData: FormData) {
@@ -66,6 +69,7 @@ export async function assignReadyOrderToRider(formData: FormData) {
     prisma.delivery.upsert({ where: { restaurantOrderId: order.id }, create: { restaurantOrderId: order.id, riderId, status: "ASSIGNED", assignedAt: new Date() }, update: { riderId, status: "ASSIGNED", assignedAt: new Date() } }),
   ]);
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
   revalidatePath("/rider");
 }
 
@@ -80,6 +84,7 @@ export async function assignRider(formData: FormData) {
   if (!rider || rider.role !== "RIDER" || !rider.isActive) throw new Error("Choose an active rider for this restaurant.");
   await prisma.delivery.upsert({ where: { restaurantOrderId: order.id }, create: { restaurantOrderId: order.id, riderId, status: "ASSIGNED", assignedAt: new Date() }, update: { riderId, status: "ASSIGNED", assignedAt: new Date() } });
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
 
 export async function markOrderPickedUp(formData: FormData) {
@@ -90,6 +95,7 @@ export async function markOrderPickedUp(formData: FormData) {
   if (order.status !== "READY_FOR_PICKUP") throw new Error("Only a ready order can be marked as customer pickup.");
   await prisma.restaurantOrder.update({ where: { id: order.id }, data: { status: "PICKED_UP" } });
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
 
 export async function cancelRestaurantOrder(formData: FormData) {
@@ -103,4 +109,5 @@ export async function cancelRestaurantOrder(formData: FormData) {
     if (order.delivery) await tx.delivery.update({ where: { restaurantOrderId: order.id }, data: { status: "CANCELLED" } });
   });
   revalidatePath("/restaurant/dashboard");
+  revalidatePath("/customer");
 }
