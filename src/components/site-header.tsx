@@ -12,7 +12,7 @@ export function SiteHeader() {
   const isRider = pathname.startsWith("/rider");
 
   return (
-    <header className={"sticky top-0 z-50 border-b-[0.5px] " + (isRider ? "border-b-white/10 bg-black text-white" : "border-b-[rgba(196,196,196,0.5)] bg-white text-black")}>
+    <header className={"sticky top-0 z-50 " + (isRider ? "bg-black text-white" : "border-b-[0.5px] border-b-[rgba(196,196,196,0.5)] bg-white text-black")}>
       <div className="mx-auto flex h-[56px] w-full items-center justify-between px-0 sm:px-2 lg:px-5">
         <div className="flex min-w-0 items-center gap-3 sm:gap-3.5">
           <button type="button" aria-label="Open menu" className={"grid h-10 w-10 shrink-0 place-items-center rounded-lg transition-colors " + (isRider ? "hover:bg-white/10" : "hover:bg-black/[0.04]")}>
