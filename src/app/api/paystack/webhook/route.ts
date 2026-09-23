@@ -11,6 +11,8 @@ type PaystackWebhook = {
     id?: number | string;
     status?: string;
     paid_at?: string | null;
+    amount?: number;
+    fees?: number | null;
     failures?: unknown;
     reason?: string | null;
   };
@@ -48,13 +50,38 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.event === "charge.success") {
-    await prisma.payment.updateMany({
+    const payment = await prisma.payment.findUnique({
       where: { reference },
-      data: {
-        status: "SUCCESS",
-        paidAt: event.data?.paid_at ? new Date(event.data.paid_at) : new Date(),
-      },
+      select: { id: true, orderId: true, status: true },
     });
+
+    if (payment && payment.status !== "SUCCESS") {
+      const paidAt = event.data?.paid_at ? new Date(event.data.paid_at) : new Date();
+      const chargedAmount =
+        typeof event.data?.amount === "number" ? event.data.amount / 100 : undefined;
+      const providerFee =
+        typeof event.data?.fees === "number" ? event.data.fees / 100 : undefined;
+
+      await prisma.$transaction([
+        prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: "SUCCESS",
+            paidAt,
+            chargedAmount,
+            providerFee,
+          },
+        }),
+        prisma.restaurantOrder.updateMany({
+          where: {
+            orderId: payment.orderId,
+            status: "PENDING_PAYMENT",
+          },
+          data: { status: "CONFIRMED" },
+        }),
+      ]);
+    }
+
     return NextResponse.json({ received: true });
   }
 
