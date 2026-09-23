@@ -1,6 +1,6 @@
 "use client";
 
-import { LocateFixed, MapPin, Navigation, Radio, WifiOff } from "lucide-react";
+import { LocateFixed, Radio, WifiOff } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
@@ -37,12 +37,10 @@ export function RiderLocationTracker({
   deliveryId,
   destinationLatitude,
   destinationLongitude,
-  destinationLabel,
 }: {
   deliveryId: string | null;
   destinationLatitude?: number | null;
   destinationLongitude?: number | null;
-  destinationLabel?: string | null;
 }) {
   const [state, setState] = useState<"starting" | "live" | "error" | "stopped">("starting");
   const [message, setMessage] = useState("Requesting your location…");
@@ -240,69 +238,35 @@ export function RiderLocationTracker({
   const Icon = state === "live" ? Radio : state === "error" ? WifiOff : LocateFixed;
 
   return (
-    <section>
-      <div className="relative min-h-[250px] overflow-hidden rounded-[14px] border border-white/10 bg-[#111] sm:min-h-[300px]">
-        {token ? (
-          <div ref={mapEl} className="absolute inset-0" />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center text-[14px] text-white/50">
-            Map unavailable
-          </div>
-        )}
-
-        <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-black/85 px-3 py-2 text-[12px] font-semibold text-white shadow-lg backdrop-blur">
-          <Icon className="h-4 w-4" strokeWidth={2.3} />
-          {state === "live" ? (deliveryId ? "LIVE" : "YOU") : state === "error" ? "LOCATION OFF" : "LOCATING"}
+    <div className="relative aspect-square w-full overflow-hidden rounded-[14px] border border-white/10 bg-[#0C0C0C]">
+      {token ? (
+        <div ref={mapEl} className="absolute inset-0" />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center text-[14px] text-white/45">
+          Map unavailable
         </div>
+      )}
 
-        {destinationLabel ? (
-          <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center gap-3 rounded-[11px] bg-black/88 px-4 py-3.5 text-white shadow-xl backdrop-blur sm:right-auto sm:max-w-[420px]">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[9px] border border-white/15">
-              <MapPin className="h-4 w-4" strokeWidth={2.3} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold">Delivery destination</p>
-              <p className="mt-1 truncate text-[11px] text-white/55">{destinationLabel}</p>
-            </div>
-            <Navigation className="h-4 w-4 shrink-0 text-white/65" strokeWidth={2.3} />
-          </div>
-        ) : null}
+      <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-2 rounded-full bg-black/85 px-3 py-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur">
+        <Icon className="h-3.5 w-3.5" strokeWidth={2.3} />
+        {state === "live"
+          ? deliveryId
+            ? "LIVE"
+            : "YOU"
+          : state === "error"
+            ? "LOCATION OFF"
+            : "LOCATING"}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-white">
-            {state === "live"
-              ? deliveryId
-                ? "Location sharing on"
-                : "Ready for a delivery"
-              : state === "error"
-                ? "Location unavailable"
-                : state === "stopped"
-                  ? "Location paused"
-                  : "Finding your location"}
-          </p>
-          <p className="mt-1 text-[12px] leading-[1.4] text-white/45">{message}</p>
-        </div>
-
-        {state === "error" || state === "stopped" ? (
-          <button
-            type="button"
-            onClick={start}
-            className="shrink-0 rounded-full border border-white/15 px-4 py-2 text-[12px] font-semibold text-white"
-          >
-            Retry
-          </button>
-        ) : deliveryId && state === "live" ? (
-          <button
-            type="button"
-            onClick={stop}
-            className="shrink-0 rounded-full border border-white/15 px-4 py-2 text-[12px] font-semibold text-white/80"
-          >
-            Pause
-          </button>
-        ) : null}
-      </div>
-    </section>
+      {state === "error" || state === "stopped" ? (
+        <button
+          type="button"
+          onClick={start}
+          className="absolute bottom-3 right-3 z-10 rounded-full bg-white px-4 py-2 text-[11px] font-semibold text-black shadow-lg"
+        >
+          Retry location
+        </button>
+      ) : null}
+    </div>
   );
 }
