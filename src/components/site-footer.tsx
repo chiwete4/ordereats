@@ -1,4 +1,11 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export function SiteFooter() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/rider")) return null;
+
   return (
     <footer className="overflow-hidden bg-white px-5 pb-0 pt-12 sm:px-8 sm:pt-16 lg:px-11">
       <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
