@@ -35,15 +35,19 @@ export function SiteHeader() {
                   Log in
                 </button>
               </SignInButton>
-              {!isRider ? <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-[12.5px] py-[4px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] text-white transition-opacity hover:opacity-80 sm:inline-flex">
-                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
-              </Link>
+              {!isRider ? (
+                <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-[12.5px] py-[4px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] text-white transition-opacity hover:opacity-80 sm:inline-flex">
+                  Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
+                </Link>
+              ) : null}
             </>
           ) : isLoaded && isSignedIn ? (
             <div className="flex items-center gap-4">
-              <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-[12.5px] py-[4px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] text-white transition-opacity hover:opacity-80 sm:inline-flex">
-                Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
-              </Link> : null}
+              {!isRider ? (
+                <Link href="/restaurant/new" className="hidden items-center gap-2 rounded-full bg-black px-[12.5px] py-[4px] text-[12px] font-medium leading-[0.8] tracking-[-0.052em] text-white transition-opacity hover:opacity-80 sm:inline-flex">
+                  Add your Business <Plus className="h-4 w-4" strokeWidth={2.25} />
+                </Link>
+              ) : null}
               {!isDashboard && <UserButton />}
             </div>
           ) : null}
