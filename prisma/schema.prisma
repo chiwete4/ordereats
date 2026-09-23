@@ -14,6 +14,7 @@ enum StaffRole {
 }
 
 enum RestaurantOrderStatus {
+  PENDING_PAYMENT
   CONFIRMED
   PREPARING
   READY_FOR_PICKUP
@@ -223,7 +224,9 @@ model RestaurantOrder {
   orderId      String
   restaurantId String
   status       RestaurantOrderStatus @default(CONFIRMED)
-  subtotal     Decimal               @db.Decimal(10, 2)
+  subtotal           Decimal               @db.Decimal(10, 2)
+  platformCommission Decimal               @default(0) @db.Decimal(10, 2)
+  restaurantSettlement Decimal             @default(0) @db.Decimal(10, 2)
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 
@@ -347,7 +350,9 @@ model Payment {
   id        String        @id @default(cuid())
   orderId   String        @unique
   reference String        @unique
-  amount    Decimal       @db.Decimal(10, 2)
+  amount        Decimal       @db.Decimal(10, 2)
+  chargedAmount Decimal?      @db.Decimal(10, 2)
+  providerFee   Decimal?      @db.Decimal(10, 2)
   status    PaymentStatus @default(PENDING)
   provider  String        @default("paystack")
   paidAt    DateTime?
