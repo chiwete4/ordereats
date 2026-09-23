@@ -115,7 +115,7 @@ export function CustomerRestaurantBrowserModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+      <div className="relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl lg:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.35fr)]">
         <button
           type="button"
           onClick={onClose}
@@ -124,30 +124,6 @@ export function CustomerRestaurantBrowserModal({
         >
           <X className="h-4 w-4" strokeWidth={2.4} />
         </button>
-
-        <div className="relative min-h-[280px] bg-[#EEE]">
-          {token ? (
-            <div ref={mapEl} className="absolute inset-0" />
-          ) : (
-            <div className="absolute inset-0 grid place-items-center bg-[#ECECEC] text-[11px] text-[#777]">
-              Map unavailable
-            </div>
-          )}
-
-          <div className="absolute bottom-5 left-5 z-10 max-w-[420px] rounded-[10px] bg-black px-4 py-3 text-white shadow-xl">
-            <div className="flex items-start gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] border border-white/15">
-                <MapPin className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold">{restaurant.name}</p>
-                <p className="mt-1 truncate text-[9px] text-white/55">
-                  {restaurant.address || "Restaurant location"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <aside className="flex min-h-0 flex-col bg-black text-white">
           <div className="border-b border-white/10 px-5 pb-4 pt-5 pr-14">
@@ -259,6 +235,32 @@ export function CustomerRestaurantBrowserModal({
             )}
           </div>
         </aside>
+
+        <div className="relative min-h-[280px] bg-[#EEE]">
+          {token ? (
+            <div ref={mapEl} className="absolute inset-0" />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-[#ECECEC] text-[11px] text-[#777]">
+              Map unavailable
+            </div>
+          )}
+
+          <div className="absolute bottom-5 left-5 z-10 max-w-[420px] rounded-[10px] bg-black px-4 py-3 text-white shadow-xl">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] border border-white/15">
+                <MapPin className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-semibold">{restaurant.name}</p>
+                <p className="mt-1 truncate text-[9px] text-white/55">
+                  {restaurant.address || "Restaurant location"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
       </div>
     </div>
   );
