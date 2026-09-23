@@ -52,6 +52,9 @@ html {
 
 html:has(body [data-rider-page="true"]),
 html:has(body [data-rider-page="true"]) body {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: #000000;
 }
 
