@@ -22,6 +22,7 @@ import {
   toggleFavoriteRestaurant,
 } from "@/actions/customer";
 import { CustomerLiveMap, type CustomerLiveDelivery } from "@/components/customer-live-map";
+import { CustomerRestaurantBrowserModal } from "@/components/customer-restaurant-browser-modal";
 import { useToast } from "@/components/toast-provider";
 
 export type CustomerRestaurant = {
@@ -34,6 +35,8 @@ export type CustomerRestaurant = {
   hoursLabel: string;
   rating: number | null;
   favorited: boolean;
+  latitude: number | null;
+  longitude: number | null;
   items: Array<{
     id: string;
     name: string;
@@ -143,9 +146,7 @@ export function CustomerDashboardClient({
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [basketReady, setBasketReady] = useState(false);
   const [basketOpen, setBasketOpen] = useState(false);
-  const [expandedRestaurant, setExpandedRestaurant] = useState<string | null>(
-    restaurants[0]?.id ?? null
-  );
+  const [selectedRestaurant, setSelectedRestaurant] = useState<CustomerRestaurant | null>(null);
   const [showAllActive, setShowAllActive] = useState(false);
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
@@ -228,12 +229,14 @@ export function CustomerDashboardClient({
     const quantity = item.quantity ?? 1;
     const price = item.price ?? item.unitPrice ?? 0;
 
+    let nextQuantity = quantity;
     setBasket((current) => {
       const existing = current.find((entry) => entry.menuItemId === menuItemId);
       if (existing) {
+        nextQuantity = existing.quantity + quantity;
         return current.map((entry) =>
           entry.menuItemId === menuItemId
-            ? { ...entry, quantity: entry.quantity + quantity }
+            ? { ...entry, quantity: nextQuantity }
             : entry
         );
       }
@@ -248,7 +251,12 @@ export function CustomerDashboardClient({
       });
     });
 
-    toast({ title: "Added to basket", description: item.name, tone: "success" });
+    toast({
+      key: "basket",
+      title: "Basket updated",
+      description: `${item.name} · ${nextQuantity} in basket`,
+      tone: "success",
+    });
   }
 
   function basketQuantity(menuItemId: string) {
@@ -256,15 +264,30 @@ export function CustomerDashboardClient({
   }
 
   function changeQuantity(menuItemId: string, delta: number) {
+    const item = basket.find((entry) => entry.menuItemId === menuItemId);
+    if (!item) return;
+
+    const nextQuantity = Math.max(0, item.quantity + delta);
+
     setBasket((current) =>
       current
-        .map((item) =>
-          item.menuItemId === menuItemId
-            ? { ...item, quantity: item.quantity + delta }
-            : item
+        .map((entry) =>
+          entry.menuItemId === menuItemId
+            ? { ...entry, quantity: nextQuantity }
+            : entry
         )
-        .filter((item) => item.quantity > 0)
+        .filter((entry) => entry.quantity > 0)
     );
+
+    toast({
+      key: "basket",
+      title: nextQuantity > 0 ? "Basket updated" : "Removed from basket",
+      description:
+        nextQuantity > 0
+          ? `${item.name} · ${nextQuantity} in basket`
+          : item.name,
+      tone: "success",
+    });
   }
 
   function toggleFavorite(restaurantId: string) {
@@ -361,65 +384,41 @@ export function CustomerDashboardClient({
 
             <p className="mt-5 text-[9px] font-medium text-white/45">Restaurants</p>
             <div className="mt-2 grid gap-x-6 sm:grid-cols-2">
-              {filteredRestaurants.map((restaurant) => (
-                <div key={restaurant.id} className="border-b border-white/10 py-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedRestaurant(expandedRestaurant === restaurant.id ? null : restaurant.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    >
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-white/10">
+              {filteredRestaurants.slice(0, 4).map((restaurant) => (
+                <div key={restaurant.id} className="flex items-center gap-3 border-b border-white/10 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRestaurant(restaurant)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-white/10">
+                      {restaurant.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={restaurant.imageUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
                         <Store className="h-4 w-4" strokeWidth={2.2} />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1 truncate text-[10px] font-semibold">
+                        {restaurant.name}
+                        {restaurant.isVerified ? <CheckCircle2 className="h-3 w-3" /> : null}
                       </span>
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 truncate text-[10px] font-semibold">
-                          {restaurant.name}
-                          {restaurant.isVerified ? <CheckCircle2 className="h-3 w-3" /> : null}
-                        </span>
-                        <span className={"mt-1 block truncate text-[9px] " + (restaurant.isOpen ? "text-green-400" : "text-white/45")}>
-                          {restaurant.isOpen ? "Open now" : "Closed"} · {restaurant.hoursLabel}
-                        </span>
+                      <span className={"mt-1 block truncate text-[9px] " + (restaurant.isOpen ? "text-green-400" : "text-white/45")}>
+                        {restaurant.isOpen ? "Open now" : "Closed"} · {restaurant.hoursLabel}
                       </span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => toggleFavorite(restaurant.id)}
-                      className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10 disabled:opacity-40"
-                    >
-                      <Heart className={"h-3.5 w-3.5 " + (restaurant.favorited ? "fill-white" : "")} />
-                    </button>
-                    <ChevronDown className={"h-3.5 w-3.5 transition-transform " + (expandedRestaurant === restaurant.id ? "rotate-180" : "")} />
-                  </div>
+                    </span>
+                  </button>
 
-                  {expandedRestaurant === restaurant.id ? (
-                    <div className="ml-12 mt-3 space-y-2">
-                      {restaurant.items.slice(0, 6).map((item) => (
-                        <div key={item.id} className="flex items-center gap-2">
-                          <span className="min-w-0 flex-1 truncate text-[9px] text-white/75">
-                            {item.name} · {money(item.price)}
-                          </span>
-                          {basketQuantity(item.id) > 0 ? (
-                            <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/20 px-2 py-1">
-                              <button type="button" onClick={() => changeQuantity(item.id, -1)} className="px-1 text-[11px]">−</button>
-                              <span className="min-w-4 text-center text-[9px] font-semibold">{basketQuantity(item.id)}</span>
-                              <button type="button" onClick={() => addItem(item)} className="px-1 text-[11px]">+</button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => addItem(item)}
-                              disabled={!restaurant.isOpen}
-                              className="rounded-full border border-white/20 px-2.5 py-1 text-[8px] font-semibold disabled:opacity-35"
-                            >
-                              + Add
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => toggleFavorite(restaurant.id)}
+                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10 disabled:opacity-40"
+                    aria-label={restaurant.favorited ? "Remove from favourites" : "Add to favourites"}
+                  >
+                    <Heart className={"h-3.5 w-3.5 " + (restaurant.favorited ? "fill-white" : "")} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -648,6 +647,17 @@ export function CustomerDashboardClient({
           </section>
         </aside>
       </div>
+
+      {selectedRestaurant ? (
+        <CustomerRestaurantBrowserModal
+          restaurant={selectedRestaurant}
+          onClose={() => setSelectedRestaurant(null)}
+          quantityFor={basketQuantity}
+          onAdd={addItem}
+          onChangeQuantity={changeQuantity}
+          onToggleFavorite={toggleFavorite}
+        />
+      ) : null}
 
       {basketOpen ? (
         <div className="fixed inset-0 z-[180] flex items-end justify-center bg-black/30 p-4 sm:items-center" onMouseDown={(event) => {
