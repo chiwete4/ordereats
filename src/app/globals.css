@@ -160,3 +160,19 @@ button {
   from { background-position: 200% 0; }
   to { background-position: 0% 0; }
 }
+
+
+.rider-chevron {
+  display: inline-block;
+  color: rgba(255,255,255,0.28);
+  animation: rider-chevron-pulse 1.35s ease-in-out infinite;
+}
+
+.rider-chevron-1 { animation-delay: 0ms; }
+.rider-chevron-2 { animation-delay: 160ms; }
+.rider-chevron-3 { animation-delay: 320ms; }
+
+@keyframes rider-chevron-pulse {
+  0%, 55%, 100% { color: rgba(255,255,255,0.28); }
+  20%, 35% { color: rgba(255,255,255,0.82); }
+}
