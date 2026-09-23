@@ -21,6 +21,7 @@ import {
   submitCustomerComplaint,
   toggleFavoriteRestaurant,
 } from "@/actions/customer";
+import { CustomerLiveMap, type CustomerLiveDelivery } from "@/components/customer-live-map";
 import { useToast } from "@/components/toast-provider";
 
 export type CustomerRestaurant = {
@@ -122,11 +123,21 @@ export function CustomerDashboardClient({
   activeOrders,
   pastOrders,
   riderHistory,
+  liveRestaurantOrderId,
+  initialLiveDelivery,
+  fallbackLatitude,
+  fallbackLongitude,
+  fallbackLabel,
 }: {
   restaurants: CustomerRestaurant[];
   activeOrders: CustomerOrderCard[];
   pastOrders: CustomerOrderCard[];
   riderHistory: CustomerRiderHistory[];
+  liveRestaurantOrderId: string | null;
+  initialLiveDelivery: CustomerLiveDelivery | null;
+  fallbackLatitude: number | null;
+  fallbackLongitude: number | null;
+  fallbackLabel: string;
 }) {
   const [query, setQuery] = useState("");
   const [basket, setBasket] = useState<BasketItem[]>([]);
@@ -294,6 +305,14 @@ export function CustomerDashboardClient({
     <>
       <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
         <div className="min-w-0 space-y-5">
+          <CustomerLiveMap
+            restaurantOrderId={liveRestaurantOrderId}
+            initialDelivery={initialLiveDelivery}
+            fallbackLatitude={fallbackLatitude}
+            fallbackLongitude={fallbackLongitude}
+            fallbackLabel={fallbackLabel}
+          />
+
           <section className="rounded-[12px] bg-black px-5 py-5 text-white sm:px-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
