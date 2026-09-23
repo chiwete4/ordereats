@@ -123,7 +123,7 @@ export function CustomerRestaurantBrowserModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className={"relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl transition-[transform,opacity] duration-200 ease-out lg:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.35fr)] " + (receded ? "scale-[0.965] opacity-85" : "animate-[modal-pop-in_180ms_ease-out] scale-100 opacity-100")}>
+      <div className={"relative grid h-[min(760px,92vh)] w-[min(1220px,96vw)] overflow-hidden rounded-[14px] bg-black shadow-2xl transition-[transform,opacity] duration-200 ease-out lg:grid-cols-[minmax(360px,0.65fr)_minmax(0,1.35fr)] " + (receded ? "scale-[0.965]" : "animate-[modal-pop-in_180ms_ease-out] scale-100")}>
         <button
           type="button"
           onClick={onClose}
