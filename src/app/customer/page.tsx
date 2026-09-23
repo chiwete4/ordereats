@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { RefreshCw, Store } from "lucide-react";
 
 import { CustomerDashboardClient, type CustomerOrderCard, type CustomerRestaurant, type CustomerRiderHistory } from "@/components/customer-dashboard-client";
-import type { CustomerLiveDelivery, CustomerTrackingOrder } from "@/components/customer-live-map";
+import type { CustomerTrackingOrder } from "@/components/customer-live-map";
 import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
@@ -231,6 +231,11 @@ export default async function CustomerPage() {
       createdAt: restaurantOrder.createdAt.toISOString(),
       updatedAt: restaurantOrder.updatedAt.toISOString(),
       deliveredAt: restaurantOrder.delivery?.deliveredAt?.toISOString() ?? null,
+      deliveryLatitude: order.deliveryLatitude,
+      deliveryLongitude: order.deliveryLongitude,
+      riderLatitude: restaurantOrder.delivery?.lastLatitude ?? null,
+      riderLongitude: restaurantOrder.delivery?.lastLongitude ?? null,
+      riderLocationAt: restaurantOrder.delivery?.lastLocationAt?.toISOString() ?? null,
       items: restaurantOrder.items.map((item) => ({
         id: item.id,
         menuItemId: item.menuItemId,
