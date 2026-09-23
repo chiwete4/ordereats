@@ -117,7 +117,7 @@ export function CustomerLiveMap({
       stopped = true;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [restaurantOrderId]);
 
 
   useEffect(() => {
@@ -147,6 +147,11 @@ export function CustomerLiveMap({
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  useEffect(() => {
+    if (selectedIndex < trackingOrders.length) return;
+    setSelectedIndex(Math.max(0, trackingOrders.length - 1));
+  }, [selectedIndex, trackingOrders.length]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
