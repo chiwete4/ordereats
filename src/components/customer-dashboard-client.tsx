@@ -240,6 +240,10 @@ export function CustomerDashboardClient({
   const [basketReady, setBasketReady] = useState(false);
   const [basketOpen, setBasketOpen] = useState(false);
   const [checkoutPending, setCheckoutPending] = useState(false);
+  const [customerLocation, setCustomerLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState<CustomerRestaurant | null>(null);
   const [showAllActive, setShowAllActive] = useState(false);
   const [showAllFavorites, setShowAllFavorites] = useState(false);
@@ -414,6 +418,8 @@ export function CustomerDashboardClient({
 
 
   async function currentDeliveryLocation() {
+    if (customerLocation) return customerLocation;
+
     if (!navigator.geolocation) {
       throw new Error("Location is not available in this browser.");
     }
@@ -425,10 +431,18 @@ export function CustomerDashboardClient({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           }),
-        () => reject(new Error("Allow location access so we know where to deliver your order.")),
+        (error) => {
+          const message =
+            error.code === error.PERMISSION_DENIED
+              ? "Allow location access so we know where to deliver your order."
+              : error.code === error.TIMEOUT
+                ? "Your location took too long to respond. Please try again."
+                : "Your current location is temporarily unavailable.";
+          reject(new Error(message));
+        },
         {
           enableHighAccuracy: true,
-          maximumAge: 10000,
+          maximumAge: 30000,
           timeout: 15000,
         }
       );
@@ -543,6 +557,7 @@ export function CustomerDashboardClient({
             fallbackLatitude={fallbackLatitude}
             fallbackLongitude={fallbackLongitude}
             fallbackLabel={fallbackLabel}
+            onCustomerLocation={setCustomerLocation}
           />
 
           <section className="relative rounded-[12px] bg-black px-5 py-5 text-white sm:px-6">
