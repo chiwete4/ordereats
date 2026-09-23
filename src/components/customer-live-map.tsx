@@ -49,9 +49,12 @@ export function CustomerLiveMap({
   const [delivery, setDelivery] = useState(initialDelivery);
   const [now, setNow] = useState(Date.now());
   const [following, setFollowing] = useState(true);
+  const [customerLocation, setCustomerLocation] = useState<[number, number] | null>(null);
+  const [customerLocationError, setCustomerLocationError] = useState<string | null>(null);
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const customerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const followingRef = useRef(true);
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
@@ -78,6 +81,35 @@ export function CustomerLiveMap({
       stopped = true;
       window.clearInterval(timer);
     };
+  }, [restaurantOrderId]);
+
+
+  useEffect(() => {
+    if (restaurantOrderId || !navigator.geolocation) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setCustomerLocation([
+          position.coords.longitude,
+          position.coords.latitude,
+        ]);
+        setCustomerLocationError(null);
+      },
+      (error) => {
+        setCustomerLocationError(
+          error.code === error.PERMISSION_DENIED
+            ? "Allow location access to see yourself on the map."
+            : "Your location is temporarily unavailable."
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, [restaurantOrderId]);
 
   useEffect(() => {
@@ -115,6 +147,8 @@ export function CustomerLiveMap({
     return () => {
       markerRef.current?.remove();
       markerRef.current = null;
+      customerMarkerRef.current?.remove();
+      customerMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -136,6 +170,27 @@ export function CustomerLiveMap({
     if (followingRef.current) map.panTo(point, { duration: 900 });
   }, [delivery?.lastLocationAt, delivery?.latitude, delivery?.longitude]);
 
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || restaurantOrderId || !customerLocation) return;
+
+    if (!customerMarkerRef.current) {
+      customerMarkerRef.current = new mapboxgl.Marker({
+        element: createMarker(),
+        anchor: "center",
+      })
+        .setLngLat(customerLocation)
+        .addTo(map);
+    } else {
+      customerMarkerRef.current.setLngLat(customerLocation);
+    }
+
+    if (followingRef.current) {
+      map.panTo(customerLocation, { duration: 700 });
+    }
+  }, [customerLocation, restaurantOrderId]);
+
   const age = delivery?.lastLocationAt
     ? Math.max(0, (now - new Date(delivery.lastLocationAt).getTime()) / 1000)
     : null;
@@ -145,11 +200,19 @@ export function CustomerLiveMap({
   const Icon = liveState === "live" ? Radio : liveState === "stale" ? SignalLow : WifiOff;
 
   function recenter() {
-    if (!mapRef.current || typeof delivery?.latitude !== "number" || typeof delivery?.longitude !== "number") return;
+    if (!mapRef.current) return;
+
+    const point: [number, number] | null =
+      typeof delivery?.latitude === "number" && typeof delivery?.longitude === "number"
+        ? [delivery.longitude, delivery.latitude]
+        : customerLocation;
+
+    if (!point) return;
+
     followingRef.current = true;
     setFollowing(true);
     mapRef.current.easeTo({
-      center: [delivery.longitude, delivery.latitude],
+      center: point,
       zoom: Math.max(mapRef.current.getZoom(), 15),
       duration: 800,
     });
@@ -170,14 +233,20 @@ export function CustomerLiveMap({
         {label}
       </span>
 
-      {delivery && typeof delivery.latitude === "number" ? (
+      {(delivery && typeof delivery.latitude === "number") || customerLocation ? (
         <button
           type="button"
           onClick={recenter}
           className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-[10px] font-semibold text-black shadow-lg"
         >
           <Crosshair className="h-3.5 w-3.5" strokeWidth={2.3} />
-          {following ? "Following rider" : "Recenter rider"}
+          {delivery
+            ? following
+              ? "Following rider"
+              : "Recenter rider"
+            : following
+              ? "Following you"
+              : "Recenter"}
         </button>
       ) : null}
 
@@ -187,12 +256,18 @@ export function CustomerLiveMap({
         </span>
         <div className="min-w-0">
           <p className="truncate text-[11px] font-semibold">
-            {delivery ? `${delivery.riderName} · #${delivery.orderNumber}` : fallbackLabel}
+            {delivery
+              ? `${delivery.riderName} · #${delivery.orderNumber}`
+              : customerLocation
+                ? "Your live location"
+                : fallbackLabel}
           </p>
           <p className="mt-1 truncate text-[9px] text-white/55">
             {delivery?.lastLocationAt
               ? `Updated ${Math.max(0, Math.floor(age ?? 0))}s ago`
-              : "No live rider location right now"}
+              : customerLocation
+                ? "Location updates stay on this device until an order is on the way."
+                : customerLocationError || "Waiting for your location…"}
           </p>
         </div>
       </div>
