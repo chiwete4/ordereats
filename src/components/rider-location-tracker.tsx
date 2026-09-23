@@ -1,6 +1,6 @@
 "use client";
 
-import { LocateFixed, Radio, WifiOff } from "lucide-react";
+import { LocateFixed, Phone, Radio, WifiOff } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
@@ -37,10 +37,16 @@ export function RiderLocationTracker({
   deliveryId,
   destinationLatitude,
   destinationLongitude,
+  customerName,
+  customerPhone,
+  customerImageUrl,
 }: {
   deliveryId: string | null;
   destinationLatitude?: number | null;
   destinationLongitude?: number | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerImageUrl?: string | null;
 }) {
   const [state, setState] = useState<"starting" | "live" | "error" | "stopped">("starting");
   const [, setMessage] = useState("Requesting your location…");
@@ -248,6 +254,47 @@ export function RiderLocationTracker({
             ? "LOCATION OFF"
             : "LOCATING"}
       </div>
+
+      {customerName ? (
+        <div className="absolute inset-x-3 bottom-3 z-10 flex items-center gap-3 rounded-[10px] bg-black px-3 py-3 text-white shadow-lg">
+          {customerImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={customerImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-[13px] font-semibold">
+              {customerName
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase())
+                .join("")}
+            </span>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold">{customerName}</p>
+            <p className="mt-1 text-[11px] text-white/45">Customer</p>
+          </div>
+
+          {customerPhone ? (
+            <a
+              href={"tel:" + customerPhone}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] bg-white px-4 text-[12px] font-semibold text-black"
+            >
+              <Phone className="h-4 w-4" strokeWidth={2.3} />
+              Call
+            </a>
+          ) : (
+            <span className="inline-flex h-10 shrink-0 items-center rounded-[8px] bg-white/10 px-4 text-[11px] font-semibold text-white/45">
+              No phone
+            </span>
+          )}
+        </div>
+      ) : null}
 
       {state === "error" || state === "stopped" ? (
         <button
