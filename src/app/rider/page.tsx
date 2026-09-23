@@ -146,7 +146,7 @@ export default async function RiderPage() {
               <RiderDeliveryCompleteButton />
             </form>
           ) : (
-            <div className="flex h-[68px] items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[13px] font-semibold text-white/35">
+            <div className="flex h-[66px] items-center justify-center rounded-[10px] bg-[#202020] text-[13px] font-semibold text-white/35">
               Waiting for an assignment
             </div>
           )}
