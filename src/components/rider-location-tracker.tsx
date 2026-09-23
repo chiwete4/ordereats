@@ -43,7 +43,7 @@ export function RiderLocationTracker({
   destinationLongitude?: number | null;
 }) {
   const [state, setState] = useState<"starting" | "live" | "error" | "stopped">("starting");
-  const [message, setMessage] = useState("Requesting your location…");
+  const [, setMessage] = useState("Requesting your location…");
   const [position, setPosition] = useState<[number, number] | null>(null);
   const lastSentAt = useRef(0);
   const watchId = useRef<number | null>(null);
@@ -124,15 +124,6 @@ export function RiderLocationTracker({
         timeout: 15000,
       }
     );
-  }
-
-  function stop() {
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-    setState("stopped");
-    setMessage("Location sharing is paused.");
   }
 
   useEffect(() => {
