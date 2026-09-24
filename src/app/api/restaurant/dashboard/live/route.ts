@@ -35,24 +35,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }
 
-  const delivery = await prisma.delivery.findFirst({
+  const deliveries = await prisma.delivery.findMany({
     where: {
       restaurantOrder: {
         restaurantId,
       },
       status: "OUT_FOR_DELIVERY",
-      riderId: {
-        not: null,
-      },
-      lastLatitude: {
-        not: null,
-      },
-      lastLongitude: {
-        not: null,
-      },
-      lastLocationAt: {
-        not: null,
-      },
+      riderId: { not: null },
+      lastLatitude: { not: null },
+      lastLongitude: { not: null },
+      lastLocationAt: { not: null },
     },
     orderBy: [
       { lastLocationAt: "desc" },
@@ -73,7 +65,6 @@ export async function GET(request: NextRequest) {
       },
       restaurantOrder: {
         select: {
-          id: true,
           order: {
             select: {
               orderNumber: true,
@@ -84,20 +75,16 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  if (!delivery) {
-    return NextResponse.json({ delivery: null });
-  }
+  const serialized = deliveries.map((delivery) => {
+    const riderName =
+      [delivery.rider?.firstName, delivery.rider?.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      delivery.rider?.email ||
+      "Assigned rider";
 
-  const riderName =
-    [delivery.rider?.firstName, delivery.rider?.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim() ||
-    delivery.rider?.email ||
-    "Assigned rider";
-
-  return NextResponse.json({
-    delivery: {
+    return {
       id: delivery.id,
       status: delivery.status,
       latitude: delivery.lastLatitude,
@@ -105,6 +92,11 @@ export async function GET(request: NextRequest) {
       lastLocationAt: delivery.lastLocationAt?.toISOString() ?? null,
       riderName,
       orderNumber: delivery.restaurantOrder.order.orderNumber,
-    },
+    };
+  });
+
+  return NextResponse.json({
+    deliveries: serialized,
+    delivery: serialized[0] ?? null,
   });
 }
