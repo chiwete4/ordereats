@@ -1,6 +1,14 @@
 "use client";
 
-import { Crosshair, MapPin, Radio, SignalLow, WifiOff } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Crosshair,
+  MapPin,
+  Radio,
+  SignalLow,
+  WifiOff,
+} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,24 +62,26 @@ export function LiveDeliveryMap({
   restaurantAddress,
   restaurantLatitude,
   restaurantLongitude,
-  initialDelivery,
+  initialDeliveries,
 }: {
   restaurantId: string;
   restaurantAddress: string | null;
   restaurantLatitude: number | null;
   restaurantLongitude: number | null;
-  initialDelivery: LiveDeliveryState | null;
+  initialDeliveries: LiveDeliveryState[];
 }) {
-  const [delivery, setDelivery] = useState<LiveDeliveryState | null>(initialDelivery);
+  const [deliveries, setDeliveries] = useState<LiveDeliveryState[]>(initialDeliveries);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [isFollowing, setIsFollowing] = useState(true);
 
+  const delivery = deliveries[selectedIndex] ?? null;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const riderMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const routeCoordinatesRef = useRef<[number, number][]>([]);
-  const currentDeliveryRef = useRef<LiveDeliveryState | null>(initialDelivery);
+  const routeCoordinatesRef = useRef<Record<string, [number, number][]>>({});
   const followingRef = useRef(true);
+  const initialDelivery = initialDeliveries[0] ?? null;
   const initialCenterRef = useRef<[number, number]>([
     typeof initialDelivery?.longitude === "number"
       ? initialDelivery.longitude
@@ -88,10 +98,6 @@ export function LiveDeliveryMap({
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
   useEffect(() => {
-    currentDeliveryRef.current = delivery;
-  }, [delivery]);
-
-  useEffect(() => {
     let stopped = false;
 
     async function refresh() {
@@ -102,9 +108,13 @@ export function LiveDeliveryMap({
         );
         if (!response.ok) return;
         const payload = await response.json();
-        if (!stopped) setDelivery(payload.delivery ?? null);
+        if (stopped) return;
+
+        const next = Array.isArray(payload.deliveries) ? payload.deliveries : [];
+        setDeliveries(next);
+        setSelectedIndex((current) => Math.min(current, Math.max(0, next.length - 1)));
       } catch {
-        // Keep the last known location visible if a poll fails.
+        // Keep last known locations visible if a poll fails.
       }
     }
 
@@ -131,10 +141,7 @@ export function LiveDeliveryMap({
       attributionControl: false,
     });
 
-    map.addControl(
-      new mapboxgl.AttributionControl({ compact: true }),
-      "bottom-right"
-    );
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
     const stopFollowing = () => {
       followingRef.current = false;
@@ -151,10 +158,7 @@ export function LiveDeliveryMap({
         data: {
           type: "Feature",
           properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: [],
-          },
+          geometry: { type: "LineString", coordinates: [] },
         },
       });
 
@@ -162,10 +166,7 @@ export function LiveDeliveryMap({
         id: ROUTE_CASING_LAYER_ID,
         type: "line",
         source: ROUTE_SOURCE_ID,
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": "#ffffff",
           "line-width": 8,
@@ -177,10 +178,7 @@ export function LiveDeliveryMap({
         id: ROUTE_LAYER_ID,
         type: "line",
         source: ROUTE_SOURCE_ID,
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": "#111111",
           "line-width": 4,
@@ -203,19 +201,25 @@ export function LiveDeliveryMap({
 
   useEffect(() => {
     const map = mapRef.current;
+
     if (
       !map ||
       !delivery ||
       typeof delivery.latitude !== "number" ||
       typeof delivery.longitude !== "number"
     ) {
+      riderMarkerRef.current?.remove();
+      riderMarkerRef.current = null;
+      const source = map?.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+      source?.setData({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      });
       return;
     }
 
-    const coordinate: [number, number] = [
-      delivery.longitude,
-      delivery.latitude,
-    ];
+    const coordinate: [number, number] = [delivery.longitude, delivery.latitude];
 
     if (!riderMarkerRef.current) {
       riderMarkerRef.current = new mapboxgl.Marker({
@@ -228,40 +232,39 @@ export function LiveDeliveryMap({
       riderMarkerRef.current.setLngLat(coordinate);
     }
 
-    const previous = routeCoordinatesRef.current.at(-1);
+    const trail = routeCoordinatesRef.current[delivery.id] ?? [];
+    const previous = trail.at(-1);
     if (
       !previous ||
       Math.abs(previous[0] - coordinate[0]) > 0.000001 ||
       Math.abs(previous[1] - coordinate[1]) > 0.000001
     ) {
-      routeCoordinatesRef.current.push(coordinate);
-      if (routeCoordinatesRef.current.length > 120) {
-        routeCoordinatesRef.current.shift();
-      }
+      trail.push(coordinate);
+      if (trail.length > 120) trail.shift();
+      routeCoordinatesRef.current[delivery.id] = trail;
     }
 
     const updateRoute = () => {
-      const source = map.getSource(ROUTE_SOURCE_ID) as
-        | mapboxgl.GeoJSONSource
-        | undefined;
+      const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
       source?.setData({
         type: "Feature",
         properties: {},
         geometry: {
           type: "LineString",
-          coordinates: routeCoordinatesRef.current,
+          coordinates: routeCoordinatesRef.current[delivery.id] ?? [],
         },
       });
     };
 
-    if (map.isStyleLoaded()) {
-      updateRoute();
-    } else {
-      map.once("load", updateRoute);
-    }
+    if (map.isStyleLoaded()) updateRoute();
+    else map.once("load", updateRoute);
 
     if (followingRef.current) {
-      map.panTo(coordinate, { duration: 900 });
+      map.easeTo({
+        center: coordinate,
+        zoom: Math.max(map.getZoom(), 15.5),
+        duration: 700,
+      });
     }
   }, [
     delivery?.id,
@@ -271,7 +274,22 @@ export function LiveDeliveryMap({
   ]);
 
   useEffect(() => {
-    routeCoordinatesRef.current = [];
+    followingRef.current = true;
+    setIsFollowing(true);
+
+    const map = mapRef.current;
+    if (
+      map &&
+      delivery &&
+      typeof delivery.latitude === "number" &&
+      typeof delivery.longitude === "number"
+    ) {
+      map.easeTo({
+        center: [delivery.longitude, delivery.latitude],
+        zoom: Math.max(map.getZoom(), 15.5),
+        duration: 650,
+      });
+    }
   }, [delivery?.id]);
 
   const locationAgeSeconds = delivery?.lastLocationAt
@@ -320,6 +338,13 @@ export function LiveDeliveryMap({
     });
   }
 
+  function switchRider(direction: -1 | 1) {
+    if (deliveries.length < 2) return;
+    setSelectedIndex(
+      (current) => (current + direction + deliveries.length) % deliveries.length
+    );
+  }
+
   return (
     <section className="relative aspect-[1069/535] overflow-hidden rounded-[12px] bg-[#F2F2F2]">
       {mapboxToken ? (
@@ -343,6 +368,27 @@ export function LiveDeliveryMap({
         {statusLabel}
       </span>
 
+      {deliveries.length > 1 ? (
+        <>
+          <button
+            type="button"
+            onClick={() => switchRider(-1)}
+            aria-label="Previous active rider"
+            className="absolute left-4 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+          <button
+            type="button"
+            onClick={() => switchRider(1)}
+            aria-label="Next active rider"
+            className="absolute right-4 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition active:scale-95"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+        </>
+      ) : null}
+
       {hasDeliveryCoordinates && mapboxToken ? (
         <button
           type="button"
@@ -358,7 +404,7 @@ export function LiveDeliveryMap({
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] border border-white/15">
           <MapPin className="h-4 w-4" strokeWidth={2.3} />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-semibold">
             {delivery
               ? `${delivery.riderName} · #${delivery.orderNumber}`
@@ -372,6 +418,11 @@ export function LiveDeliveryMap({
                 : "Add coordinates to enable the map"}
           </p>
         </div>
+        {deliveries.length > 1 && delivery ? (
+          <span className="shrink-0 rounded-full border border-white/15 px-2 py-1 text-[8px] font-semibold text-white/70">
+            {selectedIndex + 1}/{deliveries.length}
+          </span>
+        ) : null}
       </div>
     </section>
   );
