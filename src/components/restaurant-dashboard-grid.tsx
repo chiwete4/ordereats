@@ -694,37 +694,37 @@ export async function RestaurantDashboardGrid({
       return completedAt(b) - completedAt(a);
     });
   const riders = staff.filter((member) => member.role === "RIDER");
-  const latestDelivery =
-    orders
-      .filter(
-        (row) =>
-          row.status === "OUT_FOR_DELIVERY" &&
-          row.delivery?.riderId &&
-          !["DELIVERED", "CANCELLED"].includes(row.delivery.status)
-      )
-      .map((row) => row.delivery)
-      .filter(Boolean)
-      .sort((a, b) => {
-        const aTime = a?.lastLocationAt?.getTime() ?? a?.updatedAt.getTime() ?? 0;
-        const bTime = b?.lastLocationAt?.getTime() ?? b?.updatedAt.getTime() ?? 0;
-        return bTime - aTime;
-      })[0] ?? null;
+  const activeLiveDeliveries = orders
+    .filter(
+      (row) =>
+        row.status === "OUT_FOR_DELIVERY" &&
+        row.delivery?.riderId &&
+        !["DELIVERED", "CANCELLED"].includes(row.delivery.status) &&
+        typeof row.delivery.lastLatitude === "number" &&
+        typeof row.delivery.lastLongitude === "number" &&
+        row.delivery.lastLocationAt
+    )
+    .map((row) => ({
+      delivery: row.delivery!,
+      orderNumber: row.order.orderNumber,
+    }))
+    .sort((a, b) => {
+      const aTime = a.delivery.lastLocationAt?.getTime() ?? a.delivery.updatedAt.getTime();
+      const bTime = b.delivery.lastLocationAt?.getTime() ?? b.delivery.updatedAt.getTime();
+      return bTime - aTime;
+    });
 
-  const initialLiveDelivery: LiveDeliveryState | null = latestDelivery
-    ? {
-        id: latestDelivery.id,
-        status: latestDelivery.status,
-        latitude: latestDelivery.lastLatitude,
-        longitude: latestDelivery.lastLongitude,
-        lastLocationAt: latestDelivery.lastLocationAt?.toISOString() ?? null,
-        riderName: latestDelivery.rider
-          ? personName(latestDelivery.rider)
-          : "Assigned rider",
-        orderNumber:
-          orders.find((row) => row.delivery?.id === latestDelivery.id)?.order
-            .orderNumber ?? "Order",
-      }
-    : null;
+  const initialLiveDeliveries: LiveDeliveryState[] = activeLiveDeliveries.map(
+    ({ delivery, orderNumber }) => ({
+      id: delivery.id,
+      status: delivery.status,
+      latitude: delivery.lastLatitude,
+      longitude: delivery.lastLongitude,
+      lastLocationAt: delivery.lastLocationAt?.toISOString() ?? null,
+      riderName: delivery.rider ? personName(delivery.rider) : "Assigned rider",
+      orderNumber,
+    })
+  );
 
   const orderRiders = riders.map((rider) => {
     const activeDelivery = rider.user.assignedDeliveries?.[0];
@@ -1033,7 +1033,7 @@ export async function RestaurantDashboardGrid({
           restaurantAddress={restaurant.address}
           restaurantLatitude={restaurant.latitude}
           restaurantLongitude={restaurant.longitude}
-          initialDelivery={initialLiveDelivery}
+          initialDeliveries={initialLiveDeliveries}
         />
 
         <ReviewsPanel
