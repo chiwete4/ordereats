@@ -13,6 +13,8 @@ export type CustomerLiveDelivery = {
   riderName: string;
   riderPhone: string | null;
   orderNumber: string;
+  deliveryLatitude: number | null;
+  deliveryLongitude: number | null;
 };
 
 export type CustomerTrackingOrder = {
@@ -85,13 +87,14 @@ export function CustomerLiveMap({
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const customerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const followingRef = useRef(true);
+  const routeSourceReadyRef = useRef(false);
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
 
   useEffect(() => {
     setDelivery(selectedTrackingOrder?.delivery ?? null);
     followingRef.current = true;
     setFollowing(true);
-  }, [selectedTrackingOrder?.restaurantOrderId]);
+  }, [selectedTrackingOrder?.restaurantOrderId, selectedTrackingOrder?.delivery]);
 
   useEffect(() => {
     let stopped = false;
@@ -184,6 +187,46 @@ export function CustomerLiveMap({
     });
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
+
+    map.on("load", () => {
+      if (!map.getSource("customer-rider-route")) {
+        map.addSource("customer-rider-route", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: [] },
+          },
+        });
+
+        map.addLayer({
+          id: "customer-rider-route-casing",
+          type: "line",
+          source: "customer-rider-route",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 8,
+            "line-opacity": 0.95,
+          },
+        });
+
+        map.addLayer({
+          id: "customer-rider-route-line",
+          type: "line",
+          source: "customer-rider-route",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#111111",
+            "line-width": 4,
+            "line-opacity": 0.9,
+          },
+        });
+
+        routeSourceReadyRef.current = true;
+      }
+    });
+
     const stopFollowing = () => {
       followingRef.current = false;
       setFollowing(false);
@@ -217,6 +260,76 @@ export function CustomerLiveMap({
 
     if (followingRef.current) map.panTo(point, { duration: 900 });
   }, [delivery?.lastLocationAt, delivery?.latitude, delivery?.longitude]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !map ||
+      !token ||
+      typeof delivery?.latitude !== "number" ||
+      typeof delivery?.longitude !== "number" ||
+      typeof delivery?.deliveryLatitude !== "number" ||
+      typeof delivery?.deliveryLongitude !== "number"
+    ) {
+      const source = map?.getSource("customer-rider-route") as mapboxgl.GeoJSONSource | undefined;
+      source?.setData({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      });
+      return;
+    }
+
+    let stopped = false;
+    const coordinates =
+      `${delivery.longitude},${delivery.latitude};${delivery.deliveryLongitude},${delivery.deliveryLatitude}`;
+
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${encodeURIComponent(token)}`,
+      { cache: "no-store" }
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        const route = payload?.routes?.[0];
+        if (!route || stopped) return;
+
+        const applyRoute = () => {
+          const source = map.getSource("customer-rider-route") as mapboxgl.GeoJSONSource | undefined;
+          source?.setData({
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          });
+        };
+
+        if (map.isStyleLoaded()) applyRoute();
+        else map.once("load", applyRoute);
+
+        if (followingRef.current) {
+          const bounds = new mapboxgl.LngLatBounds();
+          bounds.extend([delivery.longitude as number, delivery.latitude as number]);
+          bounds.extend([delivery.deliveryLongitude as number, delivery.deliveryLatitude as number]);
+          map.fitBounds(bounds, {
+            padding: 70,
+            maxZoom: 15.5,
+            duration: 700,
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      stopped = true;
+    };
+  }, [
+    delivery?.id,
+    delivery?.lastLocationAt,
+    delivery?.latitude,
+    delivery?.longitude,
+    delivery?.deliveryLatitude,
+    delivery?.deliveryLongitude,
+    token,
+  ]);
 
 
   useEffect(() => {
