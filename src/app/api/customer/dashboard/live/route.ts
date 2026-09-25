@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
           riderName,
           riderPhone: rider?.phoneNumber ?? null,
           orderNumber: order.order.orderNumber,
+          deliveryLatitude: order.order.deliveryLatitude,
+          deliveryLongitude: order.order.deliveryLongitude,
         }
       : null,
     destination: {
