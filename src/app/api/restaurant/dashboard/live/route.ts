@@ -68,6 +68,8 @@ export async function GET(request: NextRequest) {
           order: {
             select: {
               orderNumber: true,
+              deliveryLatitude: true,
+              deliveryLongitude: true,
             },
           },
         },
@@ -92,6 +94,8 @@ export async function GET(request: NextRequest) {
       lastLocationAt: delivery.lastLocationAt?.toISOString() ?? null,
       riderName,
       orderNumber: delivery.restaurantOrder.order.orderNumber,
+      deliveryLatitude: delivery.restaurantOrder.order.deliveryLatitude,
+      deliveryLongitude: delivery.restaurantOrder.order.deliveryLongitude,
     };
   });
 
