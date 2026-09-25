@@ -98,6 +98,7 @@ export function LiveDeliveryMap({
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const followingRef = useRef(true);
   const lastRouteRequestAt = useRef(0);
+  const lastRouteDeliveryId = useRef<string | null>(null);
   const initialDelivery = initialDeliveries[0] ?? null;
   const initialCenterRef = useRef<[number, number]>([
     typeof initialDelivery?.longitude === "number"
@@ -314,7 +315,9 @@ export function LiveDeliveryMap({
     }
 
     const nowMs = Date.now();
-    if (nowMs - lastRouteRequestAt.current < 7000) return;
+    const riderChanged = lastRouteDeliveryId.current !== delivery.id;
+    if (!riderChanged && nowMs - lastRouteRequestAt.current < 7000) return;
+    lastRouteDeliveryId.current = delivery.id;
     lastRouteRequestAt.current = nowMs;
 
     let stopped = false;
@@ -369,8 +372,15 @@ export function LiveDeliveryMap({
     setIsFollowing(true);
     setRouteMeta(null);
     lastRouteRequestAt.current = 0;
+    lastRouteDeliveryId.current = null;
 
     const map = mapRef.current;
+    const source = map?.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    source?.setData({
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates: [] },
+    });
     if (
       map &&
       delivery &&
