@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Crosshair,
   MapPin,
+  Navigation,
   Radio,
   SignalLow,
   WifiOff,
@@ -20,6 +21,8 @@ export type LiveDeliveryState = {
   lastLocationAt: string | null;
   riderName: string;
   orderNumber: string;
+  deliveryLatitude: number | null;
+  deliveryLongitude: number | null;
 };
 
 const ROUTE_SOURCE_ID = "paperbag-rider-route";
@@ -57,6 +60,18 @@ function createRiderMarkerElement() {
   return element;
 }
 
+function createDestinationMarkerElement() {
+  const element = document.createElement("div");
+  element.setAttribute("aria-label", "Customer destination");
+  element.style.width = "30px";
+  element.style.height = "30px";
+  element.style.borderRadius = "8px";
+  element.style.background = "#fff";
+  element.style.border = "4px solid #000";
+  element.style.boxShadow = "0 5px 18px rgba(0,0,0,.24)";
+  return element;
+}
+
 export function LiveDeliveryMap({
   restaurantId,
   restaurantAddress,
@@ -74,13 +89,15 @@ export function LiveDeliveryMap({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [isFollowing, setIsFollowing] = useState(true);
+  const [routeMeta, setRouteMeta] = useState<{ duration: number; distance: number } | null>(null);
 
   const delivery = deliveries[selectedIndex] ?? null;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const riderMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const routeCoordinatesRef = useRef<Record<string, [number, number][]>>({});
+  const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const followingRef = useRef(true);
+  const lastRouteRequestAt = useRef(0);
   const initialDelivery = initialDeliveries[0] ?? null;
   const initialCenterRef = useRef<[number, number]>([
     typeof initialDelivery?.longitude === "number"
@@ -170,7 +187,7 @@ export function LiveDeliveryMap({
         paint: {
           "line-color": "#ffffff",
           "line-width": 8,
-          "line-opacity": 0.9,
+          "line-opacity": 0.95,
         },
       });
 
@@ -182,7 +199,7 @@ export function LiveDeliveryMap({
         paint: {
           "line-color": "#111111",
           "line-width": 4,
-          "line-opacity": 0.82,
+          "line-opacity": 0.9,
         },
       });
     });
@@ -193,7 +210,9 @@ export function LiveDeliveryMap({
       canvas.removeEventListener("pointerdown", stopFollowing);
       canvas.removeEventListener("wheel", stopFollowing);
       riderMarkerRef.current?.remove();
+      destinationMarkerRef.current?.remove();
       riderMarkerRef.current = null;
+      destinationMarkerRef.current = null;
       mapRef.current = null;
       map.remove();
     };
@@ -210,12 +229,6 @@ export function LiveDeliveryMap({
     ) {
       riderMarkerRef.current?.remove();
       riderMarkerRef.current = null;
-      const source = map?.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-      source?.setData({
-        type: "Feature",
-        properties: {},
-        geometry: { type: "LineString", coordinates: [] },
-      });
       return;
     }
 
@@ -232,33 +245,6 @@ export function LiveDeliveryMap({
       riderMarkerRef.current.setLngLat(coordinate);
     }
 
-    const trail = routeCoordinatesRef.current[delivery.id] ?? [];
-    const previous = trail.at(-1);
-    if (
-      !previous ||
-      Math.abs(previous[0] - coordinate[0]) > 0.000001 ||
-      Math.abs(previous[1] - coordinate[1]) > 0.000001
-    ) {
-      trail.push(coordinate);
-      if (trail.length > 120) trail.shift();
-      routeCoordinatesRef.current[delivery.id] = trail;
-    }
-
-    const updateRoute = () => {
-      const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-      source?.setData({
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "LineString",
-          coordinates: routeCoordinatesRef.current[delivery.id] ?? [],
-        },
-      });
-    };
-
-    if (map.isStyleLoaded()) updateRoute();
-    else map.once("load", updateRoute);
-
     if (followingRef.current) {
       map.easeTo({
         center: coordinate,
@@ -274,8 +260,115 @@ export function LiveDeliveryMap({
   ]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    const hasDestination =
+      typeof delivery?.deliveryLatitude === "number" &&
+      typeof delivery?.deliveryLongitude === "number";
+
+    if (!map || !delivery || !hasDestination) {
+      destinationMarkerRef.current?.remove();
+      destinationMarkerRef.current = null;
+      return;
+    }
+
+    const destination: [number, number] = [
+      delivery.deliveryLongitude as number,
+      delivery.deliveryLatitude as number,
+    ];
+
+    if (!destinationMarkerRef.current) {
+      destinationMarkerRef.current = new mapboxgl.Marker({
+        element: createDestinationMarkerElement(),
+        anchor: "center",
+      })
+        .setLngLat(destination)
+        .addTo(map);
+    } else {
+      destinationMarkerRef.current.setLngLat(destination);
+    }
+  }, [
+    delivery?.id,
+    delivery?.deliveryLatitude,
+    delivery?.deliveryLongitude,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !map ||
+      !mapboxToken ||
+      !delivery ||
+      typeof delivery.latitude !== "number" ||
+      typeof delivery.longitude !== "number" ||
+      typeof delivery.deliveryLatitude !== "number" ||
+      typeof delivery.deliveryLongitude !== "number"
+    ) {
+      setRouteMeta(null);
+      const source = map?.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+      source?.setData({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      });
+      return;
+    }
+
+    const nowMs = Date.now();
+    if (nowMs - lastRouteRequestAt.current < 7000) return;
+    lastRouteRequestAt.current = nowMs;
+
+    let stopped = false;
+    const coordinates =
+      `${delivery.longitude},${delivery.latitude};${delivery.deliveryLongitude},${delivery.deliveryLatitude}`;
+
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=${encodeURIComponent(mapboxToken)}`,
+      { cache: "no-store" }
+    )
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        const route = payload?.routes?.[0];
+        if (!route || stopped) return;
+
+        setRouteMeta({
+          duration: Number(route.duration) || 0,
+          distance: Number(route.distance) || 0,
+        });
+
+        const applyRoute = () => {
+          const source = map.getSource(ROUTE_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+          source?.setData({
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          });
+        };
+
+        if (map.isStyleLoaded()) applyRoute();
+        else map.once("load", applyRoute);
+      })
+      .catch(() => {
+        if (!stopped) setRouteMeta(null);
+      });
+
+    return () => {
+      stopped = true;
+    };
+  }, [
+    delivery?.id,
+    delivery?.lastLocationAt,
+    delivery?.latitude,
+    delivery?.longitude,
+    delivery?.deliveryLatitude,
+    delivery?.deliveryLongitude,
+    mapboxToken,
+  ]);
+
+  useEffect(() => {
     followingRef.current = true;
     setIsFollowing(true);
+    setRouteMeta(null);
+    lastRouteRequestAt.current = 0;
 
     const map = mapRef.current;
     if (
@@ -284,11 +377,25 @@ export function LiveDeliveryMap({
       typeof delivery.latitude === "number" &&
       typeof delivery.longitude === "number"
     ) {
-      map.easeTo({
-        center: [delivery.longitude, delivery.latitude],
-        zoom: Math.max(map.getZoom(), 15.5),
-        duration: 650,
-      });
+      if (
+        typeof delivery.deliveryLatitude === "number" &&
+        typeof delivery.deliveryLongitude === "number"
+      ) {
+        const bounds = new mapboxgl.LngLatBounds();
+        bounds.extend([delivery.longitude, delivery.latitude]);
+        bounds.extend([delivery.deliveryLongitude, delivery.deliveryLatitude]);
+        map.fitBounds(bounds, {
+          padding: 70,
+          maxZoom: 15.5,
+          duration: 700,
+        });
+      } else {
+        map.easeTo({
+          center: [delivery.longitude, delivery.latitude],
+          zoom: Math.max(map.getZoom(), 15.5),
+          duration: 650,
+        });
+      }
     }
   }, [delivery?.id]);
 
@@ -400,6 +507,22 @@ export function LiveDeliveryMap({
         </button>
       ) : null}
 
+      {routeMeta ? (
+        <div className="absolute right-4 top-[54px] z-10 inline-flex items-center gap-2 rounded-[9px] bg-black px-3 py-2 text-white shadow-lg">
+          <Navigation className="h-3.5 w-3.5" strokeWidth={2.3} />
+          <span className="text-[10px] font-semibold">
+            {routeMeta.duration < 60
+              ? "<1 min"
+              : `${Math.max(1, Math.round(routeMeta.duration / 60))} min`}
+          </span>
+          <span className="text-[9px] text-white/55">
+            {routeMeta.distance < 1000
+              ? `${Math.max(1, Math.round(routeMeta.distance))} m`
+              : `${(routeMeta.distance / 1000).toFixed(1)} km`}
+          </span>
+        </div>
+      ) : null}
+
       <div className="absolute bottom-6 left-6 z-10 flex max-w-[380px] items-center gap-3 rounded-[8px] bg-black px-4 py-3 text-white shadow-lg">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] border border-white/15">
           <MapPin className="h-4 w-4" strokeWidth={2.3} />
@@ -412,7 +535,9 @@ export function LiveDeliveryMap({
           </p>
           <p className="mt-1 truncate text-[9px] font-medium text-[#B0B0B0]">
             {delivery
-              ? `${relativeAge(delivery.lastLocationAt, now)} · ${delivery.status.replaceAll("_", " ").toLowerCase()}`
+              ? routeMeta
+                ? `${relativeAge(delivery.lastLocationAt, now)} · ${routeMeta.distance < 1000 ? `${Math.round(routeMeta.distance)}m` : `${(routeMeta.distance / 1000).toFixed(1)}km`} remaining`
+                : `${relativeAge(delivery.lastLocationAt, now)} · ${delivery.status.replaceAll("_", " ").toLowerCase()}`
               : hasCoordinates
                 ? "No active rider delivery right now"
                 : "Add coordinates to enable the map"}
