@@ -1,10 +1,13 @@
+import Link from "next/link";
+import { currentUser } from "@clerk/nextjs/server";
+import { ChevronRight, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import {
-  createMenuCategory,
-  createMenuItem,
-  toggleMenuItemAvailability,
-} from "@/actions/menu";
+import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid";
+import { DashboardProfileEditButton } from "@/components/dashboard-profile-edit-button";
+import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
+import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
+import { RestaurantPayoutSettingsButton } from "@/components/restaurant-payout-settings-button";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -14,15 +17,24 @@ export default async function RestaurantDashboardPage({
   searchParams: Promise<{ restaurantId?: string }>;
 }) {
   const user = await getOrCreateCurrentUser();
+  if (!user) redirect("/");
 
-  if (!user) {
-    redirect("/");
-  }
+  const { restaurantId: requestedRestaurantId } = await searchParams;
 
-  const { restaurantId } = await searchParams;
-
+  let restaurantId = requestedRestaurantId;
   if (!restaurantId) {
-    redirect("/restaurant/new");
+    const defaultMembership = await prisma.restaurantStaff.findFirst({
+      where: {
+        userId: user.id,
+        isActive: true,
+        role: { in: ["OWNER", "STAFF"] },
+      },
+      select: { restaurantId: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (!defaultMembership) redirect("/");
+    restaurantId = defaultMembership.restaurantId;
   }
 
   const membership = await prisma.restaurantStaff.findUnique({
@@ -32,14 +44,38 @@ export default async function RestaurantDashboardPage({
         restaurantId,
       },
     },
-    include: {
+    select: {
+      role: true,
+      isActive: true,
       restaurant: {
-        include: {
-          menuCategories: {
-            orderBy: { createdAt: "asc" },
-            include: {
+        select: {
+          name: true,
+          isOpen: true,
+          openingTime: true,
+          closingTime: true,
+          operatingDays: true,
+          timezone: true,
+          description: true,
+          phoneNumber: true,
+          address: true,
+          imageUrl: true,
+          latitude: true,
+          longitude: true,
+          isVerified: true,
+          payoutBankName: true,
+          payoutBankCode: true,
+          payoutAccountName: true,
+          payoutAccountNumber: true,
+          payoutRecipientCode: true,
+          paystackSubaccountCode: true,
+          paystackSubaccountId: true,
+          payoutVerifiedAt: true,
+          _count: {
+            select: {
               menuItems: {
-                orderBy: { createdAt: "asc" },
+                where: {
+                  isArchived: false,
+                },
               },
             },
           },
@@ -48,125 +84,149 @@ export default async function RestaurantDashboardPage({
     },
   });
 
-  if (!membership || membership.role !== "STAFF" || !membership.isActive) {
+  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
     redirect("/");
   }
 
-  const restaurant = membership.restaurant;
+  const activeRiderCount = await prisma.restaurantStaff.count({
+    where: {
+      restaurantId,
+      role: "RIDER",
+      isActive: true,
+    },
+  });
+
+  const detailsComplete = Boolean(
+    membership.restaurant.name.trim() &&
+      membership.restaurant.description?.trim() &&
+      membership.restaurant.phoneNumber?.trim() &&
+      membership.restaurant.address?.trim()
+  );
+  const riderComplete = activeRiderCount >= 1;
+  const menuComplete = membership.restaurant._count.menuItems >= 5;
+  const bankComplete = Boolean(
+    membership.restaurant.payoutBankName?.trim() &&
+      membership.restaurant.payoutBankCode?.trim() &&
+      membership.restaurant.payoutAccountName?.trim() &&
+      membership.restaurant.payoutAccountNumber?.trim() &&
+      membership.restaurant.paystackSubaccountCode?.trim() &&
+      membership.restaurant.payoutVerifiedAt
+  );
+  const verificationSteps = [
+    { label: "Restaurant Details", complete: detailsComplete },
+    { label: "Add at least 1 Rider", complete: riderComplete },
+    { label: "Create your menu", complete: menuComplete },
+    { label: "Add your Bank Info", complete: bankComplete },
+  ];
+
+  const clerkUser = await currentUser();
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "there";
+  const roleLabel = membership.role === "OWNER" ? "Restaurant Owner" : "Restaurant Staff";
+  const avatarUrl = clerkUser?.imageUrl;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <header>
-          <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-            Restaurant dashboard
-          </p>
-          <h1 className="mt-1 text-3xl font-bold">{restaurant.name}</h1>
-          <div className="mt-3 flex gap-4 text-sm text-gray-600">
-            <span>Verification: {restaurant.isVerified ? "Verified" : "Pending"}</span>
-            <span>Status: {restaurant.isOpen ? "Open" : "Closed"}</span>
-          </div>
-        </header>
+    <main className="min-h-screen bg-white">
+      <DashboardLiveRefresh intervalMs={12000} />
+      <div className="w-full px-4 sm:px-6 lg:px-[125px]">
+        <div className="h-[32px]" />
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <form action={createMenuCategory} className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Add category</h2>
-            <p className="mt-1 text-sm text-gray-500">Examples: Meals, Drinks, Snacks.</p>
-            <input type="hidden" name="restaurantId" value={restaurant.id} />
-            <label htmlFor="category-name" className="mt-5 block text-sm font-medium">
-              Category name
-            </label>
-            <input
-              id="category-name"
-              name="name"
-              required
-              placeholder="Meals"
-              className="mt-2 w-full rounded-lg border px-3 py-2"
-            />
-            <button className="mt-4 rounded-lg bg-black px-4 py-2 font-medium text-white" type="submit">
-              Add category
-            </button>
-          </form>
-
-          <form action={createMenuItem} className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Add menu item</h2>
-            <input type="hidden" name="restaurantId" value={restaurant.id} />
-
-            {restaurant.menuCategories.length === 0 ? (
-              <p className="mt-4 text-sm text-gray-600">Create a category first, then you can add food to it.</p>
-            ) : (
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label htmlFor="item-category" className="block text-sm font-medium">Category</label>
-                  <select id="item-category" name="categoryId" required className="mt-2 w-full rounded-lg border px-3 py-2">
-                    {restaurant.menuCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="item-name" className="block text-sm font-medium">Item name</label>
-                  <input id="item-name" name="name" required placeholder="Jollof Rice" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <div>
-                  <label htmlFor="item-description" className="block text-sm font-medium">Description</label>
-                  <textarea id="item-description" name="description" placeholder="Optional description" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <div>
-                  <label htmlFor="item-price" className="block text-sm font-medium">Price (₦)</label>
-                  <input id="item-price" name="price" type="number" min="0.01" step="0.01" required placeholder="2500" className="mt-2 w-full rounded-lg border px-3 py-2" />
-                </div>
-                <button className="rounded-lg bg-black px-4 py-2 font-medium text-white" type="submit">Add item</button>
+        <section
+          aria-label="Dashboard overview"
+          className="flex w-full items-center bg-white"
+        >
+          <div className="flex w-full flex-col gap-3">
+            <div className="shrink-0">
+              <div className="relative h-[56px] w-[56px] shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-[56px] w-[56px] rounded-full object-cover" />
+                ) : (
+                  <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#EAEAEA] text-lg font-semibold">
+                    {(user.firstName?.[0] || user.email[0]).toUpperCase()}
+                  </div>
+                )}
+                <DashboardProfileEditButton />
               </div>
-            )}
-          </form>
-        </section>
-
-        <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div>
-            <h2 className="text-2xl font-semibold">Menu</h2>
-            <p className="mt-1 text-sm text-gray-500">Items marked unavailable stay on the menu but cannot be ordered.</p>
-          </div>
-
-          {restaurant.menuCategories.length === 0 ? (
-            <p className="mt-6 rounded-lg bg-gray-50 p-4 text-gray-600">No menu categories yet.</p>
-          ) : (
-            <div className="mt-6 space-y-8">
-              {restaurant.menuCategories.map((category) => (
-                <div key={category.id}>
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
-                  {category.menuItems.length === 0 ? (
-                    <p className="mt-2 text-sm text-gray-500">No items in this category yet.</p>
-                  ) : (
-                    <div className="mt-3 divide-y rounded-lg border">
-                      {category.menuItems.map((item) => (
-                        <div key={item.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{item.name}</p>
-                              {!item.isAvailable && (
-                                <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Unavailable</span>
-                              )}
-                            </div>
-                            {item.description && <p className="mt-1 text-sm text-gray-500">{item.description}</p>}
-                            <p className="mt-2 font-semibold">₦{Number(item.price).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                          <form action={toggleMenuItemAvailability}>
-                            <input type="hidden" name="restaurantId" value={restaurant.id} />
-                            <input type="hidden" name="menuItemId" value={item.id} />
-                            <button type="submit" className="rounded-lg border px-3 py-2 text-sm font-medium">
-                              Mark {item.isAvailable ? "unavailable" : "available"}
-                            </button>
-                          </form>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
-          )}
+
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 xl:flex-nowrap">
+              <h1 className="whitespace-nowrap text-[22px] font-normal leading-none tracking-[-0.052em] text-black">
+                Welcome, <span className="tracking-[-0.035em]">{displayName}</span>
+              </h1>
+              <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black">
+                <Store className="h-3 w-3" strokeWidth={2.3} />
+                {roleLabel}
+              </div>
+
+              <div className="hidden min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none active:cursor-grabbing sm:inline-flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <span className="shrink-0 text-[#808080]">Profile</span>
+                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
+                <span className="shrink-0 text-[#808080]">All Restaurants</span>
+                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
+                <span className="shrink-0 font-semibold tracking-[-2%] text-black">{membership.restaurant.name}</span>
+              </div>
+
+              <RestaurantHoursStatus
+                openingTime={membership.restaurant.openingTime}
+                closingTime={membership.restaurant.closingTime}
+                operatingDays={membership.restaurant.operatingDays}
+                timezone={membership.restaurant.timezone}
+              />
+
+              <div className="hidden min-w-4 flex-1 xl:block" />
+
+              <RestaurantPayoutSettingsButton
+                restaurantId={restaurantId}
+                bankName={membership.restaurant.payoutBankName}
+                bankCode={membership.restaurant.payoutBankCode}
+                accountName={membership.restaurant.payoutAccountName}
+                accountNumber={membership.restaurant.payoutAccountNumber}
+                payoutVerified={Boolean(
+                  membership.restaurant.paystackSubaccountCode &&
+                  membership.restaurant.payoutVerifiedAt
+                )}
+              />
+
+              <Link
+                href="/customer"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-semibold leading-none tracking-[-0.02em] text-black"
+              >
+                <RefreshCw className="h-3 w-3" strokeWidth={2.3} />
+                Switch to Customer
+              </Link>
+            </div>
+          </div>
         </section>
+
+        <div className="h-[32px]" />
+
+        <RestaurantDashboardGrid
+          restaurantId={restaurantId}
+          restaurant={{
+            name: membership.restaurant.name,
+            description: membership.restaurant.description,
+            phoneNumber: membership.restaurant.phoneNumber,
+            address: membership.restaurant.address,
+            imageUrl: membership.restaurant.imageUrl,
+            latitude: membership.restaurant.latitude,
+            longitude: membership.restaurant.longitude,
+            isVerified: membership.restaurant.isVerified,
+            openingTime: membership.restaurant.openingTime,
+            closingTime: membership.restaurant.closingTime,
+            operatingDays: membership.restaurant.operatingDays,
+            timezone: membership.restaurant.timezone,
+            payoutBankName: membership.restaurant.payoutBankName,
+            payoutBankCode: membership.restaurant.payoutBankCode,
+            payoutAccountName: membership.restaurant.payoutAccountName,
+            payoutAccountNumber: membership.restaurant.payoutAccountNumber,
+            payoutRecipientCode: membership.restaurant.payoutRecipientCode,
+            paystackSubaccountCode: membership.restaurant.paystackSubaccountCode,
+            paystackSubaccountId: membership.restaurant.paystackSubaccountId,
+            payoutVerifiedAt: membership.restaurant.payoutVerifiedAt?.toISOString() ?? null,
+          }}
+          verificationSteps={verificationSteps}
+        />
+
+        <div className="h-[168px]" />
       </div>
     </main>
   );

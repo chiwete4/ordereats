@@ -1,0 +1,329 @@
+import "server-only";
+
+import crypto from "crypto";
+
+const PAYSTACK_BASE_URL = "https://api.paystack.co";
+
+type PaystackEnvelope<T> = {
+  status: boolean;
+  message: string;
+  data: T;
+};
+
+export type PaystackBank = {
+  id: number;
+  name: string;
+  code: string;
+  slug?: string;
+  type?: string;
+  currency?: string;
+  active?: boolean;
+  is_deleted?: boolean;
+  country?: string;
+};
+
+export type PaystackResolvedAccount = {
+  account_number: string;
+  account_name: string;
+  bank_id?: number;
+};
+
+export type PaystackTransferRecipient = {
+  id: number;
+  recipient_code: string;
+  name: string;
+  active: boolean;
+  currency: string;
+  type: string;
+  details?: {
+    account_number?: string;
+    account_name?: string | null;
+    bank_code?: string;
+    bank_name?: string;
+  };
+};
+
+export type PaystackSubaccount = {
+  id: number;
+  subaccount_code: string;
+  business_name: string;
+  settlement_bank: string;
+  account_number: string;
+  percentage_charge: number;
+  active: boolean;
+};
+
+export const PAPERBAG_PLATFORM_COMMISSION_PERCENT = 5;
+
+
+export type PaystackTransactionInitialization = {
+  authorization_url: string;
+  access_code: string;
+  reference: string;
+};
+
+export type PaystackVerifiedTransaction = {
+  id: number;
+  reference: string;
+  status: string;
+  amount: number;
+  fees?: number | null;
+  paid_at?: string | null;
+  currency?: string;
+};
+
+export type PaystackFlatSplitSubaccount = {
+  subaccount: string;
+  share: number;
+};
+
+export async function initializePaystackTransaction({
+  email,
+  amountKobo,
+  reference,
+  callbackUrl,
+  subaccounts,
+  metadata,
+}: {
+  email: string;
+  amountKobo: number;
+  reference: string;
+  callbackUrl?: string;
+  subaccounts: PaystackFlatSplitSubaccount[];
+  metadata?: Record<string, unknown>;
+}) {
+  const response = await paystackFetch<PaystackTransactionInitialization>(
+    "/transaction/initialize",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        amount: String(amountKobo),
+        reference,
+        ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+        metadata: JSON.stringify(metadata ?? {}),
+        split: {
+          type: "flat",
+          bearer_type: "account",
+          subaccounts,
+          reference: `paperbag-${reference}`,
+        },
+      }),
+    }
+  );
+
+  return response.data;
+}
+
+export async function verifyPaystackTransaction(reference: string) {
+  const response = await paystackFetch<PaystackVerifiedTransaction>(
+    `/transaction/verify/${encodeURIComponent(reference)}`
+  );
+  return response.data;
+}
+
+export type PaystackTransfer = {
+  id: number;
+  amount: number;
+  currency: string;
+  reference: string;
+  transfer_code?: string;
+  status: string;
+  recipient?: string | PaystackTransferRecipient;
+};
+
+export function isPaystackConfigured() {
+  return Boolean(process.env.PAYSTACK_SECRET_KEY?.trim());
+}
+
+function secretKey() {
+  const key = process.env.PAYSTACK_SECRET_KEY?.trim();
+  if (!key) {
+    throw new Error(
+      "Paystack is not configured. Add PAYSTACK_SECRET_KEY to your environment."
+    );
+  }
+  return key;
+}
+
+async function paystackFetch<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<PaystackEnvelope<T>> {
+  const response = await fetch(`${PAYSTACK_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      "Content-Type": "application/json",
+      ...(init.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  const payload = (await response.json()) as
+    | PaystackEnvelope<T>
+    | { status?: boolean; message?: string };
+
+  if (!response.ok || !payload.status || !("data" in payload)) {
+    throw new Error(payload.message || "Paystack could not complete that request.");
+  }
+
+  return payload as PaystackEnvelope<T>;
+}
+
+export async function listNigerianBanks() {
+  const response = await paystackFetch<PaystackBank[]>(
+    "/bank?country=nigeria&currency=NGN&perPage=100"
+  );
+
+  return response.data
+    .filter((bank) => bank.active !== false && bank.is_deleted !== true)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function resolveNigerianAccount(
+  accountNumber: string,
+  bankCode: string
+) {
+  const params = new URLSearchParams({
+    account_number: accountNumber,
+    bank_code: bankCode,
+  });
+  const response = await paystackFetch<PaystackResolvedAccount>(
+    `/bank/resolve?${params.toString()}`
+  );
+  return response.data;
+}
+
+export async function createPaystackSubaccount({
+  businessName,
+  accountNumber,
+  bankCode,
+  restaurantId,
+}: {
+  businessName: string;
+  accountNumber: string;
+  bankCode: string;
+  restaurantId: string;
+}) {
+  const response = await paystackFetch<PaystackSubaccount>("/subaccount", {
+    method: "POST",
+    body: JSON.stringify({
+      business_name: businessName,
+      settlement_bank: bankCode,
+      account_number: accountNumber,
+      percentage_charge: PAPERBAG_PLATFORM_COMMISSION_PERCENT,
+      description: `Paperbag restaurant ${restaurantId}`,
+      metadata: JSON.stringify({
+        restaurantId,
+        product: "paperbag",
+      }),
+    }),
+  });
+  return response.data;
+}
+
+export async function updatePaystackSubaccount({
+  idOrCode,
+  businessName,
+  accountNumber,
+  bankCode,
+}: {
+  idOrCode: string;
+  businessName: string;
+  accountNumber: string;
+  bankCode: string;
+}) {
+  const response = await paystackFetch<PaystackSubaccount>(
+    `/subaccount/${encodeURIComponent(idOrCode)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        business_name: businessName,
+        bank_code: bankCode,
+        account_number: accountNumber,
+        percentage_charge: PAPERBAG_PLATFORM_COMMISSION_PERCENT,
+        active: true,
+      }),
+    }
+  );
+  return response.data;
+}
+
+export async function createNigerianTransferRecipient({
+  name,
+  accountNumber,
+  bankCode,
+  restaurantId,
+}: {
+  name: string;
+  accountNumber: string;
+  bankCode: string;
+  restaurantId: string;
+}) {
+  const response = await paystackFetch<PaystackTransferRecipient>(
+    "/transferrecipient",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        type: "nuban",
+        name,
+        account_number: accountNumber,
+        bank_code: bankCode,
+        currency: "NGN",
+        metadata: {
+          restaurantId,
+          product: "paperbag",
+        },
+      }),
+    }
+  );
+  return response.data;
+}
+
+export async function verifyPaystackTransfer(reference: string) {
+  const response = await paystackFetch<PaystackTransfer>(
+    `/transfer/verify/${encodeURIComponent(reference)}`
+  );
+  return response.data;
+}
+
+export async function initiatePaystackTransfer({
+  amountKobo,
+  recipientCode,
+  reference,
+  reason,
+}: {
+  amountKobo: number;
+  recipientCode: string;
+  reference: string;
+  reason: string;
+}) {
+  const response = await paystackFetch<PaystackTransfer>("/transfer", {
+    method: "POST",
+    body: JSON.stringify({
+      source: "balance",
+      amount: amountKobo,
+      recipient: recipientCode,
+      reference,
+      reason,
+      currency: "NGN",
+    }),
+  });
+  return response.data;
+}
+
+export function verifyPaystackWebhook(rawBody: string, signature: string | null) {
+  if (!signature) return false;
+
+  const expected = crypto
+    .createHmac("sha512", secretKey())
+    .update(rawBody)
+    .digest("hex");
+
+  const expectedBuffer = Buffer.from(expected);
+  const suppliedBuffer = Buffer.from(signature);
+
+  if (expectedBuffer.length !== suppliedBuffer.length) return false;
+  return crypto.timingSafeEqual(expectedBuffer, suppliedBuffer);
+}

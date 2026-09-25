@@ -1,0 +1,1092 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ReactNode } from "react";
+import {
+  ArrowRight,
+  Ban,
+  Bike,
+  Heart,
+  PackageCheck,
+  Search,
+  ShoppingBag,
+  Star,
+  Store,
+  UserRound,
+} from "lucide-react";
+
+import { addRestaurantStaff } from "@/actions/staff";
+import { FeaturedMenuManager } from "@/components/featured-menu-manager";
+import { DashboardSectionExplorer, type DashboardExplorerItem } from "@/components/dashboard-section-explorer";
+import { PerformanceChart, type PerformanceDay } from "@/components/performance-chart";
+import { PerformanceMetrics } from "@/components/performance-metrics";
+import { RiderAssignButton, StaffMoreMenu } from "@/components/dashboard-action-controls";
+import { RestaurantVerificationCard } from "@/components/restaurant-verification-card";
+import { RestaurantOrderPanels, type DashboardOrder } from "@/components/restaurant-order-panels";
+import { LiveDeliveryMap, type LiveDeliveryState } from "@/components/live-delivery-map";
+import { StaffUserSearch } from "@/components/staff-user-search";
+import { prisma } from "@/lib/prisma";
+
+type VerificationStep = {
+  label: string;
+  complete: boolean;
+};
+
+type RestaurantForDashboard = {
+  name: string;
+  description: string | null;
+  phoneNumber: string | null;
+  address: string | null;
+  imageUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  isVerified: boolean;
+  openingTime: string;
+  closingTime: string;
+  operatingDays: number[];
+  timezone: string;
+  payoutBankName: string | null;
+  payoutBankCode: string | null;
+  payoutAccountName: string | null;
+  payoutAccountNumber: string | null;
+  payoutRecipientCode: string | null;
+  paystackSubaccountCode: string | null;
+  paystackSubaccountId: string | null;
+  payoutVerifiedAt: string | null;
+};
+
+const moneyFormatter = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  maximumFractionDigits: 0,
+});
+
+function money(value: number | string | { toString(): string }) {
+  return moneyFormatter.format(Number(value));
+}
+
+function personName(person: { firstName: string; lastName: string; email: string }) {
+  const full = [person.firstName, person.lastName].filter(Boolean).join(" ").trim();
+  return full || person.email;
+}
+
+function DashboardHeading({
+  title,
+  count,
+  expand,
+}: {
+  title: string;
+  count?: number;
+  expand?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[14px] font-semibold leading-none tracking-[-0.02em] text-black">
+          {title}
+        </h2>
+        {typeof count === "number" ? (
+          <span className="text-[12px] font-medium leading-none tracking-[-0.01em] text-[#9A9A9A]">
+            {count.toLocaleString()}
+          </span>
+        ) : null}
+      </div>
+      {expand ?? null}
+    </div>
+  );
+}
+
+function OrderThumb({
+  src,
+  alt,
+}: {
+  src?: string | null;
+  alt: string;
+}) {
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className="h-9 w-9 shrink-0 rounded-[7px] border border-[#EAEAEA] object-cover"
+    />
+  ) : (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[7px] border border-[#EAEAEA] bg-white">
+      <ShoppingBag className="h-4 w-4" strokeWidth={2.3} />
+    </span>
+  );
+}
+
+function ReviewsPanel({
+  restaurantId,
+  complaintsOpen,
+  mealUnread,
+  restaurantRating,
+  explorerItems,
+}: {
+  restaurantId: string;
+  complaintsOpen: number;
+  mealUnread: number;
+  restaurantRating: number | null;
+  explorerItems: DashboardExplorerItem[];
+}) {
+  const rows = [
+    { icon: Heart, title: "Customer Complaints", detail: `${complaintsOpen.toLocaleString()} unresolved`, tone: "bg-red-50 text-red-500" },
+    { icon: ShoppingBag, title: "Meal Reviews", detail: `${mealUnread.toLocaleString()} unread`, tone: "bg-green-50 text-green-500" },
+    { icon: Star, title: "Restaurant Ratings", detail: restaurantRating === null ? "No ratings yet" : `${restaurantRating.toFixed(1)}/5 stars`, tone: "bg-yellow-50 text-yellow-500" },
+  ];
+
+  return (
+    <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
+      <DashboardHeading
+        title="Reviews"
+        expand={
+          <DashboardSectionExplorer
+            title="Reviews"
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "reviews" }}
+          />
+        }
+      />
+      <div className="mt-5 divide-y divide-[#DEDEDE]">
+        {rows.map((row) => {
+          const Icon = row.icon;
+          return (
+            <div key={row.title} className="flex items-center gap-4 py-4 first:pt-0">
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] ${row.tone}`}>
+                <Icon className="h-5 w-5" strokeWidth={2.3} />
+              </span>
+              <div>
+                <p className="text-[12px] font-semibold tracking-[-0.02em] text-black">{row.title}</p>
+                <p className="mt-1 text-[10px] font-medium text-[#808080]">{row.detail}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StaffPanel({
+  restaurantId,
+  staff,
+  explorerItems,
+}: {
+  restaurantId: string;
+  staff: Array<any>;
+  explorerItems: DashboardExplorerItem[];
+}) {
+  const visible = staff.filter((member) => member.role !== "RIDER");
+
+  return (
+    <section className="bg-white">
+      <DashboardHeading
+        title="Your Staff"
+        count={visible.length}
+        expand={
+          <DashboardSectionExplorer
+            title="Your Staff"
+            count={visible.length}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "staff" }}
+          />
+        }
+      />
+
+      <details className="group mt-4">
+        <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-[8px] border-2 border-[#EAEAEA] px-3 text-[10px] font-medium text-[#9A9A9A]">
+          <Search className="h-3.5 w-3.5" strokeWidth={2.3} /> Search or Add New...
+        </summary>
+        <form action={addRestaurantStaff} className="mt-3 rounded-[10px] border border-[#EAEAEA] p-3">
+          <input type="hidden" name="restaurantId" value={restaurantId} />
+          <input type="hidden" name="role" value="STAFF" />
+          <StaffUserSearch restaurantId={restaurantId} />
+          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">Add Staff Member</button>
+        </form>
+      </details>
+
+      <div className="mt-4 divide-y divide-[#EAEAEA]">
+        {visible.slice(0, 6).map((member) => (
+          <div key={member.id} className="flex items-center gap-3 py-4 first:pt-0">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EFEFEF]">
+              <UserRound className="h-4 w-4 text-[#808080]" strokeWidth={2.3} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-semibold text-black">{personName(member.user)}</p>
+              <p className="mt-1 text-[9px] font-medium uppercase text-[#808080]">{member.role} · {member.isActive ? "Active" : "Inactive"}</p>
+            </div>
+            <StaffMoreMenu
+              restaurantId={restaurantId}
+              membershipId={member.id}
+              name={personName(member.user)}
+              isActive={member.isActive}
+              role={member.role}
+              disabled={member.role === "OWNER"}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RidersPanel({
+  restaurantId,
+  riders,
+  assignableOrders,
+  explorerItems,
+}: {
+  restaurantId: string;
+  riders: Array<any>;
+  assignableOrders: Array<{ id: string; orderNumber: string; total: string }>;
+  explorerItems: DashboardExplorerItem[];
+}) {
+  return (
+    <section className="bg-white">
+      <DashboardHeading
+        title="Riders on Duty"
+        count={riders.length}
+        expand={
+          <DashboardSectionExplorer
+            title="Riders on Duty"
+            count={riders.length}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "riders" }}
+          />
+        }
+      />
+
+      <details id="rider-add-details" className="group mt-4">
+        <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-[8px] border-2 border-[#EAEAEA] px-3 text-[10px] font-medium text-[#9A9A9A]">
+          <Search className="h-3.5 w-3.5" strokeWidth={2.3} /> Search or Add New...
+        </summary>
+        <form action={addRestaurantStaff} className="mt-3 rounded-[10px] border border-[#EAEAEA] p-3">
+          <input type="hidden" name="restaurantId" value={restaurantId} />
+          <input type="hidden" name="role" value="RIDER" />
+          <StaffUserSearch restaurantId={restaurantId} />
+          <button className="mt-3 h-9 w-full rounded-[8px] bg-black text-[11px] font-semibold text-white">Add Rider</button>
+        </form>
+      </details>
+
+      <div className="mt-4 divide-y divide-[#EAEAEA]">
+        {riders.slice(0, 6).map((rider) => {
+          const delivering = rider.user.assignedDeliveries?.find(
+            (delivery: any) => !["DELIVERED", "CANCELLED"].includes(delivery.status)
+          );
+          return (
+            <div key={rider.id} className="flex items-center gap-3 py-4 first:pt-0">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EFEFEF]">
+                <Bike className="h-4 w-4 text-[#808080]" strokeWidth={2.3} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-semibold text-black">{personName(rider.user)}</p>
+                <p className={`mt-1 text-[9px] font-medium ${delivering ? "text-[#808080]" : "text-green-500"}`}>
+                  {delivering ? "Delivering an order" : rider.isActive ? "Available to deliver" : "Off duty"}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {!delivering && rider.isActive ? (
+                  <RiderAssignButton
+                    restaurantId={restaurantId}
+                    riderId={rider.userId}
+                    riderName={personName(rider.user)}
+                    orders={assignableOrders}
+                  />
+                ) : null}
+                <StaffMoreMenu
+                  restaurantId={restaurantId}
+                  membershipId={rider.id}
+                  name={personName(rider.user)}
+                  isActive={rider.isActive}
+                  role="RIDER"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function PastOrdersPanel({
+  restaurantId,
+  orders,
+  count,
+  explorerItems,
+}: {
+  restaurantId: string;
+  orders: Array<any>;
+  count: number;
+  explorerItems: DashboardExplorerItem[];
+}) {
+  return (
+    <section className="rounded-[12px] bg-[#F3F3F3] px-6 py-6 sm:px-8">
+      <DashboardHeading
+        title="All Past Orders"
+        count={count}
+        expand={
+          <DashboardSectionExplorer
+            title="All Past Orders"
+            count={count}
+            items={explorerItems}
+            pagination={{ restaurantId, kind: "past" }}
+          />
+        }
+      />
+
+      <div className="mt-5 grid gap-x-8 sm:grid-cols-2">
+        {orders.length === 0 ? (
+          <p className="text-[12px] font-medium text-[#808080]">No past orders yet.</p>
+        ) : (
+          orders.slice(0, 6).map((row) => {
+            const image = row.items[0]?.menuItem?.imageUrl;
+            const statusTone = row.status === "DELIVERED" ? "text-green-500" : row.status === "CANCELLED" ? "text-red-500" : "text-[#808080]";
+            return (
+              <div key={row.id} className="flex items-center gap-3 border-b border-[#DEDEDE] py-4 first:pt-0">
+                <OrderThumb src={image} alt={row.items[0]?.name ?? "Order"} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[10px] font-semibold text-black">#{row.order.orderNumber}</p>
+                  <p className="mt-1 truncate text-[9px] font-medium text-[#808080]">{money(row.subtotal)} total · {row.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items</p>
+                </div>
+                <span className={`inline-flex shrink-0 items-center gap-1 text-[9px] font-semibold ${statusTone}`}>
+                  {row.status === "DELIVERED" ? <>Delivered <PackageCheck className="h-3 w-3" strokeWidth={2.3} /></> : row.status === "CANCELLED" ? <>Cancelled <Ban className="h-3 w-3" strokeWidth={2.3} /></> : <>Picked up <Store className="h-3 w-3" strokeWidth={2.3} /></>}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PerformancePanel({
+  weeklyDays,
+  revenueToday,
+  totalOrders,
+  totalCustomers,
+  explorerItems,
+}: {
+  weeklyDays: PerformanceDay[];
+  revenueToday: number;
+  totalOrders: number;
+  totalCustomers: number;
+  explorerItems: DashboardExplorerItem[];
+}) {
+  return (
+    <section className="bg-white">
+      <DashboardHeading
+        title="Performance"
+        expand={<DashboardSectionExplorer title="Performance" items={explorerItems} />}
+      />
+      <span className="-mt-3 ml-[88px] block text-[12px] font-medium text-[#9A9A9A]">Past 7 days</span>
+
+      <PerformanceChart days={weeklyDays} />
+
+      <div className="mt-3">
+        <DashboardSectionExplorer
+          title="Performance"
+          items={explorerItems}
+          triggerLabel={
+            <span className="inline-flex items-center justify-center gap-1.5">
+              All-time performance
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.3} />
+            </span>
+          }
+          triggerClassName="h-8 w-full rounded-[8px] border border-[#EAEAEA] text-[10px] font-semibold text-black"
+        />
+      </div>
+
+      <PerformanceMetrics
+        revenue={money(revenueToday)}
+        orders={totalOrders.toLocaleString()}
+        customers={totalCustomers.toLocaleString()}
+      />
+    </section>
+  );
+}
+
+export async function RestaurantDashboardGrid({
+  restaurantId,
+  restaurant,
+  verificationSteps,
+}: {
+  restaurantId: string;
+  restaurant: RestaurantForDashboard;
+  verificationSteps: VerificationStep[];
+}) {
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - 6);
+
+  const [
+    orders,
+    staff,
+    menuItems,
+    featuredCombos,
+    categories,
+    totalOrders,
+    pendingOrderCount,
+    activeOrderCount,
+    pastOrderCount,
+    customerRows,
+    weeklyRows,
+    allRevenueRows,
+    reviews,
+    complaints,
+    complaintsOpenCount,
+    mealUnreadCount,
+    restaurantRatingAggregate,
+  ] = await Promise.all([
+    prisma.restaurantOrder.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 60,
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            customerId: true,
+            deliveryLatitude: true,
+            deliveryLongitude: true,
+            payment: { select: { status: true } },
+          },
+        },
+        items: {
+          include: {
+            menuItem: {
+              select: {
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        delivery: {
+          include: {
+            rider: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.restaurantStaff.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            assignedDeliveries: {
+              where: {
+                status: {
+                  notIn: ["DELIVERED", "CANCELLED"],
+                },
+              },
+              select: {
+                id: true,
+                status: true,
+              },
+              take: 1,
+            },
+          },
+        },
+      },
+    }),
+    prisma.menuItem.findMany({
+      where: { restaurantId, isArchived: false },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.featuredCombo.findMany({
+      where: { restaurantId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        items: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            menuItem: true,
+          },
+        },
+        reviews: {
+          select: { rating: true },
+        },
+      },
+    }),
+    prisma.menuCategory.findMany({
+      where: {
+        restaurantId,
+        name: { not: "Archived" },
+      },
+      orderBy: { createdAt: "asc" },
+      include: {
+        _count: {
+          select: {
+            menuItems: true,
+          },
+        },
+      },
+    }),
+    prisma.restaurantOrder.count({ where: { restaurantId } }),
+    prisma.restaurantOrder.count({
+      where: { restaurantId, status: "CONFIRMED" },
+    }),
+    prisma.restaurantOrder.count({
+      where: {
+        restaurantId,
+        status: { in: ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"] },
+      },
+    }),
+    prisma.restaurantOrder.count({
+      where: {
+        restaurantId,
+        status: { in: ["DELIVERED", "PICKED_UP", "CANCELLED"] },
+      },
+    }),
+    prisma.restaurantOrder.findMany({
+      where: { restaurantId },
+      select: {
+        order: {
+          select: {
+            customerId: true,
+          },
+        },
+      },
+    }),
+    prisma.restaurantOrder.findMany({
+      where: {
+        restaurantId,
+        createdAt: { gte: weekStart },
+        status: { not: "CANCELLED" },
+      },
+      select: {
+        createdAt: true,
+        subtotal: true,
+        order: {
+          select: {
+            customerId: true,
+            payment: { select: { status: true } },
+          },
+        },
+      },
+    }),
+    prisma.restaurantOrder.findMany({
+      where: {
+        restaurantId,
+        status: { not: "CANCELLED" },
+      },
+      select: {
+        subtotal: true,
+        order: {
+          select: {
+            payment: { select: { status: true } },
+          },
+        },
+      },
+    }),
+    prisma.review.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        menuItem: { select: { name: true } },
+        featuredCombo: { select: { name: true } },
+        restaurantOrder: {
+          select: {
+            order: { select: { orderNumber: true } },
+          },
+        },
+      },
+    }),
+    prisma.customerComplaint.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        restaurantOrder: {
+          select: {
+            order: { select: { orderNumber: true } },
+          },
+        },
+      },
+    }),
+    prisma.customerComplaint.count({
+      where: {
+        restaurantId,
+        status: "OPEN",
+      },
+    }),
+    prisma.review.count({
+      where: {
+        restaurantId,
+        isRead: false,
+        target: {
+          in: ["MENU_ITEM", "FEATURED_COMBO"],
+        },
+      },
+    }),
+    prisma.review.aggregate({
+      where: {
+        restaurantId,
+        target: "RESTAURANT",
+      },
+      _avg: {
+        rating: true,
+      },
+    }),
+  ]);
+
+  const pendingOrders = orders.filter((row) => row.status === "CONFIRMED");
+  const activeOrderPriority: Record<string, number> = {
+    PREPARING: 0,
+    READY_FOR_PICKUP: 1,
+    OUT_FOR_DELIVERY: 2,
+  };
+  const activeOrders = orders
+    .filter((row) =>
+      ["PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"].includes(row.status)
+    )
+    .sort((a, b) => {
+      const statusDifference =
+        (activeOrderPriority[a.status] ?? 99) - (activeOrderPriority[b.status] ?? 99);
+      if (statusDifference !== 0) return statusDifference;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+  const pastOrders = orders
+    .filter((row) =>
+      ["DELIVERED", "PICKED_UP", "CANCELLED"].includes(row.status)
+    )
+    .sort((a, b) => {
+      const completedAt = (row: (typeof orders)[number]) =>
+        row.status === "DELIVERED"
+          ? row.delivery?.deliveredAt?.getTime() ?? row.updatedAt.getTime()
+          : row.updatedAt.getTime();
+
+      return completedAt(b) - completedAt(a);
+    });
+  const riders = staff.filter((member) => member.role === "RIDER");
+  const activeLiveDeliveries = orders
+    .filter(
+      (row) =>
+        row.status === "OUT_FOR_DELIVERY" &&
+        row.delivery?.riderId &&
+        !["DELIVERED", "CANCELLED"].includes(row.delivery.status) &&
+        typeof row.delivery.lastLatitude === "number" &&
+        typeof row.delivery.lastLongitude === "number" &&
+        row.delivery.lastLocationAt
+    )
+    .map((row) => ({
+      delivery: row.delivery!,
+      orderNumber: row.order.orderNumber,
+      deliveryLatitude: row.order.deliveryLatitude,
+      deliveryLongitude: row.order.deliveryLongitude,
+    }))
+    .sort((a, b) => {
+      const aTime = a.delivery.lastLocationAt?.getTime() ?? a.delivery.updatedAt.getTime();
+      const bTime = b.delivery.lastLocationAt?.getTime() ?? b.delivery.updatedAt.getTime();
+      return bTime - aTime;
+    });
+
+  const initialLiveDeliveries: LiveDeliveryState[] = activeLiveDeliveries.map(
+    ({ delivery, orderNumber, deliveryLatitude, deliveryLongitude }) => ({
+      id: delivery.id,
+      status: delivery.status,
+      latitude: delivery.lastLatitude,
+      longitude: delivery.lastLongitude,
+      lastLocationAt: delivery.lastLocationAt?.toISOString() ?? null,
+      riderName: delivery.rider ? personName(delivery.rider) : "Assigned rider",
+      orderNumber,
+      deliveryLatitude,
+      deliveryLongitude,
+    })
+  );
+
+  const orderRiders = riders.map((rider) => {
+    const activeDelivery = rider.user.assignedDeliveries?.[0];
+    const deliveryOrder = activeDelivery
+      ? orders.find((row) => row.delivery?.id === activeDelivery.id)
+      : null;
+
+    return {
+      id: rider.userId,
+      name: personName(rider.user),
+      isActive: rider.isActive,
+      deliveringOrderNumber: activeDelivery
+        ? deliveryOrder?.order.orderNumber ?? "Active order"
+        : null,
+    };
+  });
+
+  const assignableOrders = activeOrders
+    .filter((row) => row.status === "OUT_FOR_DELIVERY" && !row.delivery?.riderId)
+    .map((row) => ({
+      id: row.id,
+      orderNumber: row.order.orderNumber,
+      total: money(row.subtotal),
+    }));
+
+  const totalCustomers = new Set(customerRows.map((row) => row.order.customerId)).size;
+  const successfulAllRevenue = allRevenueRows.filter((row) => row.order.payment?.status === "SUCCESS");
+  const allTimeRevenue = successfulAllRevenue.reduce((sum, row) => sum + Number(row.subtotal), 0);
+
+  const revenueToday = weeklyRows
+    .filter((row) => row.createdAt >= todayStart && row.order.payment?.status === "SUCCESS")
+    .reduce((sum, row) => sum + Number(row.subtotal), 0);
+
+  const menuItemData = menuItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    price: Number(item.price),
+    imageUrl: item.imageUrl,
+    isAvailable: item.isAvailable,
+    readyMin: item.readyMin,
+    readyMax: item.readyMax,
+    deliverySeconds: item.deliverySeconds,
+    categoryId: item.categoryId,
+    categoryName: item.category.name,
+  }));
+
+  const comboData = featuredCombos.map((combo) => {
+    const ratingAverage = combo.reviews.length
+      ? combo.reviews.reduce((sum, review) => sum + review.rating, 0) / combo.reviews.length
+      : null;
+
+    return {
+      id: combo.id,
+      name: combo.name,
+      readyMin: combo.readyMin,
+      readyMax: combo.readyMax,
+      deliverySeconds: combo.deliverySeconds,
+      ratingAverage,
+      ratingCount: combo.reviews.length,
+      items: combo.items.map((entry) => ({
+        id: entry.id,
+        quantity: entry.quantity,
+        menuItem: {
+          id: entry.menuItem.id,
+          name: entry.menuItem.name,
+          price: Number(entry.menuItem.price),
+          imageUrl: entry.menuItem.imageUrl,
+          isAvailable: entry.menuItem.isAvailable,
+          readyMin: entry.menuItem.readyMin,
+          readyMax: entry.menuItem.readyMax,
+          deliverySeconds: entry.menuItem.deliverySeconds,
+          categoryId: entry.menuItem.categoryId,
+          categoryName: categories.find((category) => category.id === entry.menuItem.categoryId)?.name ?? "Menu",
+        },
+      })),
+    };
+  });
+
+  const categoryData = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    itemCount: menuItems.filter((item) => item.categoryId === category.id).length,
+  }));
+
+  const pastOrderData = pastOrders.slice(0, 12).map((row) => ({
+    id: row.id,
+    orderNumber: row.order.orderNumber,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+  }));
+
+  function orderExplorerItems(rows: Array<any>): DashboardExplorerItem[] {
+    return rows.map((row) => {
+      const itemCount = row.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+      const imageUrl = row.items[0]?.menuItem?.imageUrl ?? null;
+      const tone =
+        row.status === "DELIVERED"
+          ? "green"
+          : row.status === "CANCELLED"
+            ? "red"
+            : row.status === "READY_FOR_PICKUP"
+              ? "amber"
+              : "neutral";
+
+      return {
+        id: row.id,
+        title: `#${row.order.orderNumber}`,
+        subtitle: `${itemCount} items · ${money(row.subtotal)} total`,
+        status: row.status.replaceAll("_", " "),
+        statusTone: tone,
+        imageUrl,
+        details: [
+          ...row.items.map((item: any) => ({
+            label: `x${item.quantity} ${item.name}`,
+            value: money(Number(item.unitPrice) * item.quantity),
+          })),
+          { label: "Placed", value: row.createdAt.toLocaleString() },
+          { label: "Payment", value: row.order.payment?.status ?? "No payment record" },
+        ],
+      } satisfies DashboardExplorerItem;
+    });
+  }
+
+  const pendingExplorerItems = orderExplorerItems(pendingOrders).slice(0, 20);
+  const activeExplorerItems = orderExplorerItems(activeOrders).slice(0, 20);
+  const pastExplorerItems = orderExplorerItems(pastOrders).slice(0, 20);
+
+  const serializeOrder = (row: any): DashboardOrder => ({
+    id: row.id,
+    orderNumber: row.order.orderNumber,
+    subtotal: Number(row.subtotal),
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    items: row.items.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      imageUrl: item.menuItem?.imageUrl ?? null,
+    })),
+  });
+
+  const pendingOrderData = pendingOrders.map(serializeOrder);
+  const activeOrderData = activeOrders.map(serializeOrder);
+
+  const staffExplorerItems: DashboardExplorerItem[] = staff
+    .filter((member) => member.role !== "RIDER")
+    .slice(0, 20)
+    .map((member) => ({
+      id: member.id,
+      title: personName(member.user),
+      subtitle: member.user.email,
+      status: member.isActive ? "Active" : "Inactive",
+      statusTone: (member.isActive ? "green" : "neutral") as DashboardExplorerItem["statusTone"],
+      details: [
+        { label: "Role", value: member.role },
+        { label: "Access", value: member.isActive ? "Active" : "Inactive" },
+        { label: "Email", value: member.user.email },
+      ],
+    }));
+
+  const riderExplorerItems: DashboardExplorerItem[] = riders.slice(0, 20).map((rider) => {
+    const delivering = rider.user.assignedDeliveries?.[0];
+    return {
+      id: rider.id,
+      title: personName(rider.user),
+      subtitle: rider.user.email,
+      status: delivering ? "Delivering" : rider.isActive ? "Available" : "Off duty",
+      statusTone: (delivering ? "amber" : rider.isActive ? "green" : "neutral") as DashboardExplorerItem["statusTone"],
+      details: [
+        { label: "Role", value: "RIDER" },
+        { label: "Access", value: rider.isActive ? "Active" : "Inactive" },
+        { label: "Delivery", value: delivering ? "Currently delivering an order" : "No active delivery" },
+      ],
+    };
+  });
+
+  const restaurantRating = restaurantRatingAggregate._avg.rating;
+  const complaintsOpen = complaintsOpenCount;
+  const mealUnread = mealUnreadCount;
+
+  const reviewExplorerItems: DashboardExplorerItem[] = [
+    ...complaints.map((complaint) => ({
+      id: `complaint-${complaint.id}`,
+      title: complaint.subject,
+      subtitle: `${personName(complaint.customer)}${complaint.restaurantOrder ? ` · #${complaint.restaurantOrder.order.orderNumber}` : ""}`,
+      status: complaint.status,
+      statusTone: (complaint.status === "OPEN" ? "red" : "green") as DashboardExplorerItem["statusTone"],
+      body: complaint.body,
+      details: [
+        { label: "Type", value: "Customer complaint" },
+        { label: "Submitted", value: complaint.createdAt.toLocaleString() },
+      ],
+    })),
+    ...reviews.map((review) => ({
+      id: `review-${review.id}`,
+      title:
+        review.target === "RESTAURANT"
+          ? "Restaurant rating"
+          : review.target === "FEATURED_COMBO"
+            ? review.featuredCombo?.name ?? "Featured combo review"
+            : review.menuItem?.name ?? "Meal review",
+      subtitle: `${personName(review.customer)}${review.restaurantOrder ? ` · #${review.restaurantOrder.order.orderNumber}` : ""}`,
+      status: `${review.rating}/5`,
+      statusTone: "green" as DashboardExplorerItem["statusTone"],
+      body: review.body,
+      details: [
+        { label: "Rating", value: `${review.rating}/5` },
+        { label: "Type", value: review.target.replaceAll("_", " ") },
+        { label: "Submitted", value: review.createdAt.toLocaleString() },
+      ],
+    })),
+  ].slice(0, 20);
+
+  const dayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+  const weeklyDays: PerformanceDay[] = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + index);
+    const next = new Date(date);
+    next.setDate(next.getDate() + 1);
+    const rows = weeklyRows.filter((row) => row.createdAt >= date && row.createdAt < next);
+    const paidRows = rows.filter((row) => row.order.payment?.status === "SUCCESS");
+    return {
+      label: dayFormatter.format(date).toUpperCase().slice(0, 3),
+      dateLabel: dateFormatter.format(date),
+      count: rows.length,
+      revenue: paidRows.reduce((sum, row) => sum + Number(row.subtotal), 0),
+      customers: new Set(rows.map((row) => row.order.customerId)).size,
+    };
+  });
+
+  const verificationComplete = verificationSteps.every((step) => step.complete);
+
+  const performanceExplorerItems: DashboardExplorerItem[] = [
+    {
+      id: "all-time",
+      title: "All-time performance",
+      subtitle: "Since this restaurant joined Paperbag",
+      status: "Live totals",
+      statusTone: "neutral",
+      details: [
+        { label: "Revenue", value: money(allTimeRevenue) },
+        { label: "Orders", value: totalOrders.toLocaleString() },
+        { label: "Customers", value: totalCustomers.toLocaleString() },
+      ],
+    },
+    ...weeklyDays.map((day) => ({
+      id: day.dateLabel,
+      title: day.dateLabel,
+      subtitle: `${day.count} orders`,
+      details: [
+        { label: "Orders", value: day.count.toLocaleString() },
+        { label: "Paid revenue", value: money(day.revenue) },
+        { label: "Customers", value: day.customers.toLocaleString() },
+      ],
+    })),
+  ];
+
+  return (
+    <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
+      <div className="flex min-w-0 flex-col gap-[20px]">
+        {!verificationComplete ? (
+          <div id="restaurant-verification">
+            <RestaurantVerificationCard
+              restaurantId={restaurantId}
+              restaurantName={restaurant.name}
+              imageUrl={restaurant.imageUrl}
+              description={restaurant.description}
+              phoneNumber={restaurant.phoneNumber}
+              address={restaurant.address}
+              bankName={restaurant.payoutBankName}
+              bankCode={restaurant.payoutBankCode}
+              accountName={restaurant.payoutAccountName}
+              accountNumber={restaurant.payoutAccountNumber}
+              payoutVerified={Boolean(
+                restaurant.paystackSubaccountCode && restaurant.payoutVerifiedAt
+              )}
+              canRequestPayout={false}
+              openingTime={restaurant.openingTime}
+              closingTime={restaurant.closingTime}
+              operatingDays={restaurant.operatingDays}
+              timezone={restaurant.timezone}
+              steps={verificationSteps}
+            />
+          </div>
+        ) : null}
+
+        <FeaturedMenuManager
+          restaurantId={restaurantId}
+          restaurant={{
+            name: restaurant.name,
+            address: restaurant.address,
+            imageUrl: restaurant.imageUrl,
+            isVerified: restaurant.isVerified,
+          }}
+          menuItems={menuItemData}
+          combos={comboData}
+          pastOrders={pastOrderData}
+          categories={categoryData}
+        />
+
+        <LiveDeliveryMap
+          restaurantId={restaurantId}
+          restaurantAddress={restaurant.address}
+          restaurantLatitude={restaurant.latitude}
+          restaurantLongitude={restaurant.longitude}
+          initialDeliveries={initialLiveDeliveries}
+        />
+
+        <ReviewsPanel
+          restaurantId={restaurantId}
+          complaintsOpen={complaintsOpen}
+          mealUnread={mealUnread}
+          restaurantRating={restaurantRating}
+          explorerItems={reviewExplorerItems}
+        />
+
+        <PastOrdersPanel
+          restaurantId={restaurantId}
+          orders={pastOrders}
+          count={pastOrderCount}
+          explorerItems={pastExplorerItems}
+        />
+      </div>
+
+      <div className="mt-[20px] flex min-w-0 flex-col gap-[60px] lg:mt-0">
+        <RestaurantOrderPanels
+          restaurantId={restaurantId}
+          pendingOrders={pendingOrderData}
+          activeOrders={activeOrderData}
+          pendingCount={pendingOrderCount}
+          activeCount={activeOrderCount}
+          pendingExplorerItems={pendingExplorerItems}
+          activeExplorerItems={activeExplorerItems}
+          riders={orderRiders}
+        />
+
+        <StaffPanel restaurantId={restaurantId} staff={staff} explorerItems={staffExplorerItems} />
+
+        <RidersPanel
+          restaurantId={restaurantId}
+          riders={riders}
+          assignableOrders={assignableOrders}
+          explorerItems={riderExplorerItems}
+        />
+
+        <PerformancePanel
+          weeklyDays={weeklyDays}
+          revenueToday={revenueToday}
+          totalOrders={totalOrders}
+          totalCustomers={totalCustomers}
+          explorerItems={performanceExplorerItems}
+        />
+      </div>
+    </div>
+  );
+}
