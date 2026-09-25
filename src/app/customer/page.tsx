@@ -322,7 +322,7 @@ export default async function CustomerPage() {
       return bTime - aTime;
     });
 
-  const trackingOrders: CustomerTrackingOrder[] = liveRows.map(({ row, orderNumber }) => ({
+  const trackingOrders: CustomerTrackingOrder[] = liveRows.map(({ row, orderNumber, deliveryLatitude, deliveryLongitude }) => ({
     restaurantOrderId: row.id,
     delivery: row.delivery
       ? {
@@ -336,6 +336,8 @@ export default async function CustomerPage() {
             : "Your rider",
           riderPhone: row.delivery.rider?.phoneNumber ?? null,
           orderNumber,
+          deliveryLatitude,
+          deliveryLongitude,
         }
       : null,
   }));
