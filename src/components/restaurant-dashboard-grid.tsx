@@ -450,6 +450,8 @@ export async function RestaurantDashboardGrid({
           select: {
             orderNumber: true,
             customerId: true,
+            deliveryLatitude: true,
+            deliveryLongitude: true,
             payment: { select: { status: true } },
           },
         },
@@ -707,6 +709,8 @@ export async function RestaurantDashboardGrid({
     .map((row) => ({
       delivery: row.delivery!,
       orderNumber: row.order.orderNumber,
+      deliveryLatitude: row.order.deliveryLatitude,
+      deliveryLongitude: row.order.deliveryLongitude,
     }))
     .sort((a, b) => {
       const aTime = a.delivery.lastLocationAt?.getTime() ?? a.delivery.updatedAt.getTime();
@@ -715,7 +719,7 @@ export async function RestaurantDashboardGrid({
     });
 
   const initialLiveDeliveries: LiveDeliveryState[] = activeLiveDeliveries.map(
-    ({ delivery, orderNumber }) => ({
+    ({ delivery, orderNumber, deliveryLatitude, deliveryLongitude }) => ({
       id: delivery.id,
       status: delivery.status,
       latitude: delivery.lastLatitude,
@@ -723,6 +727,8 @@ export async function RestaurantDashboardGrid({
       lastLocationAt: delivery.lastLocationAt?.toISOString() ?? null,
       riderName: delivery.rider ? personName(delivery.rider) : "Assigned rider",
       orderNumber,
+      deliveryLatitude,
+      deliveryLongitude,
     })
   );
 
