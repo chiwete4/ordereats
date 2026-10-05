@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "seed:demo": "node scripts/seed-demo.mjs"
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "seed:campus": "node scripts/seed-campus-restaurants.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.4",
