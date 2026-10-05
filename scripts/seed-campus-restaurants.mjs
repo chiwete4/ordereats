@@ -128,6 +128,7 @@ async function upsertRestaurant(definition, ownerUserId) {
 
     if (!existing.imageUrl) updateData.imageUrl = heroImage;
     if (!existing.address) updateData.address = DEFAULT_ADDRESS;
+    if (!existing.isVerified) updateData.isVerified = true;
     if (!existing.phoneNumber && definition.phoneNumber) {
       updateData.phoneNumber = definition.phoneNumber;
     }
@@ -146,7 +147,7 @@ async function upsertRestaurant(definition, ownerUserId) {
         address: DEFAULT_ADDRESS,
         imageUrl: heroImage,
         isOpen: true,
-        isVerified: false,
+        isVerified: true,
       },
     });
   }
