@@ -224,6 +224,19 @@ async function upsertRestaurant(definition, ownerUserId) {
   let createdItems = 0;
   let updatedItems = 0;
 
+  if (definition.name === "W Sauce") {
+    await prisma.menuItem.updateMany({
+      where: {
+        restaurantId: restaurant.id,
+        name: "Regular - Strawberry, Watermelon & Pineapple",
+      },
+      data: {
+        isAvailable: false,
+        isArchived: true,
+      },
+    });
+  }
+
   for (const item of definition.items) {
     const existingItem = await prisma.menuItem.findFirst({
       where: {
