@@ -70,7 +70,7 @@ export function CustomerAllRestaurantsModal({
     const map = new mapboxgl.Map({
       accessToken: token,
       container: mapEl.current,
-      style: "mapbox://styles/mapbox/standard",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
       center: [BAZE_CAMPUS_CENTER.longitude, BAZE_CAMPUS_CENTER.latitude],
       zoom: BAZE_MAP_MIN_ZOOM,
       minZoom: BAZE_MAP_MIN_ZOOM,
