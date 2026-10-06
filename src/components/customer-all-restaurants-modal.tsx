@@ -62,7 +62,13 @@ export function CustomerAllRestaurantsModal({
 }) {
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const initialRestaurantsRef = useRef(restaurants);
+  const onOpenRestaurantRef = useRef(onOpenRestaurant);
   const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
+
+  useEffect(() => {
+    onOpenRestaurantRef.current = onOpenRestaurant;
+  }, [onOpenRestaurant]);
 
   useEffect(() => {
     if (!token || !mapEl.current || mapRef.current) return;
@@ -84,7 +90,7 @@ export function CustomerAllRestaurantsModal({
     const bounds = new mapboxgl.LngLatBounds();
     let markerCount = 0;
 
-    for (const restaurant of restaurants) {
+    for (const restaurant of initialRestaurantsRef.current) {
       if (
         typeof restaurant.longitude !== "number" ||
         typeof restaurant.latitude !== "number"
@@ -97,7 +103,7 @@ export function CustomerAllRestaurantsModal({
 
       const el = markerElement();
       el.title = restaurant.name;
-      el.addEventListener("click", () => onOpenRestaurant(restaurant));
+      el.addEventListener("click", () => onOpenRestaurantRef.current(restaurant));
 
       new mapboxgl.Marker({ element: el, anchor: "center" })
         .setLngLat([restaurant.longitude, restaurant.latitude])
@@ -118,7 +124,7 @@ export function CustomerAllRestaurantsModal({
       map.remove();
       mapRef.current = null;
     };
-  }, [onOpenRestaurant, restaurants, token]);
+  }, [token]);
 
   function focusRestaurant(restaurant: Restaurant) {
     if (
