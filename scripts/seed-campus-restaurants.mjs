@@ -55,23 +55,23 @@ const prisma = new PrismaClient();
 const DEFAULT_ADDRESS =
   process.env.CAMPUS_SEED_ADDRESS?.trim() || "Baze University, Abuja";
 
-const BAZE_CAMPUS_CENTER = { latitude: 9.0062, longitude: 7.4045 };
+const BAZE_CAMPUS_CENTER = { latitude: 9.00603935, longitude: 7.40519329 };
 
-// Campus placement pins keep discovery inside Baze University.
-// They are intentionally clustered because several vendors operate around the same campus food area.
+// Exact Google Earth pins supplied for the Baze University restaurant locations.
+// DMS coordinates were converted to decimal degrees for Mapbox/PostgreSQL.
 const CAMPUS_LOCATIONS = {
-  "Quick Fix Baze": { latitude: 9.00645, longitude: 7.40435 },
-  "11:29": { latitude: 9.00642, longitude: 7.40448 },
-  "Iced Coffee Kiosk": { latitude: 9.00634, longitude: 7.40461 },
-  "strEatz": { latitude: 9.00622, longitude: 7.40429 },
-  "Papa Rimz Base": { latitude: 9.00616, longitude: 7.40444 },
-  "Sizzles Café": { latitude: 9.00609, longitude: 7.40458 },
-  "W Sauce": { latitude: 9.00603, longitude: 7.40431 },
-  "Yerwa Chow": { latitude: 9.00596, longitude: 7.40447 },
-  "Aji's Bukka LTD": { latitude: 9.00588, longitude: 7.40462 },
-  "The Brim": { latitude: 9.00656, longitude: 7.40416 },
-  "AYCE": { latitude: 9.0065, longitude: 7.40472 },
-  "The Terminal": { latitude: 9.00578, longitude: 7.40436 },
+  "Quick Fix Baze": { latitude: 9.00566111, longitude: 7.40595278 },
+  "11:29": { latitude: 9.00547778, longitude: 7.40476389 },
+  "Iced Coffee Kiosk": { latitude: 9.00548056, longitude: 7.40445278 },
+  "strEatz": { latitude: 9.00555833, longitude: 7.40472778 },
+  "Papa Rimz Base": { latitude: 9.007375, longitude: 7.405225 },
+  "Sizzles Café": { latitude: 9.00733333, longitude: 7.40516944 },
+  "W Sauce": { latitude: 9.00604444, longitude: 7.40578056 },
+  "Yerwa Chow": { latitude: 9.00576944, longitude: 7.40592222 },
+  "Aji's Bukka LTD": { latitude: 9.00556944, longitude: 7.40611944 },
+  "The Brim": { latitude: 9.00550833, longitude: 7.40461111 },
+  "AYCE": { latitude: 9.00529722, longitude: 7.40445556 },
+  "The Terminal": { latitude: 9.00739722, longitude: 7.40513889 },
 };
 
 async function findSeedOwnerUserId() {
