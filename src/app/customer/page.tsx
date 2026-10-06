@@ -6,6 +6,7 @@ import { RefreshCw, Store } from "lucide-react";
 import { CustomerDashboardClient, type CustomerOrderCard, type CustomerRestaurant, type CustomerRiderHistory } from "@/components/customer-dashboard-client";
 import type { CustomerTrackingOrder } from "@/components/customer-live-map";
 import { DashboardLiveRefresh } from "@/components/dashboard-live-refresh";
+import { BAZE_RESTAURANT_NAMES } from "@/lib/baze-campus";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -80,6 +81,7 @@ export default async function CustomerPage() {
     }),
     prisma.restaurant.findMany({
       where: {
+        name: { in: [...BAZE_RESTAURANT_NAMES] },
         menuItems: {
           some: {
             isAvailable: true,
