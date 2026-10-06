@@ -4,6 +4,13 @@ import { CheckCircle2, Heart, MapPin, Minus, Plus, Search, ShoppingBag, X } from
 import mapboxgl from "mapbox-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  BAZE_CAMPUS_BOUNDS,
+  BAZE_CAMPUS_CENTER,
+  BAZE_MAP_MAX_ZOOM,
+  BAZE_MAP_MIN_ZOOM,
+} from "@/lib/baze-campus";
+
 type Restaurant = {
   id: string;
   name: string;
@@ -48,6 +55,7 @@ export function CustomerRestaurantBrowserModal({
   basketTotal,
   onOpenBasket,
   receded = false,
+  nestedBackdrop = false,
 }: {
   restaurant: Restaurant;
   onClose: () => void;
@@ -59,6 +67,7 @@ export function CustomerRestaurantBrowserModal({
   basketTotal: number;
   onOpenBasket: () => void;
   receded?: boolean;
+  nestedBackdrop?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const mapEl = useRef<HTMLDivElement | null>(null);
@@ -80,14 +89,17 @@ export function CustomerRestaurantBrowserModal({
       typeof restaurant.longitude === "number" &&
       typeof restaurant.latitude === "number"
         ? [restaurant.longitude, restaurant.latitude]
-        : [7.3986, 9.0765];
+        : [BAZE_CAMPUS_CENTER.longitude, BAZE_CAMPUS_CENTER.latitude];
 
     const map = new mapboxgl.Map({
       accessToken: token,
       container: mapEl.current,
       style: "mapbox://styles/mapbox/standard",
       center,
-      zoom: 15.25,
+      zoom: 18.1,
+      minZoom: BAZE_MAP_MIN_ZOOM,
+      maxZoom: BAZE_MAP_MAX_ZOOM,
+      maxBounds: BAZE_CAMPUS_BOUNDS,
       attributionControl: false,
     });
 
@@ -118,7 +130,10 @@ export function CustomerRestaurantBrowserModal({
 
   return (
     <div
-      className={"fixed inset-0 z-[185] flex items-center justify-center p-3 backdrop-blur-[1px] transition-[background-color] duration-200 sm:p-8 " + (receded ? "bg-black/20" : "bg-white/80")}
+      className={
+        "fixed inset-0 z-[185] flex items-center justify-center p-3 backdrop-blur-[1px] transition-[background-color] duration-200 sm:p-8 " +
+        (nestedBackdrop ? "bg-black/35" : receded ? "bg-black/20" : "bg-white/80")
+      }
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
