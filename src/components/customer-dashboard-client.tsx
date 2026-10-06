@@ -21,6 +21,7 @@ import {
   submitCustomerComplaint,
   toggleFavoriteRestaurant,
 } from "@/actions/customer";
+import { CustomerAllRestaurantsModal } from "@/components/customer-all-restaurants-modal";
 import { CustomerLiveMap, type CustomerTrackingOrder } from "@/components/customer-live-map";
 import { CustomerRestaurantBrowserModal } from "@/components/customer-restaurant-browser-modal";
 import { useToast } from "@/components/toast-provider";
@@ -245,6 +246,7 @@ export function CustomerDashboardClient({
     longitude: number;
   } | null>(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState<CustomerRestaurant | null>(null);
+  const [allRestaurantsOpen, setAllRestaurantsOpen] = useState(false);
   const [showAllActive, setShowAllActive] = useState(false);
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
@@ -581,7 +583,16 @@ export function CustomerDashboardClient({
               />
             </label>
 
-            <p className="mt-5 text-[9px] font-medium text-white/45">Restaurants</p>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-[9px] font-medium text-white/45">Restaurants</p>
+              <button
+                type="button"
+                onClick={() => setAllRestaurantsOpen(true)}
+                className="text-[10px] font-semibold text-white underline decoration-white/35 underline-offset-2"
+              >
+                View all restaurants
+              </button>
+            </div>
             <div className="mt-2 grid gap-x-6 sm:grid-cols-2">
               {filteredRestaurants.slice(0, 4).map((restaurant) => (
                 <div key={restaurant.id} className="flex items-center gap-3 border-b border-white/10 py-3">
@@ -913,6 +924,16 @@ export function CustomerDashboardClient({
         </aside>
       </div>
 
+      {allRestaurantsOpen ? (
+        <CustomerAllRestaurantsModal
+          restaurants={restaurants}
+          onClose={() => setAllRestaurantsOpen(false)}
+          onOpenRestaurant={setSelectedRestaurant}
+          onToggleFavorite={toggleFavorite}
+          receded={Boolean(selectedRestaurant)}
+        />
+      ) : null}
+
       {selectedRestaurant ? (
         <CustomerRestaurantBrowserModal
           restaurant={selectedRestaurant}
@@ -927,6 +948,7 @@ export function CustomerDashboardClient({
             setBasketOpen(true);
           }}
           receded={basketOpen}
+          nestedBackdrop={allRestaurantsOpen}
         />
       ) : null}
 
