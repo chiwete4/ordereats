@@ -387,7 +387,9 @@ export const CAMPUS_RESTAURANTS = [
         ["Sloppy Joes (Chicken) Burger", 3000],
       ]),
       ...group("Smoothies", [
-        ["Regular - Strawberry, Watermelon & Pineapple", 2800],
+        ["Strawberry Smoothie", 2800],
+        ["Watermelon Smoothie", 2800],
+        ["Pineapple Smoothie", 2800],
         ["Lime Strawberry - Watermelon & Lime", 2800],
         ["Mint Freeze (Mint & Lime) Smoothie", 2800],
         ["Classic 21 - Strawberry, Banana & Coconut", 2800],
