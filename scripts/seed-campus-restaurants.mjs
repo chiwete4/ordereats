@@ -52,7 +52,27 @@ if (!process.env.DATABASE_URL) {
 }
 
 const prisma = new PrismaClient();
-const DEFAULT_ADDRESS = process.env.CAMPUS_SEED_ADDRESS?.trim() || "Campus";
+const DEFAULT_ADDRESS =
+  process.env.CAMPUS_SEED_ADDRESS?.trim() || "Baze University, Abuja";
+
+const BAZE_CAMPUS_CENTER = { latitude: 9.0062, longitude: 7.4045 };
+
+// Campus placement pins keep discovery inside Baze University.
+// They are intentionally clustered because several vendors operate around the same campus food area.
+const CAMPUS_LOCATIONS = {
+  "Quick Fix Baze": { latitude: 9.00645, longitude: 7.40435 },
+  "11:29": { latitude: 9.00642, longitude: 7.40448 },
+  "Iced Coffee Kiosk": { latitude: 9.00634, longitude: 7.40461 },
+  "strEatz": { latitude: 9.00622, longitude: 7.40429 },
+  "Papa Rimz Base": { latitude: 9.00616, longitude: 7.40444 },
+  "Sizzles Café": { latitude: 9.00609, longitude: 7.40458 },
+  "W Sauce": { latitude: 9.00603, longitude: 7.40431 },
+  "Yerwa Chow": { latitude: 9.00596, longitude: 7.40447 },
+  "Aji's Bukka LTD": { latitude: 9.00588, longitude: 7.40462 },
+  "The Brim": { latitude: 9.00656, longitude: 7.40416 },
+  "AYCE": { latitude: 9.0065, longitude: 7.40472 },
+  "The Terminal": { latitude: 9.00578, longitude: 7.40436 },
+};
 
 async function findSeedOwnerUserId() {
   const explicitRestaurantId = process.env.CAMPUS_SEED_OWNER_RESTAURANT_ID?.trim();
@@ -121,13 +141,17 @@ async function upsertRestaurant(definition, ownerUserId) {
     FOOD_IMAGES[definition.hero] ||
     FOOD_IMAGES.general;
 
+  const location = CAMPUS_LOCATIONS[definition.name] || BAZE_CAMPUS_CENTER;
   let restaurant;
 
   if (existing) {
-    const updateData = {};
+    const updateData = {
+      address: DEFAULT_ADDRESS,
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
 
     if (!existing.imageUrl) updateData.imageUrl = heroImage;
-    if (!existing.address) updateData.address = DEFAULT_ADDRESS;
     if (!existing.isVerified) updateData.isVerified = true;
     if (!existing.phoneNumber && definition.phoneNumber) {
       updateData.phoneNumber = definition.phoneNumber;
@@ -145,6 +169,8 @@ async function upsertRestaurant(definition, ownerUserId) {
         name: definition.name,
         phoneNumber: definition.phoneNumber,
         address: DEFAULT_ADDRESS,
+        latitude: location.latitude,
+        longitude: location.longitude,
         imageUrl: heroImage,
         isOpen: true,
         isVerified: true,
