@@ -94,7 +94,7 @@ export function CustomerRestaurantBrowserModal({
     const map = new mapboxgl.Map({
       accessToken: token,
       container: mapEl.current,
-      style: "mapbox://styles/mapbox/standard",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
       center,
       zoom: 18.1,
       minZoom: BAZE_MAP_MIN_ZOOM,
