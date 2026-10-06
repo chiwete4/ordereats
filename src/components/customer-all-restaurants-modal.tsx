@@ -19,9 +19,19 @@ type Restaurant = {
   isVerified: boolean;
   isOpen: boolean;
   hoursLabel: string;
+  rating: number | null;
   favorited: boolean;
   latitude: number | null;
   longitude: number | null;
+  items: Array<{
+    id: string;
+    name: string;
+    price: number;
+    imageUrl: string | null;
+    description: string | null;
+    restaurantId: string;
+    restaurantName: string;
+  }>;
 };
 
 function markerElement() {
@@ -97,7 +107,6 @@ export function CustomerAllRestaurantsModal({
     if (markerCount > 1) {
       map.fitBounds(bounds, {
         padding: 72,
-        minZoom: BAZE_MAP_MIN_ZOOM,
         maxZoom: 18.4,
         duration: 0,
       });
