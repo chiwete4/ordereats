@@ -6,12 +6,14 @@ import {
   Clock3,
   Heart,
   LoaderCircle,
+  Minus,
   Phone,
   Plus,
   RefreshCw,
   Search,
   ShoppingBag,
   Store,
+  Trash2,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -414,6 +416,22 @@ export function CustomerDashboardClient({
         nextQuantity > 0
           ? `${item.name} · ${nextQuantity} in basket`
           : item.name,
+      tone: "success",
+    });
+  }
+
+  function removeItem(menuItemId: string) {
+    const item = basket.find((entry) => entry.menuItemId === menuItemId);
+    if (!item) return;
+
+    setBasket((current) =>
+      current.filter((entry) => entry.menuItemId !== menuItemId)
+    );
+
+    toast({
+      key: "basket",
+      title: "Removed from basket",
+      description: item.name,
       tone: "success",
     });
   }
@@ -973,16 +991,59 @@ export function CustomerDashboardClient({
             </div>
 
             <div className="mt-5 divide-y divide-[#EAEAEA]">
-              {basket.map((item) => (
-                <div key={item.menuItemId} className="flex items-center gap-3 py-3">
-                  <FoodThumb src={item.imageUrl} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold">{item.name}</p>
-                    <p className="mt-1 text-[9px] text-[#808080]">{item.restaurantName} · {money(item.price)}</p>
+              {basket.length === 0 ? (
+                <p className="py-8 text-center text-[10px] text-[#808080]">
+                  Your basket is empty.
+                </p>
+              ) : (
+                basket.map((item) => (
+                  <div key={item.menuItemId} className="flex items-center gap-3 py-3">
+                    <FoodThumb src={item.imageUrl} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-semibold">{item.name}</p>
+                      <p className="mt-1 text-[9px] text-[#808080]">
+                        {item.restaurantName} · {money(item.price)}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full border border-[#DEDEDE] px-2 py-1.5">
+                        <button
+                          type="button"
+                          disabled={checkoutPending}
+                          onClick={() => changeQuantity(item.menuItemId, -1)}
+                          className="grid h-5 w-5 place-items-center rounded-full transition hover:bg-[#F2F2F2] disabled:opacity-40"
+                          aria-label={`Remove one ${item.name}`}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="min-w-4 text-center text-[10px] font-semibold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={checkoutPending}
+                          onClick={() => changeQuantity(item.menuItemId, 1)}
+                          className="grid h-5 w-5 place-items-center rounded-full transition hover:bg-[#F2F2F2] disabled:opacity-40"
+                          aria-label={`Add one ${item.name}`}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={checkoutPending}
+                        onClick={() => removeItem(item.menuItemId)}
+                        className="grid h-8 w-8 place-items-center rounded-full text-[#9A9A9A] transition hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
+                        aria-label={`Remove ${item.name} from basket`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <span className="shrink-0 text-[10px] font-semibold text-[#666]">x{item.quantity}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             <div className="mt-5 space-y-2 border-t border-[#EAEAEA] pt-4">
