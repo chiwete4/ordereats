@@ -110,7 +110,6 @@ export default async function CustomerPage() {
             isArchived: false,
           },
           orderBy: { createdAt: "asc" },
-          take: 20,
           select: {
             id: true,
             name: true,
