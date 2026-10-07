@@ -56,6 +56,8 @@ const DEFAULT_ADDRESS =
   process.env.CAMPUS_SEED_ADDRESS?.trim() || "Baze University, Abuja";
 
 const BAZE_CAMPUS_CENTER = { latitude: 9.00603935, longitude: 7.40519329 };
+const PAYSTACK_BASE_URL = "https://api.paystack.co";
+const PAPERBAG_PLATFORM_COMMISSION_PERCENT = 5;
 
 // Exact Google Earth pins supplied for the Baze University restaurant locations.
 // DMS coordinates were converted to decimal degrees for Mapbox/PostgreSQL.
@@ -129,6 +131,121 @@ async function findSeedOwnerUserId() {
   });
 
   return fallback?.userId ?? null;
+}
+
+async function findPaymentSourceRestaurant() {
+  const sourceName =
+    process.env.CAMPUS_SEED_PAYMENT_SOURCE_RESTAURANT?.trim() || "Mama's Kitchen";
+
+  return prisma.restaurant.findFirst({
+    where: { name: sourceName },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+function paystackSecretKey() {
+  const key = process.env.PAYSTACK_SECRET_KEY?.trim();
+  if (!key) return null;
+
+  if (
+    key.startsWith("sk_live_") &&
+    process.env.ALLOW_LIVE_PAYSTACK_CAMPUS_SEED !== "1"
+  ) {
+    throw new Error(
+      "Refusing to create campus demo subaccounts with a live Paystack key. Use your test key or explicitly set ALLOW_LIVE_PAYSTACK_CAMPUS_SEED=1."
+    );
+  }
+
+  return key;
+}
+
+async function createCampusSubaccount(restaurant, paymentSource) {
+  const secret = paystackSecretKey();
+  if (!secret) return null;
+
+  const response = await fetch(PAYSTACK_BASE_URL + "/subaccount", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + secret,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      business_name: restaurant.name,
+      settlement_bank: paymentSource.payoutBankCode,
+      account_number: paymentSource.payoutAccountNumber,
+      percentage_charge: PAPERBAG_PLATFORM_COMMISSION_PERCENT,
+      description: "Paperbag Baze University demo restaurant " + restaurant.id,
+      metadata: JSON.stringify({
+        restaurantId: restaurant.id,
+        product: "paperbag",
+        campus: "Baze University",
+        seededFrom: paymentSource.name,
+      }),
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok || !payload?.status || !payload?.data?.subaccount_code) {
+    throw new Error(
+      "Paystack subaccount creation failed for " +
+        restaurant.name +
+        ": " +
+        (payload?.message || response.statusText)
+    );
+  }
+
+  return payload.data;
+}
+
+async function syncDemoPaymentSetup(restaurant, paymentSource) {
+  if (
+    !paymentSource?.payoutBankCode ||
+    !paymentSource?.payoutAccountNumber ||
+    !paymentSource?.payoutAccountName
+  ) {
+    return { mode: "missing-source" };
+  }
+
+  let subaccountCode = restaurant.paystackSubaccountCode;
+  let subaccountId = restaurant.paystackSubaccountId;
+  let mode = "existing";
+
+  if (!subaccountCode) {
+    const created = await createCampusSubaccount(restaurant, paymentSource);
+
+    if (created) {
+      subaccountCode = created.subaccount_code;
+      subaccountId = String(created.id);
+      mode = "created";
+    } else if (paymentSource.paystackSubaccountCode) {
+      // Useful for a local single-restaurant demo if the Paystack secret is not
+      // present. With a test secret available, each campus restaurant gets its
+      // own subaccount code while still settling to the same demo bank account.
+      subaccountCode = paymentSource.paystackSubaccountCode;
+      subaccountId = paymentSource.paystackSubaccountId;
+      mode = "shared-fallback";
+    }
+  }
+
+  await prisma.restaurant.update({
+    where: { id: restaurant.id },
+    data: {
+      payoutBankName: paymentSource.payoutBankName,
+      payoutBankCode: paymentSource.payoutBankCode,
+      payoutAccountName: paymentSource.payoutAccountName,
+      payoutAccountNumber: paymentSource.payoutAccountNumber,
+      payoutRecipientCode: paymentSource.payoutRecipientCode,
+      payoutRecipientId: paymentSource.payoutRecipientId,
+      paystackSubaccountCode: subaccountCode,
+      paystackSubaccountId: subaccountId,
+      payoutVerifiedAt:
+        subaccountCode
+          ? paymentSource.payoutVerifiedAt || new Date()
+          : null,
+    },
+  });
+
+  return { mode };
 }
 
 async function upsertRestaurant(definition, ownerUserId) {
@@ -299,6 +416,19 @@ async function main() {
   console.log("Fallback address:", DEFAULT_ADDRESS);
 
   const ownerUserId = await findSeedOwnerUserId();
+  const paymentSource = await findPaymentSourceRestaurant();
+
+  if (paymentSource) {
+    console.log(
+      "Payment source: " +
+        paymentSource.name +
+        " — campus restaurants will use the same demo settlement bank account."
+    );
+  } else {
+    console.warn(
+      "Payment source restaurant was not found. Campus restaurants will seed normally, but checkout will remain unavailable until payout details are added."
+    );
+  }
 
   if (ownerUserId) {
     console.log(
@@ -312,11 +442,20 @@ async function main() {
 
   let createdItems = 0;
   let updatedItems = 0;
+  let paymentCreated = 0;
+  let paymentSharedFallback = 0;
 
   for (const definition of CAMPUS_RESTAURANTS) {
     const result = await upsertRestaurant(definition, ownerUserId);
     createdItems += result.createdItems;
     updatedItems += result.updatedItems;
+
+    const paymentResult = paymentSource
+      ? await syncDemoPaymentSetup(result.restaurant, paymentSource)
+      : { mode: "missing-source" };
+
+    if (paymentResult.mode === "created") paymentCreated += 1;
+    if (paymentResult.mode === "shared-fallback") paymentSharedFallback += 1;
 
     console.log(
       "✓ " +
@@ -325,7 +464,14 @@ async function main() {
         definition.items.length +
         " items across " +
         result.categories +
-        " categories"
+        " categories" +
+        (paymentResult.mode === "created"
+          ? " · Paystack subaccount created"
+          : paymentResult.mode === "existing"
+            ? " · Paystack ready"
+            : paymentResult.mode === "shared-fallback"
+              ? " · using demo payment fallback"
+              : "")
     );
   }
 
@@ -349,7 +495,24 @@ async function main() {
   if (paymentPending > 0) {
     console.log(
       paymentPending +
-        " seeded restaurants still need their own Paystack subaccount before customer checkout can charge orders from them."
+        " seeded restaurants still need Paystack setup before customer checkout can charge orders from them."
+    );
+  }
+
+  if (paymentCreated > 0) {
+    console.log(
+      "Created " +
+        paymentCreated +
+        " Paystack subaccounts using the same demo settlement account as " +
+        paymentSource.name +
+        "."
+    );
+  }
+
+  if (paymentSharedFallback > 0) {
+    console.warn(
+      paymentSharedFallback +
+        " restaurants are sharing the source Paystack subaccount because PAYSTACK_SECRET_KEY was not available locally. Single-restaurant demo checkout works, but rerun with the test secret before testing a multi-restaurant split."
     );
   }
 
