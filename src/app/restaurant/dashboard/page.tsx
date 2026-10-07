@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
-import { ChevronRight, RefreshCw, Store } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, RefreshCw, Store } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { RestaurantDashboardGrid } from "@/components/restaurant-dashboard-grid";
@@ -88,6 +88,26 @@ export default async function RestaurantDashboardPage({
     redirect("/");
   }
 
+  const restaurantMemberships = (
+    await prisma.restaurantStaff.findMany({
+      where: {
+        userId: user.id,
+        isActive: true,
+        role: { in: ["OWNER", "STAFF"] },
+      },
+      select: {
+        restaurantId: true,
+        role: true,
+        restaurant: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    })
+  ).sort((a, b) => a.restaurant.name.localeCompare(b.restaurant.name));
+
   const activeRiderCount = await prisma.restaurantStaff.count({
     where: {
       restaurantId,
@@ -157,13 +177,50 @@ export default async function RestaurantDashboardPage({
                 {roleLabel}
               </div>
 
-              <div className="hidden min-w-0 max-w-full cursor-grab select-none items-center overflow-x-auto whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none active:cursor-grabbing sm:inline-flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <span className="shrink-0 text-[#808080]">Profile</span>
-                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
-                <span className="shrink-0 text-[#808080]">All Restaurants</span>
-                <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
-                <span className="shrink-0 font-semibold tracking-[-2%] text-black">{membership.restaurant.name}</span>
-              </div>
+              <details className="group relative min-w-0 max-w-full">
+                <summary className="inline-flex max-w-full cursor-pointer list-none items-center whitespace-nowrap rounded-full border-2 border-[#EAEAEA] px-2.5 py-1 text-[12px] font-normal leading-none [&::-webkit-details-marker]:hidden">
+                  <span className="shrink-0 text-[#808080]">Profile</span>
+                  <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
+                  <span className="shrink-0 text-[#808080]">
+                    All Restaurants ({restaurantMemberships.length})
+                  </span>
+                  <ChevronRight className="mx-1 h-3.5 w-3.5 shrink-0 text-[#808080]" strokeWidth={2.65} />
+                  <span className="min-w-0 truncate font-semibold tracking-[-2%] text-black">
+                    {membership.restaurant.name}
+                  </span>
+                  <ChevronDown className="ml-1.5 h-3.5 w-3.5 shrink-0 text-[#808080] transition-transform group-open:rotate-180" strokeWidth={2.4} />
+                </summary>
+
+                <div className="absolute left-0 top-[calc(100%+8px)] z-[80] max-h-[340px] w-[290px] overflow-y-auto rounded-[14px] border border-[#E5E5E5] bg-white p-2 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+                  <div className="px-2 pb-2 pt-1">
+                    <p className="text-[10px] font-semibold text-black">Switch restaurant</p>
+                    <p className="mt-0.5 text-[9px] text-[#888]">
+                      You can manage all restaurants attached to this account.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    {restaurantMemberships.map((entry) => {
+                      const selected = entry.restaurantId === restaurantId;
+
+                      return (
+                        <Link
+                          key={entry.restaurantId}
+                          href={`/restaurant/dashboard?restaurantId=${entry.restaurantId}`}
+                          className={
+                            "flex items-center gap-2 rounded-[9px] px-2.5 py-2.5 text-[11px] transition hover:bg-[#F4F4F4] " +
+                            (selected ? "bg-[#F2F2F2] font-semibold" : "bg-white")
+                          }
+                        >
+                          <Store className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+                          <span className="min-w-0 flex-1 truncate">{entry.restaurant.name}</span>
+                          {selected ? <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} /> : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </details>
 
               <RestaurantHoursStatus
                 openingTime={membership.restaurant.openingTime}
