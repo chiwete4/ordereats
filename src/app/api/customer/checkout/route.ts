@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     {
       restaurantId: string;
       restaurantName: string;
-      subaccountCode: string;
+      subaccountCode: string | null;
       subtotalKobo: number;
       items: Array<{
         menuItemId: string;
@@ -118,13 +118,7 @@ export async function POST(request: NextRequest) {
   >();
 
   for (const item of menuItems) {
-    const subaccountCode = item.restaurant.paystackSubaccountCode?.trim();
-    if (!subaccountCode) {
-      return NextResponse.json(
-        { error: `${item.restaurant.name} is not ready to accept payments yet.` },
-        { status: 409 }
-      );
-    }
+    const subaccountCode = item.restaurant.paystackSubaccountCode?.trim() || null;
 
     const quantity = quantities.get(item.id)!;
     const unitPriceKobo = Math.round(Number(item.price) * 100);
@@ -158,6 +152,7 @@ export async function POST(request: NextRequest) {
   }
 
   const grouped = [...groups.values()];
+  const canUsePaystackSplit = grouped.every((group) => Boolean(group.subaccountCode));
   const subtotalKobo = grouped.reduce((sum, group) => sum + group.subtotalKobo, 0);
   if (subtotalKobo < 1) {
     return NextResponse.json({ error: "Order total must be greater than zero." }, { status: 400 });
@@ -224,15 +219,17 @@ export async function POST(request: NextRequest) {
       amountKobo: totalKobo,
       reference: paymentReference,
       callbackUrl: `${request.nextUrl.origin}/api/customer/checkout/verify?reference=${encodeURIComponent(paymentReference)}`,
-      subaccounts: grouped.map((group) => {
-        const commissionKobo = Math.round(
-          (group.subtotalKobo * PAPERBAG_PLATFORM_COMMISSION_PERCENT) / 100
-        );
-        return {
-          subaccount: group.subaccountCode,
-          share: group.subtotalKobo - commissionKobo,
-        };
-      }),
+      subaccounts: canUsePaystackSplit
+        ? grouped.map((group) => {
+            const commissionKobo = Math.round(
+              (group.subtotalKobo * PAPERBAG_PLATFORM_COMMISSION_PERCENT) / 100
+            );
+            return {
+              subaccount: group.subaccountCode!,
+              share: group.subtotalKobo - commissionKobo,
+            };
+          })
+        : undefined,
       metadata: {
         product: "paperbag",
         orderId: order.id,
