@@ -89,7 +89,7 @@ export async function initializePaystackTransaction({
   amountKobo: number;
   reference: string;
   callbackUrl?: string;
-  subaccounts: PaystackFlatSplitSubaccount[];
+  subaccounts?: PaystackFlatSplitSubaccount[];
   metadata?: Record<string, unknown>;
 }) {
   const response = await paystackFetch<PaystackTransactionInitialization>(
@@ -102,12 +102,16 @@ export async function initializePaystackTransaction({
         reference,
         ...(callbackUrl ? { callback_url: callbackUrl } : {}),
         metadata: JSON.stringify(metadata ?? {}),
-        split: {
-          type: "flat",
-          bearer_type: "account",
-          subaccounts,
-          reference: `paperbag-${reference}`,
-        },
+        ...(subaccounts && subaccounts.length > 0
+          ? {
+              split: {
+                type: "flat",
+                bearer_type: "account",
+                subaccounts,
+                reference: `paperbag-${reference}`,
+              },
+            }
+          : {}),
       }),
     }
   );
