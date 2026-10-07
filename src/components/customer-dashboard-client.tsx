@@ -342,6 +342,9 @@ export function CustomerDashboardClient({
 
   const basketCount = basket.reduce((sum, item) => sum + item.quantity, 0);
   const basketTotal = basket.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const deliveryFee = 1000;
+  const serviceFee = 1000;
+  const checkoutTotal = basketTotal + deliveryFee + serviceFee;
 
   function addItem(item: {
     id?: string;
@@ -1051,6 +1054,14 @@ export function CustomerDashboardClient({
                 <span className="text-[10px] text-[#808080]">Food subtotal</span>
                 <span className="text-[12px] font-semibold">{money(basketTotal)}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#808080]">Delivery fee</span>
+                <span className="text-[11px] font-semibold">{money(deliveryFee)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-[#808080]">Service fee</span>
+                <span className="text-[11px] font-semibold">{money(serviceFee)}</span>
+              </div>
               <div className="flex items-start justify-between gap-4">
                 <span className="text-[10px] text-[#808080]">Paystack processing fee</span>
                 <span className="text-right text-[9px] leading-[1.4] text-[#808080]">
@@ -1059,7 +1070,7 @@ export function CustomerDashboardClient({
               </div>
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[11px] font-semibold">Order total</span>
-                <span className="text-[15px] font-semibold">{money(basketTotal)} + fee</span>
+                <span className="text-[15px] font-semibold">{money(checkoutTotal)} + Paystack fee</span>
               </div>
             </div>
 
