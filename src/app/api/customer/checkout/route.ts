@@ -19,6 +19,9 @@ type CheckoutPayload = {
   deliveryLongitude?: unknown;
 };
 
+const FLAT_DELIVERY_FEE_KOBO = 1000 * 100;
+const FLAT_SERVICE_FEE_KOBO = 1000 * 100;
+
 function orderNumber() {
   return `PB-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`;
 }
@@ -160,6 +163,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Order total must be greater than zero." }, { status: 400 });
   }
 
+  const deliveryFeeKobo = FLAT_DELIVERY_FEE_KOBO;
+  const serviceFeeKobo = FLAT_SERVICE_FEE_KOBO;
+  const totalKobo = subtotalKobo + deliveryFeeKobo + serviceFeeKobo;
+
   const paymentReference = reference();
   const newOrderNumber = orderNumber();
 
@@ -191,9 +198,9 @@ export async function POST(request: NextRequest) {
       orderNumber: newOrderNumber,
       customerId: user.id,
       subtotal: (subtotalKobo / 100).toFixed(2),
-      deliveryFee: "0.00",
-      serviceFee: "0.00",
-      total: (subtotalKobo / 100).toFixed(2),
+      deliveryFee: (deliveryFeeKobo / 100).toFixed(2),
+      serviceFee: (serviceFeeKobo / 100).toFixed(2),
+      total: (totalKobo / 100).toFixed(2),
       deliveryLatitude: latitude,
       deliveryLongitude: longitude,
       restaurantOrders: {
@@ -202,7 +209,7 @@ export async function POST(request: NextRequest) {
       payment: {
         create: {
           reference: paymentReference,
-          amount: (subtotalKobo / 100).toFixed(2),
+          amount: (totalKobo / 100).toFixed(2),
           status: "PENDING",
           provider: "paystack",
         },
@@ -214,7 +221,7 @@ export async function POST(request: NextRequest) {
   try {
     const transaction = await initializePaystackTransaction({
       email: user.email,
-      amountKobo: subtotalKobo,
+      amountKobo: totalKobo,
       reference: paymentReference,
       callbackUrl: `${request.nextUrl.origin}/api/customer/checkout/verify?reference=${encodeURIComponent(paymentReference)}`,
       subaccounts: grouped.map((group) => {
@@ -232,6 +239,8 @@ export async function POST(request: NextRequest) {
         orderNumber: order.orderNumber,
         customerId: user.id,
         restaurantIds: grouped.map((group) => group.restaurantId),
+        deliveryFee: deliveryFeeKobo / 100,
+        serviceFee: serviceFeeKobo / 100,
       },
     });
 
