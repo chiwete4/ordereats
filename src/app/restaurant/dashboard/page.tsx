@@ -44,7 +44,7 @@ export default async function RestaurantDashboardPage({
     ["OWNER", "STAFF"].includes(demoAccessMembership.role)
   );
 
-  if (hasDemoWorkspaceAccess) {
+  if (hasDemoWorkspaceAccess && demoAccessMembership) {
     const campusRestaurants = await prisma.restaurant.findMany({
       select: { id: true, name: true, address: true, isVerified: true },
       orderBy: { createdAt: "asc" },
