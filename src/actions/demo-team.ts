@@ -83,7 +83,9 @@ export async function activateDemoRestaurantTeam(
 
     const { firstName, lastName } = demoPersona(index, slot);
     const name = firstName + " " + lastName;
-    const email = demoEmail(restaurantId, slot);
+    const email = membership.user.clerkId.startsWith("paperbag_demo_clerk_")
+      ? demoEmail(restaurant.name, index, slot)
+      : membership.user.email;
     const password = "Pb!" + randomBytes(18).toString("base64url") + "7z";
     const metadata = {
       seededBy: "paperbag-demo",
