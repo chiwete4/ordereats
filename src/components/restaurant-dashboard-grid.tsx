@@ -170,10 +170,12 @@ function StaffPanel({
   restaurantId,
   staff,
   explorerItems,
+  currentUserId,
 }: {
   restaurantId: string;
   staff: Array<any>;
   explorerItems: DashboardExplorerItem[];
+  currentUserId: string;
 }) {
   const visible = staff.filter((member) => member.role !== "RIDER");
 
@@ -221,6 +223,7 @@ function StaffPanel({
               isActive={member.isActive}
               role={member.role}
               disabled={member.role === "OWNER"}
+              isCurrentUser={member.userId === currentUserId}
             />
           </div>
         ))}
@@ -234,11 +237,13 @@ function RidersPanel({
   riders,
   assignableOrders,
   explorerItems,
+  currentUserId,
 }: {
   restaurantId: string;
   riders: Array<any>;
   assignableOrders: Array<{ id: string; orderNumber: string; total: string }>;
   explorerItems: DashboardExplorerItem[];
+  currentUserId: string;
 }) {
   return (
     <section className="bg-white">
@@ -298,6 +303,7 @@ function RidersPanel({
                   name={personName(rider.user)}
                   isActive={rider.isActive}
                   role="RIDER"
+                  isCurrentUser={rider.userId === currentUserId}
                 />
               </div>
             </div>
@@ -410,10 +416,12 @@ export async function RestaurantDashboardGrid({
   restaurantId,
   restaurant,
   verificationSteps,
+  currentUserId,
 }: {
   restaurantId: string;
   restaurant: RestaurantForDashboard;
   verificationSteps: VerificationStep[];
+  currentUserId: string;
 }) {
   const now = new Date();
   const todayStart = new Date(now);
@@ -1070,13 +1078,19 @@ export async function RestaurantDashboardGrid({
           riders={orderRiders}
         />
 
-        <StaffPanel restaurantId={restaurantId} staff={staff} explorerItems={staffExplorerItems} />
+        <StaffPanel
+          restaurantId={restaurantId}
+          staff={staff}
+          explorerItems={staffExplorerItems}
+          currentUserId={currentUserId}
+        />
 
         <RidersPanel
           restaurantId={restaurantId}
           riders={riders}
           assignableOrders={assignableOrders}
           explorerItems={riderExplorerItems}
+          currentUserId={currentUserId}
         />
 
         <PerformancePanel
