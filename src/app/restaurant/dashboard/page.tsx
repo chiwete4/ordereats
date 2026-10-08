@@ -10,7 +10,6 @@ import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { RestaurantPayoutSettingsButton } from "@/components/restaurant-payout-settings-button";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
-import { BAZE_RESTAURANT_NAMES } from "@/lib/baze-campus";
 
 export default async function RestaurantDashboardPage({
   searchParams,
@@ -40,8 +39,8 @@ export default async function RestaurantDashboardPage({
 
   if (demoOwnerMembership?.role === "OWNER" && demoOwnerMembership.isActive) {
     const campusRestaurants = await prisma.restaurant.findMany({
-      where: { name: { in: [...BAZE_RESTAURANT_NAMES] } },
       select: { id: true },
+      orderBy: { createdAt: "asc" },
     });
 
     await prisma.$transaction(
