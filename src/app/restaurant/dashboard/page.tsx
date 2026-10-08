@@ -19,10 +19,10 @@ export default async function RestaurantDashboardPage({
   const user = await getOrCreateCurrentUser();
   if (!user) redirect("/");
 
-  // The seeded Baze restaurants are a shared demo workspace managed through
-  // the active Mama's Kitchen owner account. Restore these links on dashboard
-  // access so an older or separately seeded database cannot hide the switcher.
-  const demoOwnerMembership = await prisma.restaurantStaff.findUnique({
+  // The seeded restaurant data is a shared demo workspace. Any active
+  // Mama's Kitchen owner/staff account can switch across every restaurant
+  // currently present in the database.
+  const demoAccessMembership = await prisma.restaurantStaff.findUnique({
     where: {
       userId_restaurantId: {
         userId: user.id,
@@ -37,7 +37,10 @@ export default async function RestaurantDashboardPage({
     select: { role: true, isActive: true },
   });
 
-  if (demoOwnerMembership?.role === "OWNER" && demoOwnerMembership.isActive) {
+  if (
+    demoAccessMembership?.isActive &&
+    ["OWNER", "STAFF"].includes(demoAccessMembership.role)
+  ) {
     const campusRestaurants = await prisma.restaurant.findMany({
       select: { id: true },
       orderBy: { createdAt: "asc" },
@@ -52,11 +55,11 @@ export default async function RestaurantDashboardPage({
               restaurantId: restaurant.id,
             },
           },
-          update: { role: "OWNER", isActive: true },
+          update: { isActive: true },
           create: {
             userId: user.id,
             restaurantId: restaurant.id,
-            role: "OWNER",
+            role: demoAccessMembership.role,
             isActive: true,
           },
         })
