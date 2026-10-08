@@ -1,46 +1,69 @@
 import { prisma } from "@/lib/prisma";
 
-// Real, persisted database rows for a classroom demonstration, not Clerk
-// sign-in accounts or actual restaurant employees. Use example.com so these
-// profiles never impersonate someone's real mailbox.
-const NAMES = [
-  ["Amina", "Bello"], ["Tolu", "Martins"], ["Jide", "Okafor"],
-  ["Zara", "Musa"], ["Chidi", "Eze"], ["Hauwa", "Ibrahim"],
-  ["Femi", "Adeyemi"], ["Amara", "Nwosu"], ["Seyi", "Ojo"],
-  ["Fatima", "Yusuf"], ["Kelechi", "Obi"], ["Bola", "Adebayo"],
-  ["Ife", "Okon"], ["Timi", "Lawal"], ["Zainab", "Ahmed"],
-  ["Uche", "Nnamdi"], ["Mariam", "Ali"], ["David", "Usman"],
-  ["Chioma", "Eke"], ["Tobi", "Salami"], ["Nkechi", "Ifeanyi"],
-  ["Sani", "Umar"], ["Temi", "Aina"], ["Adaeze", "Nwankwo"],
+// Deterministic, distinct demo identities. These become real Clerk accounts
+// only after an authorized manager activates their logins.
+const FIRST_NAMES = [
+  "Amina", "Tolu", "Jide", "Zara", "Chidi", "Hauwa", "Femi", "Amara",
+  "Seyi", "Fatima", "Kelechi", "Bola", "Ife", "Timi", "Zainab", "Uche",
 ] as const;
+
+const LAST_NAMES = [
+  "Bello", "Martins", "Okafor", "Musa", "Eze", "Ibrahim",
+  "Adeyemi", "Nwosu", "Lawal", "Okon",
+] as const;
+
+export function demoPersona(restaurantIndex: number, slot: number) {
+  const n = restaurantIndex * 4 + slot - 1;
+  return {
+    firstName: FIRST_NAMES[n % FIRST_NAMES.length],
+    lastName: LAST_NAMES[Math.floor(n / FIRST_NAMES.length) % LAST_NAMES.length],
+    role: (slot <= 2 ? "STAFF" : "RIDER") as "STAFF" | "RIDER",
+  };
+}
+
+export function demoUserId(restaurantId: string, slot: number) {
+  return `paperbag_demo_user_${restaurantId}_${slot}`;
+}
+
+export function demoEmail(restaurantId: string, slot: number) {
+  // Every Clerk instance can use normal email/password sign-in. Synthetic
+  // addresses won't receive mail, so provisioned accounts are for demos only.
+  // Do not use +clerk_test on production, where Clerk test mode is disabled.
+  const suffix = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_")
+    ? "+clerk_test"
+    : "";
+  return `paperbag.team.${restaurantId}.${slot}${suffix}@example.com`;
+}
 
 type DemoRestaurant = { id: string };
 
 export async function ensureDemoRestaurantEmployees(restaurants: DemoRestaurant[]) {
   if (restaurants.length === 0) return;
 
-  const ids = restaurants.map((restaurant) => restaurant.id);
+  const ids = restaurants.map(({ id }) => id);
   const expected = restaurants.length * 4;
+  // Count by stable local user ID, not the fake Clerk ID: activated users
+  // remain the same database employees and should not get duplicated.
   const existing = await prisma.restaurantStaff.count({
     where: {
       restaurantId: { in: ids },
-      user: { clerkId: { startsWith: "paperbag_demo_clerk_" } },
+      user: { id: { startsWith: "paperbag_demo_user_" } },
     },
   });
   if (existing >= expected) return;
 
   const team = restaurants.flatMap((restaurant, restaurantIndex) =>
-    Array.from({ length: 4 }, (_, slot) => {
-      const [firstName, lastName] = NAMES[(restaurantIndex * 4 + slot) % NAMES.length];
-      const key = restaurant.id + "_" + String(slot + 1);
+    Array.from({ length: 4 }, (_, index) => {
+      const slot = index + 1;
+      const person = demoPersona(restaurantIndex, slot);
       return {
-        id: "paperbag_demo_user_" + key,
-        clerkId: "paperbag_demo_clerk_" + key,
-        email: "paperbag-demo-" + restaurant.id + "-" + String(slot + 1) + "@example.com",
-        firstName: firstName + " (Demo)",
-        lastName,
+        id: demoUserId(restaurant.id, slot),
+        clerkId: `paperbag_demo_clerk_${restaurant.id}_${slot}`,
+        email: `paperbag-demo-${restaurant.id}-${slot}@example.com`,
+        firstName: `${person.firstName} (Demo)`,
+        lastName: person.lastName,
         restaurantId: restaurant.id,
-        role: slot < 2 ? ("STAFF" as const) : ("RIDER" as const),
+        role: person.role,
       };
     })
   );
