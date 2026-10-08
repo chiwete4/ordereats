@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 export async function GET(request: NextRequest) {
   const restaurantId = request.nextUrl.searchParams.get("restaurantId");
@@ -28,9 +29,9 @@ export async function GET(request: NextRequest) {
   });
 
   if (
-    !membership ||
-    !membership.isActive ||
-    !["OWNER", "STAFF"].includes(membership.role)
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
   ) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }
