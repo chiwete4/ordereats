@@ -33,6 +33,7 @@ export function RestaurantVerificationCard({
   operatingDays,
   timezone,
   steps,
+  hideBanner = false,
 }: {
   restaurantId: string;
   restaurantName: string;
@@ -51,6 +52,7 @@ export function RestaurantVerificationCard({
   operatingDays: number[];
   timezone: string;
   steps: VerificationStep[];
+  hideBanner?: boolean;
 }) {
   const bankDialogRef = useRef<HTMLDialogElement>(null);
   const detailsDialogRef = useRef<HTMLDialogElement>(null);
@@ -85,7 +87,7 @@ export function RestaurantVerificationCard({
 
   return (
     <>
-      <section className="flex w-full flex-col rounded-[14px] bg-[#FFF3C4] px-6 py-5 sm:px-8 sm:py-6">
+      <section className={`flex w-full flex-col rounded-[14px] bg-[#FFF3C4] px-6 py-5 sm:px-8 sm:py-6 ${hideBanner ? "hidden" : ""}`}>
         <div className="flex flex-col gap-5">
           <div className="inline-flex items-center gap-1.5 text-[14px] font-semibold leading-none tracking-[-0.02em] text-black">
             <AlertTriangle className="h-4 w-4" strokeWidth={2.3} />
