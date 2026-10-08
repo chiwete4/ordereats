@@ -27,12 +27,6 @@ export async function addRestaurantStaff(formData: FormData) {
 
   await prisma.restaurantStaff.create({ data: { restaurantId, userId, role } });
   revalidatePath("/restaurant/dashboard");
-
-  return {
-    changedUserId: membership.userId,
-    nextRole,
-    changedOwnRole: membership.userId === manager.id,
-  };
 }
 
 export async function toggleRestaurantStaffActive(formData: FormData) {
@@ -104,4 +98,10 @@ export async function changeRestaurantStaffRole(formData: FormData) {
   });
 
   revalidatePath("/restaurant/dashboard");
+
+  return {
+    changedUserId: membership.userId,
+    nextRole,
+    changedOwnRole: membership.userId === manager.id,
+  };
 }
