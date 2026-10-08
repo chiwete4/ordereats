@@ -27,6 +27,12 @@ export async function addRestaurantStaff(formData: FormData) {
 
   await prisma.restaurantStaff.create({ data: { restaurantId, userId, role } });
   revalidatePath("/restaurant/dashboard");
+
+  return {
+    changedUserId: membership.userId,
+    nextRole,
+    changedOwnRole: membership.userId === manager.id,
+  };
 }
 
 export async function toggleRestaurantStaffActive(formData: FormData) {
@@ -76,10 +82,6 @@ export async function changeRestaurantStaffRole(formData: FormData) {
   if (membership.role === "OWNER") {
     throw new Error("The restaurant owner role cannot be changed here.");
   }
-  if (membership.userId === manager.id) {
-    throw new Error("You cannot change your own restaurant role.");
-  }
-
   if (membership.role === "RIDER" && nextRole === "STAFF") {
     const activeDelivery = await prisma.delivery.findFirst({
       where: {
