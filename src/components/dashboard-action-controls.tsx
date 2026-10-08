@@ -237,6 +237,7 @@ export function StaffMoreMenu({
   isActive,
   role,
   disabled = false,
+  isCurrentUser = false,
 }: {
   restaurantId: string;
   membershipId: string;
@@ -244,6 +245,7 @@ export function StaffMoreMenu({
   isActive: boolean;
   role: "OWNER" | "STAFF" | "RIDER";
   disabled?: boolean;
+  isCurrentUser?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -273,7 +275,11 @@ export function StaffMoreMenu({
 
   const nextRole = role === "RIDER" ? "STAFF" : "RIDER";
 
-  function run(action: (formData: FormData) => Promise<void>, extra?: Record<string, string>) {
+  function run(
+    action: (formData: FormData) => Promise<unknown>,
+    extra?: Record<string, string>,
+    onSuccess?: () => void
+  ) {
     const formData = new FormData();
     formData.set("restaurantId", restaurantId);
     formData.set("membershipId", membershipId);
@@ -283,7 +289,11 @@ export function StaffMoreMenu({
     startTransition(async () => {
       try {
         await action(formData);
-        router.refresh();
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.refresh();
+        }
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "That change could not be completed.");
       }
@@ -304,7 +314,15 @@ export function StaffMoreMenu({
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(changeRestaurantStaffRole, { nextRole })}
+          onClick={() =>
+            run(changeRestaurantStaffRole, { nextRole }, () => {
+              if (isCurrentUser && nextRole === "RIDER") {
+                router.push("/rider");
+                return;
+              }
+              router.refresh();
+            })
+          }
           className="flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold text-black hover:bg-[#F4F4F4] disabled:opacity-40"
         >
           {nextRole === "RIDER" ? (
@@ -319,8 +337,14 @@ export function StaffMoreMenu({
 
         <button
           type="button"
-          disabled={pending}
-          onClick={() => isActive ? setConfirmingDeactivate(true) : run(toggleRestaurantStaffActive)}
+          disabled={pending || (isCurrentUser && isActive)}
+          onClick={() =>
+            isCurrentUser && isActive
+              ? undefined
+              : isActive
+                ? setConfirmingDeactivate(true)
+                : run(toggleRestaurantStaffActive)
+          }
           className={`w-full rounded-[7px] px-2.5 py-2 text-left text-[10px] font-semibold hover:bg-[#F4F4F4] disabled:opacity-40 ${isActive ? "text-red-600" : "text-black"}`}
         >
           {isActive ? "Deactivate access" : "Reactivate access"}
