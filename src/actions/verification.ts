@@ -9,6 +9,7 @@ import {
   updatePaystackSubaccount,
 } from "@/lib/paystack";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 async function requireRestaurantManager(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
@@ -20,9 +21,9 @@ async function requireRestaurantManager(restaurantId: string) {
   });
 
   if (
-    !membership ||
-    !membership.isActive ||
-    !["OWNER", "STAFF"].includes(membership.role)
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
   ) {
     throw new Error("You are not allowed to manage this restaurant.");
   }
