@@ -146,14 +146,10 @@ export default async function RestaurantDashboardPage({
     },
   });
 
-  const canManageNormally = Boolean(
-    membership?.isActive && ["OWNER", "STAFF"].includes(membership.role)
-  );
-  const canManageDemoRestaurant = Boolean(
-    membership?.isActive &&
-    hasDemoWorkspaceAccess &&
-    isSeededBazeRestaurant(membership.restaurant)
-  );
+  if (!membership || !membership.isActive) redirect("/");
+  const canManageNormally = ["OWNER", "STAFF"].includes(membership.role);
+  const canManageDemoRestaurant =
+    hasDemoWorkspaceAccess && isSeededBazeRestaurant(membership.restaurant);
   if (!canManageNormally && !canManageDemoRestaurant) {
     redirect("/");
   }
