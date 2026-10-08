@@ -12,7 +12,6 @@ import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 import { isSeededBazeRestaurant } from "@/lib/demo-restaurant-access";
 import { ensureDemoRestaurantEmployees } from "@/lib/demo-restaurant-employees";
-import { DemoTeamActivation } from "@/components/demo-team-activation";
 
 export default async function RestaurantDashboardPage({
   searchParams,
@@ -216,19 +215,6 @@ export default async function RestaurantDashboardPage({
     : "Demo Management Access";
   const avatarUrl = clerkUser?.imageUrl;
 
-  const canActivateDemoAccounts =
-    hasDemoWorkspaceAccess && user.email.toLowerCase() === "mathew.ou@icloud.com";
-  const demoRestaurants = canActivateDemoAccounts
-    ? (await prisma.restaurant.findMany({
-        select: { id: true, name: true, address: true, isVerified: true },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      }))
-        .filter((restaurant) =>
-          restaurant.name === "Mama's Kitchen" || isSeededBazeRestaurant(restaurant)
-        )
-        .map(({ id, name }) => ({ id, name }))
-    : [];
-
   return (
     <main className="min-h-screen bg-white">
       <DashboardLiveRefresh intervalMs={12000} />
@@ -327,13 +313,6 @@ export default async function RestaurantDashboardPage({
                   membership.restaurant.payoutVerifiedAt
                 )}
               />
-
-              {canActivateDemoAccounts ? (
-                <DemoTeamActivation
-                  restaurants={demoRestaurants}
-                  currentRestaurantId={restaurantId}
-                />
-              ) : null}
 
               <Link
                 href="/customer"
