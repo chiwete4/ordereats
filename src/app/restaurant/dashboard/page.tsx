@@ -10,6 +10,7 @@ import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { RestaurantPayoutSettingsButton } from "@/components/restaurant-payout-settings-button";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { BAZE_RESTAURANT_NAMES } from "@/lib/baze-campus";
 
 export default async function RestaurantDashboardPage({
   searchParams,
@@ -18,6 +19,51 @@ export default async function RestaurantDashboardPage({
 }) {
   const user = await getOrCreateCurrentUser();
   if (!user) redirect("/");
+
+  // The seeded Baze restaurants are a shared demo workspace managed through
+  // the active Mama's Kitchen owner account. Restore these links on dashboard
+  // access so an older or separately seeded database cannot hide the switcher.
+  const demoOwnerMembership = await prisma.restaurantStaff.findUnique({
+    where: {
+      userId_restaurantId: {
+        userId: user.id,
+        restaurantId:
+          (await prisma.restaurant.findFirst({
+            where: { name: "Mama's Kitchen" },
+            orderBy: { createdAt: "asc" },
+            select: { id: true },
+          }))?.id ?? "",
+      },
+    },
+    select: { role: true, isActive: true },
+  });
+
+  if (demoOwnerMembership?.role === "OWNER" && demoOwnerMembership.isActive) {
+    const campusRestaurants = await prisma.restaurant.findMany({
+      where: { name: { in: [...BAZE_RESTAURANT_NAMES] } },
+      select: { id: true },
+    });
+
+    await prisma.$transaction(
+      campusRestaurants.map((restaurant) =>
+        prisma.restaurantStaff.upsert({
+          where: {
+            userId_restaurantId: {
+              userId: user.id,
+              restaurantId: restaurant.id,
+            },
+          },
+          update: { role: "OWNER", isActive: true },
+          create: {
+            userId: user.id,
+            restaurantId: restaurant.id,
+            role: "OWNER",
+            isActive: true,
+          },
+        })
+      )
+    );
+  }
 
   const { restaurantId: requestedRestaurantId } = await searchParams;
 
