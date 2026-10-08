@@ -13,6 +13,13 @@ import {
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  BAZE_CAMPUS_BOUNDS,
+  BAZE_CAMPUS_CENTER,
+  BAZE_MAP_MAX_ZOOM,
+  BAZE_MAP_MIN_ZOOM,
+} from "@/lib/baze-campus";
+
 export type LiveDeliveryState = {
   id: string;
   status: string;
@@ -105,12 +112,12 @@ export function LiveDeliveryMap({
       ? initialDelivery.longitude
       : typeof restaurantLongitude === "number"
         ? restaurantLongitude
-        : 7.3986,
+        : BAZE_CAMPUS_CENTER.longitude,
     typeof initialDelivery?.latitude === "number"
       ? initialDelivery.latitude
       : typeof restaurantLatitude === "number"
         ? restaurantLatitude
-        : 9.0765,
+        : BAZE_CAMPUS_CENTER.latitude,
   ]);
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || "";
@@ -153,9 +160,12 @@ export function LiveDeliveryMap({
     const map = new mapboxgl.Map({
       accessToken: mapboxToken,
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/standard",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
       center: initialCenterRef.current,
-      zoom: 14.5,
+      zoom: BAZE_MAP_MIN_ZOOM,
+      minZoom: BAZE_MAP_MIN_ZOOM,
+      maxZoom: BAZE_MAP_MAX_ZOOM,
+      maxBounds: BAZE_CAMPUS_BOUNDS,
       attributionControl: false,
     });
 
@@ -396,7 +406,7 @@ export function LiveDeliveryMap({
         bounds.extend([delivery.deliveryLongitude, delivery.deliveryLatitude]);
         map.fitBounds(bounds, {
           padding: 70,
-          maxZoom: 15.5,
+          maxZoom: BAZE_MAP_MAX_ZOOM,
           duration: 700,
         });
       } else {
