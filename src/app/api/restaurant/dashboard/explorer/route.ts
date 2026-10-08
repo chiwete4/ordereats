@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 const PAGE_SIZE = 20;
 
@@ -46,9 +47,9 @@ async function requireRestaurantManager(restaurantId: string) {
   });
 
   if (
-    !membership ||
-    !membership.isActive ||
-    !["OWNER", "STAFF"].includes(membership.role)
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
   ) {
     return null;
   }
