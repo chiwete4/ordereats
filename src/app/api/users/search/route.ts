@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 export async function GET(request: NextRequest) {
   const currentUser = await getOrCreateCurrentUser();
@@ -11,7 +12,11 @@ export async function GET(request: NextRequest) {
   if (!restaurantId || !query || query.length < 2) return NextResponse.json({ users: [] });
 
   const manager = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: currentUser.id, restaurantId } } });
-  if (!manager || manager.role !== "STAFF" || !manager.isActive) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (
+    !manager?.isActive ||
+    (!["OWNER", "STAFF"].includes(manager.role) &&
+      !(await hasBazeDemoManagerAccess(currentUser.id, restaurantId)))
+  ) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const users = await prisma.user.findMany({
     where: {
