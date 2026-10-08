@@ -329,6 +329,7 @@ export default async function RestaurantDashboardPage({
             payoutVerifiedAt: membership.restaurant.payoutVerifiedAt?.toISOString() ?? null,
           }}
           verificationSteps={verificationSteps}
+          currentUserId={user.id}
         />
 
         <div className="h-[168px]" />
