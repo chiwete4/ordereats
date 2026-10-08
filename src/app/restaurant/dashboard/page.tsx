@@ -10,6 +10,8 @@ import { RestaurantHoursStatus } from "@/components/restaurant-hours-status";
 import { RestaurantPayoutSettingsButton } from "@/components/restaurant-payout-settings-button";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { isSeededBazeRestaurant } from "@/lib/demo-restaurant-access";
+import { ensureDemoRestaurantEmployees } from "@/lib/demo-restaurant-employees";
 
 export default async function RestaurantDashboardPage({
   searchParams,
@@ -37,12 +39,14 @@ export default async function RestaurantDashboardPage({
     select: { role: true, isActive: true },
   });
 
-  if (
+  const hasDemoWorkspaceAccess = Boolean(
     demoAccessMembership?.isActive &&
     ["OWNER", "STAFF"].includes(demoAccessMembership.role)
-  ) {
+  );
+
+  if (hasDemoWorkspaceAccess) {
     const campusRestaurants = await prisma.restaurant.findMany({
-      select: { id: true },
+      select: { id: true, name: true, address: true, isVerified: true },
       orderBy: { createdAt: "asc" },
     });
 
@@ -64,6 +68,16 @@ export default async function RestaurantDashboardPage({
           },
         })
       )
+    );
+
+    // Create persistent, clearly identified demo team records once, without
+    // CLI access or accidentally onboarding staff to new restaurants.
+    await ensureDemoRestaurantEmployees(
+      campusRestaurants
+        .filter((restaurant) =>
+          restaurant.name === "Mama's Kitchen" || isSeededBazeRestaurant(restaurant)
+        )
+        .map(({ id }) => ({ id }))
     );
   }
 
@@ -132,29 +146,40 @@ export default async function RestaurantDashboardPage({
     },
   });
 
-  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) {
+  const canManageNormally = Boolean(
+    membership?.isActive && ["OWNER", "STAFF"].includes(membership.role)
+  );
+  const canManageDemoRestaurant = Boolean(
+    membership?.isActive &&
+    hasDemoWorkspaceAccess &&
+    isSeededBazeRestaurant(membership.restaurant)
+  );
+  if (!canManageNormally && !canManageDemoRestaurant) {
     redirect("/");
   }
 
   const restaurantMemberships = (
     await prisma.restaurantStaff.findMany({
-      where: {
-        userId: user.id,
-        isActive: true,
-        role: { in: ["OWNER", "STAFF"] },
-      },
+      where: { userId: user.id, isActive: true },
       select: {
         restaurantId: true,
         role: true,
         restaurant: {
           select: {
             name: true,
+            address: true,
+            isVerified: true,
           },
         },
       },
       orderBy: { createdAt: "asc" },
     })
-  ).sort((a, b) => a.restaurant.name.localeCompare(b.restaurant.name));
+  )
+    .filter((entry) =>
+      ["OWNER", "STAFF"].includes(entry.role) ||
+      (hasDemoWorkspaceAccess && isSeededBazeRestaurant(entry.restaurant))
+    )
+    .sort((a, b) => a.restaurant.name.localeCompare(b.restaurant.name));
 
   const activeRiderCount = await prisma.restaurantStaff.count({
     where: {
@@ -189,7 +214,9 @@ export default async function RestaurantDashboardPage({
 
   const clerkUser = await currentUser();
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "there";
-  const roleLabel = membership.role === "OWNER" ? "Restaurant Owner" : "Restaurant Staff";
+  const roleLabel = canManageNormally
+    ? membership.role === "OWNER" ? "Restaurant Owner" : "Restaurant Staff"
+    : "Demo Management Access";
   const avatarUrl = clerkUser?.imageUrl;
 
   return (
