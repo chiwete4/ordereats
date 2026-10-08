@@ -3,12 +3,46 @@
 @tailwind utilities;
 
 :root {
-  --background: #f4efe6;
-  --foreground: #1f201c;
+  --background: #ffffff;
+  --foreground: #111111;
 }
 
 * {
   box-sizing: border-box;
+}
+
+
+
+/* Paperbag scrollbars — native, dependency-free, and consistent across panels/modals. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.72) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.62);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 96, 96, 0.78);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html {
@@ -16,12 +50,20 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html:has(body [data-rider-page="true"]),
+html:has(body [data-rider-page="true"]) body {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000000;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
@@ -49,22 +91,91 @@ button {
     padding-right: 1rem;
     overflow-x: auto;
     flex-wrap: nowrap !important;
-    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-  }
-
-  .mobile-scroll-row::-webkit-scrollbar {
-    display: none;
   }
 }
 
 ::selection {
-  background: #d9583b;
-  color: #fff9ef;
+  background: #111111;
+  color: #ffffff;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(1px);
+  }
+}
+
+
+.rider-swipe-shimmer {
+  color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,0.42) 0%,
+      rgba(255,255,255,0.42) 25%,
+      rgba(255,255,255,1) 50%,
+      rgba(255,255,255,0.42) 75%,
+      rgba(255,255,255,0.42) 100%
+    );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: rider-swipe-shimmer 2.4s linear infinite;
+}
+
+@keyframes rider-swipe-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: 0% 0; }
+}
+
+
+.rider-chevron {
+  display: inline-block;
+  color: rgba(255,255,255,0.28);
+  animation: rider-chevron-pulse 1.35s ease-in-out infinite;
+}
+
+.rider-chevron-1 { animation-delay: 0ms; }
+.rider-chevron-2 { animation-delay: 160ms; }
+.rider-chevron-3 { animation-delay: 320ms; }
+
+@keyframes rider-chevron-pulse {
+  0%, 55%, 100% { color: rgba(255,255,255,0.28); }
+  20%, 35% { color: rgba(255,255,255,0.82); }
 }
