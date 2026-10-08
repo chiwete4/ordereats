@@ -3,12 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 async function requireManager(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
   if (!user) throw new Error("You must be signed in.");
   const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } } });
-  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
+  if (
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
+  ) throw new Error("You are not allowed to manage this restaurant.");
 }
 
 async function getRestaurantOrder(restaurantId: string, restaurantOrderId: string) {
@@ -60,8 +65,14 @@ export async function assignReadyOrderToRider(formData: FormData) {
   await requireManager(restaurantId);
   const order = await getRestaurantOrder(restaurantId, restaurantOrderId);
   if (order.status !== "READY_FOR_PICKUP") throw new Error("Only a ready order can be sent to a rider.");
-  const rider = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: riderId, restaurantId } } });
+  const rider = await prisma.restaurantStaff.findUnique({
+    where: { userId_restaurantId: { userId: riderId, restaurantId } },
+    include: { user: { select: { clerkId: true } } },
+  });
   if (!rider || rider.role !== "RIDER" || !rider.isActive) throw new Error("Choose an active rider for this restaurant.");
+  if (rider.user.clerkId.startsWith("paperbag_demo_clerk_")) {
+    throw new Error("Demo rider profiles cannot accept real deliveries. Assign a signed-in rider.");
+  }
   const activeDelivery = await prisma.delivery.findFirst({ where: { riderId, status: { notIn: ["DELIVERED", "CANCELLED"] } }, select: { id: true } });
   if (activeDelivery) throw new Error("That rider is already delivering an order. Choose an available rider.");
   await prisma.$transaction([
@@ -80,8 +91,14 @@ export async function assignRider(formData: FormData) {
   await requireManager(restaurantId);
   const order = await getRestaurantOrder(restaurantId, restaurantOrderId);
   if (order.status !== "OUT_FOR_DELIVERY") throw new Error("Mark the order out for delivery before assigning a rider.");
-  const rider = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: riderId, restaurantId } } });
+  const rider = await prisma.restaurantStaff.findUnique({
+    where: { userId_restaurantId: { userId: riderId, restaurantId } },
+    include: { user: { select: { clerkId: true } } },
+  });
   if (!rider || rider.role !== "RIDER" || !rider.isActive) throw new Error("Choose an active rider for this restaurant.");
+  if (rider.user.clerkId.startsWith("paperbag_demo_clerk_")) {
+    throw new Error("Demo rider profiles cannot accept real deliveries. Assign a signed-in rider.");
+  }
   await prisma.delivery.upsert({ where: { restaurantOrderId: order.id }, create: { restaurantOrderId: order.id, riderId, status: "ASSIGNED", assignedAt: new Date() }, update: { riderId, status: "ASSIGNED", assignedAt: new Date() } });
   revalidatePath("/restaurant/dashboard");
   revalidatePath("/customer");
