@@ -25,14 +25,20 @@ export function demoUserId(restaurantId: string, slot: number) {
   return `paperbag_demo_user_${restaurantId}_${slot}`;
 }
 
-export function demoEmail(restaurantId: string, slot: number) {
-  // Every Clerk instance can use normal email/password sign-in. Synthetic
-  // addresses won't receive mail, so provisioned accounts are for demos only.
-  // Do not use +clerk_test on production, where Clerk test mode is disabled.
+export function demoEmail(restaurantName: string, restaurantIndex: number, slot: number) {
+  const { firstName, lastName } = demoPersona(restaurantIndex, slot);
+  const campusSlug = restaurantName
+    .normalize("NFKD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 12) || "baze";
+  // Human-readable but non-deliverable demo mailboxes. Clerk's +clerk_test
+  // addresses additionally support the fixed test code on dev instances.
   const suffix = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_")
     ? "+clerk_test"
     : "";
-  return `paperbag.team.${restaurantId}.${slot}${suffix}@example.com`;
+  return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${campusSlug}${suffix}@example.com`;
 }
 
 type DemoRestaurant = { id: string };
