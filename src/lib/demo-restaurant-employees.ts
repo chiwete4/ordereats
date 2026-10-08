@@ -29,7 +29,7 @@ export function demoEmail(restaurantName: string, restaurantIndex: number, slot:
   const { firstName, lastName } = demoPersona(restaurantIndex, slot);
   const campusSlug = restaurantName
     .normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 12) || "baze";
