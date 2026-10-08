@@ -3,12 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 async function requireManager(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
   if (!user) throw new Error("You must be signed in.");
   const membership = await prisma.restaurantStaff.findUnique({ where: { userId_restaurantId: { userId: user.id, restaurantId } } });
-  if (!membership || !["OWNER", "STAFF"].includes(membership.role) || !membership.isActive) throw new Error("You are not allowed to manage this restaurant.");
+  if (
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
+  ) throw new Error("You are not allowed to manage this restaurant.");
   return user;
 }
 
