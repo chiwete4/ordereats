@@ -4,6 +4,13 @@ import { ChevronLeft, ChevronRight, Crosshair, MapPin, Radio, SignalLow, WifiOff
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  BAZE_CAMPUS_BOUNDS,
+  BAZE_CAMPUS_CENTER,
+  BAZE_MAP_MAX_ZOOM,
+  BAZE_MAP_MIN_ZOOM,
+} from "@/lib/baze-campus";
+
 export type CustomerLiveDelivery = {
   id: string;
   status: string;
@@ -175,14 +182,17 @@ export function CustomerLiveMap({
         ? [delivery.longitude, delivery.latitude]
         : typeof fallbackLongitude === "number" && typeof fallbackLatitude === "number"
           ? [fallbackLongitude, fallbackLatitude]
-          : [7.3986, 9.0765];
+          : [BAZE_CAMPUS_CENTER.longitude, BAZE_CAMPUS_CENTER.latitude];
 
     const map = new mapboxgl.Map({
       accessToken: token,
       container: mapEl.current,
-      style: "mapbox://styles/mapbox/standard",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
       center,
-      zoom: 14.5,
+      zoom: BAZE_MAP_MIN_ZOOM,
+      minZoom: BAZE_MAP_MIN_ZOOM,
+      maxZoom: BAZE_MAP_MAX_ZOOM,
+      maxBounds: BAZE_CAMPUS_BOUNDS,
       attributionControl: false,
     });
 
@@ -311,7 +321,7 @@ export function CustomerLiveMap({
           bounds.extend([delivery.deliveryLongitude as number, delivery.deliveryLatitude as number]);
           map.fitBounds(bounds, {
             padding: 70,
-            maxZoom: 15.5,
+            maxZoom: BAZE_MAP_MAX_ZOOM,
             duration: 700,
           });
         }
