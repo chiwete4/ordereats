@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getOrCreateCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { hasBazeDemoManagerAccess } from "@/lib/demo-restaurant-access";
 
 async function requireManager(restaurantId: string) {
   const user = await getOrCreateCurrentUser();
@@ -22,7 +23,11 @@ async function requireManager(restaurantId: string) {
     },
   });
 
-  if (!membership || !membership.isActive || !["OWNER", "STAFF"].includes(membership.role)) {
+  if (
+    !membership?.isActive ||
+    (!["OWNER", "STAFF"].includes(membership.role) &&
+      !(await hasBazeDemoManagerAccess(user.id, restaurantId)))
+  ) {
     throw new Error("You are not allowed to manage this restaurant.");
   }
 }
