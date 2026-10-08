@@ -24,6 +24,7 @@ import { RestaurantOrderPanels, type DashboardOrder } from "@/components/restaur
 import { LiveDeliveryMap, type LiveDeliveryState } from "@/components/live-delivery-map";
 import { StaffUserSearch } from "@/components/staff-user-search";
 import { prisma } from "@/lib/prisma";
+import { isSeededBazeRestaurant } from "@/lib/demo-restaurant-access";
 
 type VerificationStep = {
   label: string;
@@ -214,6 +215,7 @@ function StaffPanel({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-semibold text-black">{personName(member.user)}</p>
+              <p className="mt-1 truncate text-[10px] text-[#808080]" title={member.user.email}>{member.user.email}</p>
               <p className="mt-1 text-[9px] font-medium uppercase text-[#808080]">{member.role} · {member.isActive ? "Active" : "Inactive"}</p>
             </div>
             <StaffMoreMenu
@@ -284,12 +286,15 @@ function RidersPanel({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-semibold text-black">{personName(rider.user)}</p>
+                <p className="mt-1 truncate text-[10px] text-[#808080]" title={rider.user.email}>{rider.user.email}</p>
                 <p className={`mt-1 text-[9px] font-medium ${delivering ? "text-[#808080]" : "text-green-500"}`}>
-                  {delivering ? "Delivering an order" : rider.isActive ? "Available to deliver" : "Off duty"}
+                  {rider.user.clerkId.startsWith("paperbag_demo_clerk_")
+                    ? "Demo profile · no sign-in"
+                    : delivering ? "Delivering an order" : rider.isActive ? "Available to deliver" : "Off duty"}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                {!delivering && rider.isActive ? (
+                {!delivering && rider.isActive && !rider.user.clerkId.startsWith("paperbag_demo_clerk_") ? (
                   <RiderAssignButton
                     restaurantId={restaurantId}
                     riderId={rider.userId}
@@ -494,6 +499,7 @@ export async function RestaurantDashboardGrid({
             firstName: true,
             lastName: true,
             email: true,
+            clerkId: true,
             assignedDeliveries: {
               where: {
                 status: {
@@ -740,7 +746,9 @@ export async function RestaurantDashboardGrid({
     })
   );
 
-  const orderRiders = riders.map((rider) => {
+  const orderRiders = riders
+    .filter((rider) => !rider.user.clerkId.startsWith("paperbag_demo_clerk_"))
+    .map((rider) => {
     const activeDelivery = rider.user.assignedDeliveries?.[0];
     const deliveryOrder = activeDelivery
       ? orders.find((row) => row.delivery?.id === activeDelivery.id)
@@ -973,6 +981,7 @@ export async function RestaurantDashboardGrid({
   });
 
   const verificationComplete = verificationSteps.every((step) => step.complete);
+  const isCampusDemo = isSeededBazeRestaurant(restaurant);
 
   const performanceExplorerItems: DashboardExplorerItem[] = [
     {
@@ -1002,9 +1011,10 @@ export async function RestaurantDashboardGrid({
   return (
     <div className="grid items-start gap-x-[36px] lg:grid-cols-[minmax(0,1069fr)_minmax(0,422fr)]">
       <div className="flex min-w-0 flex-col gap-[20px]">
-        {!verificationComplete ? (
+        {!verificationComplete || isCampusDemo ? (
           <div id="restaurant-verification">
             <RestaurantVerificationCard
+              hideBanner={isCampusDemo}
               restaurantId={restaurantId}
               restaurantName={restaurant.name}
               imageUrl={restaurant.imageUrl}
